@@ -26,6 +26,8 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import org.cerion.todolist.dialogs.AlertDialogFragment;
+
 import java.util.ArrayList;
 
 
@@ -180,6 +182,7 @@ public class MainActivity extends ListActivity implements Sync.SyncCallback
 
     public void onSync()
     {
+        //TODO, another file to put this function?
         ConnectivityManager cm = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = cm.getActiveNetworkInfo();
         boolean isConnected = networkInfo != null && networkInfo.isConnected();

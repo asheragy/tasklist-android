@@ -1,4 +1,4 @@
-package org.cerion.todolist;
+package org.cerion.todolist.dialogs;
 
 
 import android.app.AlertDialog;
@@ -12,7 +12,7 @@ public class AlertDialogFragment extends DialogFragment
     private static final String TITLE = "title";
     private static final String MESSAGE = "message";
 
-    static AlertDialogFragment newInstance(String sTitle, String sMessage)
+    public static AlertDialogFragment newInstance(String sTitle, String sMessage)
     {
         AlertDialogFragment frag = new AlertDialogFragment();
 
