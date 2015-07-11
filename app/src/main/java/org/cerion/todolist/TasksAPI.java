@@ -22,12 +22,12 @@ import java.util.TimeZone;
 
 public class TasksAPI
 {
-    private static final String TAG = "TasksAPI";
+    private static final String TAG = TasksAPI.class.getSimpleName();
     private static final String API_KEY = "AIzaSyAHgDGorXJ1I0WqzpWE6Pm2o894T-j4pdQ";
-    private static final SimpleDateFormat mDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
     private static final boolean mLogFullResults = true;
 
-    public String mAuthKey;
+    private SimpleDateFormat mDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+    private String mAuthKey;
 
     public TasksAPI(String authKey)
     {

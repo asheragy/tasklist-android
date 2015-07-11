@@ -93,7 +93,7 @@ public class Database extends SQLiteOpenHelper
             String id = c.getString(c.getColumnIndexOrThrow(COLUMN_ID));
             int renamed = c.getInt(c.getColumnIndexOrThrow(COLUMN_RENAMED));
 
-            return new TaskList(id,title,renamed);
+            return new TaskList(id,title,(renamed == 1 ? true : false));
         }
 
     }

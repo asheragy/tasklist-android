@@ -15,14 +15,15 @@ public class TaskList
 
     public TaskList(String id, String title)
     {
-        this(id,title,-1);
-    }
-
-    public TaskList(String id, String title, int renamed)
-    {
         this.id = id;
         this.title = title;
-        this.renamed = renamed;
+        renamed = -1;
+    }
+
+    public TaskList(String id, String title, boolean renamed)
+    {
+        this(id,title);
+        this.renamed = (renamed ? 1 : 0);
     }
 
     public String toString()

@@ -42,12 +42,13 @@ public class Sync
     private int[] dbToGoogle = { 0, 0, 0, 0, 0, 0 };
     private Map<String,String> mSyncKeys = null;
 
-    public interface SyncCallback
+    public interface Callback
     {
-        public void onSyncComplete();
+        void onSuccess();
+        void onFailure(Exception e);
     }
 
-    public static void syncTaskLists(Context context, SyncCallback callback)
+    public static void syncTaskLists(Context context, Callback callback)
     {
         getTokenAndSync(context,callback);
     }
@@ -315,8 +316,9 @@ public class Sync
         mDb.setSyncKey("updated_" + list.id, mDateFormat.format(list.updated));
     }
 
-    private static void getTokenAndSync(final Context context, final SyncCallback callback)
+    private static void getTokenAndSync(final Context context, final Callback callback)
     {
+        /*
         if(true) //Emulator, use manual code
         {
             String token = "ya29.pgHfcRyQeYabfAfvynoVnoBYUS3sbGZy40Sw408oyQ1ikcjLPvEbj6652uVby6aFWLLNX2eh60j2zg";
@@ -324,6 +326,7 @@ public class Sync
             task.execute();
             return;
         }
+        */
 
         Date dtLastToken = Prefs.getPrefDate(context,Prefs.PREF_AUTHTOKEN_DATE);
         long dtDiff = (System.currentTimeMillis() - dtLastToken.getTime()) / 1000;
@@ -369,7 +372,7 @@ public class Sync
                     }
                     catch (Exception e)
                     {
-
+                        callback.onFailure(e);
                         Log.d("TEST","ERROR");
                     }
                 }
@@ -383,8 +386,8 @@ public class Sync
     {
         private Context mContext;
         private String mAuthToken;
-        private SyncCallback mCallback;
-        public SyncTask(Context context, String sAuth, SyncCallback callback)
+        private Callback mCallback;
+        public SyncTask(Context context, String sAuth, Callback callback)
         {
             mContext = context;
             mAuthToken = sAuth;
@@ -415,7 +418,7 @@ public class Sync
                 mStatus.setText("Error");
                 */
 
-            mCallback.onSyncComplete();
+            mCallback.onSuccess();
         }
     }
 

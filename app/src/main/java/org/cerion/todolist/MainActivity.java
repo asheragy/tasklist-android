@@ -1,11 +1,9 @@
 package org.cerion.todolist;
 
 import android.app.ActionBar;
-import android.app.AlertDialog;
 import android.app.DialogFragment;
 import android.app.ListActivity;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -22,16 +20,17 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.cerion.todolist.dialogs.AlertDialogFragment;
+import org.cerion.todolist.dialogs.TaskListDialogFragment;
+import org.cerion.todolist.dialogs.TaskListDialogFragment.TaskListDialogListener;
 
 import java.util.ArrayList;
 
 
-public class MainActivity extends ListActivity implements Sync.SyncCallback
+public class MainActivity extends ListActivity implements TaskListDialogListener
 {
     public static final String TAG = MainActivity.class.getSimpleName();
 
@@ -187,8 +186,24 @@ public class MainActivity extends ListActivity implements Sync.SyncCallback
         NetworkInfo networkInfo = cm.getActiveNetworkInfo();
         boolean isConnected = networkInfo != null && networkInfo.isConnected();
 
+
         if(isConnected)
-            Sync.syncTaskLists(this,this);
+            Sync.syncTaskLists(this, new Sync.Callback() {
+                @Override
+                public void onSuccess() {
+                    refreshList();
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    String message = "Sync Failed, unknown error";
+                    if(e != null) {
+                        message = "Exception: " + e.getMessage();
+                    }
+                    DialogFragment dialog = AlertDialogFragment.newInstance("Error", message);
+                    dialog.show(getFragmentManager(), "dialog");
+                }
+            });
         else
         {
             DialogFragment dialog = AlertDialogFragment.newInstance("Error", "Internet not available");
@@ -215,10 +230,11 @@ public class MainActivity extends ListActivity implements Sync.SyncCallback
     }
 
     @Override
-    public void onSyncComplete()
-    {
-        refreshList();
+    public void onFinishTaskListDialog() {
+        loadTaskLists();
     }
+
+
 
     private class VerifyAuthTask extends AsyncTask<Void, Void, Void>
     {
@@ -264,76 +280,13 @@ public class MainActivity extends ListActivity implements Sync.SyncCallback
         }
         else if(id == R.id.action_add)
         {
-            AlertDialog.Builder alert = new AlertDialog.Builder(this);
-            final EditText edittext= new EditText(this);
-            final Context context = this;
-
-            alert.setTitle("New Task List");
-            alert.setMessage("Enter name");
-            alert.setView(edittext);
-
-            alert.setPositiveButton("Save", new DialogInterface.OnClickListener()
-            {
-                public void onClick(DialogInterface dialog, int whichButton)
-                {
-                    String name = edittext.getText().toString();
-
-                    Database db = Database.getInstance(context);
-                    TaskList update = new TaskList(TaskList.generateId(),name);
-                    db.addTaskList(update);
-
-                    loadTaskLists(); //reload from database
-                }
-            });
-
-            alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener()
-            {
-                public void onClick(DialogInterface dialog, int whichButton)
-                {
-                    Log.d(TAG,"Cancel Add");
-                }
-            });
-
-            alert.show();
+            TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_ADD,null);
+            dialog.show(getFragmentManager(), "dialog");
         }
         else if(id == R.id.action_rename)
         {
-            AlertDialog.Builder alert = new AlertDialog.Builder(this);
-            final EditText edittext= new EditText(this);
-            final TaskList taskList = getCurrentList();
-            final Context context = this;
-
-            alert.setTitle(taskList.title);
-            alert.setMessage("Enter new name");
-            alert.setView(edittext);
-
-            alert.setPositiveButton("Save", new DialogInterface.OnClickListener()
-            {
-                public void onClick(DialogInterface dialog, int whichButton)
-                {
-                    //What ever you want to do with the value
-                    String newName = edittext.getText().toString();
-                    Log.d(TAG,"Rename " + taskList.title + " to " + newName);
-
-                    //TODO, move to database?
-                    TaskList update = new TaskList(taskList.id,newName);
-                    update.setRenamed(true);
-                    Database db = Database.getInstance(context);
-                    db.updateTaskList(update);
-
-                    loadTaskLists(); //reload from database
-                }
-            });
-
-            alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener()
-            {
-                public void onClick(DialogInterface dialog, int whichButton)
-                {
-                    Log.d(TAG,"Cancel Rename");
-                }
-            });
-
-            alert.show();
+            TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME,getCurrentList());
+            dialog.show(getFragmentManager(), "dialog");
         }
 
         return super.onOptionsItemSelected(item);
@@ -352,9 +305,9 @@ public class MainActivity extends ListActivity implements Sync.SyncCallback
     {
         AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
         Task task = (Task)getListAdapter().getItem(info.position);
-        Database db = null;
 
-        ArrayAdapter<Task> adapter = (ArrayAdapter)getListAdapter();
+        Database db;
+        //ArrayAdapter<Task> adapter = (ArrayAdapter)getListAdapter();
 
         switch (item.getItemId())
         {
