@@ -41,6 +41,8 @@ public class TaskListAdapter extends ArrayAdapter<Task>
 
         TextView title = (TextView)row.findViewById(R.id.title);
         title.setText(task.toString());
+
+        //TODO, add viewholder pattern
         //holder.txtTitle.setText(weather.title);
         //holder.imgIcon.setImageResource(weather.icon);
 

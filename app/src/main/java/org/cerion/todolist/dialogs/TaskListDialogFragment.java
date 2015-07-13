@@ -71,7 +71,6 @@ public class TaskListDialogFragment extends DialogFragment {
 
             alert.setPositiveButton("Save", new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int whichButton) {
-                    //What ever you want to do with the value
                     String newName = edittext.getText().toString();
                     Log.d(TAG, "Rename " + listName + " to " + newName);
 
