@@ -1,45 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:orientation="vertical"
-              android:layout_margin="5dp"
-                android:background="@color/green"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools"
+              android:padding="5dp"
+              tools:background="#ffffff"
               android:layout_width="match_parent"
-              android:layout_height="match_parent">
+              android:layout_height="wrap_content">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="18sp"
         android:text="Title"
-        android:textColor="#ffffff"
-        android:id="@+id/title"/>
+        android:textColor="@android:color/black"
+        android:background="@color/green"
+        android:id="@+id/title"
+        android:layout_alignParentLeft="true" />
 
 
-    <LinearLayout
-        android:id="@+id/debug"
-        android:layout_width="fill_parent"
+
+    <TextView
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="ID"
-            android:textSize="10sp"
-            android:textColor="@color/secondary_text"
-            android:id="@+id/taskid"/>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="LastModified"
-            android:textSize="10sp"
-            android:textColor="@color/secondary_text"
-            android:id="@+id/modified"/>
+        android:text="Wed, Jul 22, 2015"
+        android:id="@+id/dueDate"
+        android:textColor="@android:color/black"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:visibility="gone" />
 
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="Note"
+        android:id="@+id/noteText"
+        android:textColor="@android:color/darker_gray"
+        android:layout_below="@+id/title"
+        android:layout_alignParentLeft="true"
+        android:visibility="gone" />
 
-    </LinearLayout>
 
+    <!-- Debug layouts -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="LastModified"
+        android:textSize="10sp"
+        android:textColor="@android:color/black"
+        android:id="@+id/modified"
+        android:layout_below="@+id/noteText"
+        android:layout_alignParentLeft="true"
+        android:visibility="gone" />
 
-</LinearLayout>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="ID"
+        android:textSize="10sp"
+        android:textColor="@android:color/black"
+        android:id="@+id/taskid"
+        android:layout_alignTop="@+id/modified"
+        android:layout_toRightOf="@+id/modified"
+        android:paddingLeft="10dp"
+        android:visibility="gone" />
+
+</RelativeLayout>

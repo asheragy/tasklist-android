@@ -1,6 +1,7 @@
 package org.cerion.todolist;
 
-import android.app.ActionBar;
+
+import android.app.Activity;
 import android.app.DialogFragment;
 import android.app.ListActivity;
 import android.content.Context;
@@ -9,6 +10,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v7.app.ActionBar;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.GestureDetector;
@@ -17,20 +19,24 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.Window;
+import android.widget.Adapter;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ListAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
-
+import android.support.v7.app.ActionBarActivity;
 import org.cerion.todolist.dialogs.AlertDialogFragment;
 import org.cerion.todolist.dialogs.TaskListDialogFragment;
 import org.cerion.todolist.dialogs.TaskListDialogFragment.TaskListDialogListener;
 
+
 import java.util.ArrayList;
 
-
-public class MainActivity extends ListActivity implements TaskListDialogListener
+public class MainActivity extends ActionBarActivity implements TaskListDialogListener
 {
     public static final String TAG = MainActivity.class.getSimpleName();
 
@@ -41,6 +47,7 @@ public class MainActivity extends ListActivity implements TaskListDialogListener
     GestureDetector mGestureDetector;
     ActionBar mActionBar;
 
+
     public static ArrayList<TaskList> mTaskLists; //TODO, make accessable to TaskActivity without using public static, better object oriented way?
     public static ArrayAdapter<TaskList> mAdapter;
 
@@ -49,8 +56,6 @@ public class MainActivity extends ListActivity implements TaskListDialogListener
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        //setTheme(Global.THEME);
-
         setContentView(R.layout.activity_main);
 
         mStatus = (TextView)findViewById(R.id.status);
@@ -58,9 +63,12 @@ public class MainActivity extends ListActivity implements TaskListDialogListener
         mVerify = (Button)findViewById(R.id.verify);
         mDownload=(Button)findViewById(R.id.download);
 
+        getListView().setEmptyView(findViewById(android.R.id.empty));
+
         registerForContextMenu(getListView());
 
-/*
+
+        /*
         mAuth.setOnClickListener(new View.OnClickListener()
         {
             @Override
@@ -70,6 +78,7 @@ public class MainActivity extends ListActivity implements TaskListDialogListener
             }
         });
         */
+
 
 
         mVerify.setOnClickListener(new View.OnClickListener()
@@ -100,7 +109,9 @@ public class MainActivity extends ListActivity implements TaskListDialogListener
             mTaskLists.add( new TaskList("","Default") );
         }
 
-        mActionBar = getActionBar();
+
+        //mActionBar = getActionBar();
+        mActionBar = getSupportActionBar();
 
 
         mAdapter = new ArrayAdapter<TaskList>(mActionBar.getThemedContext(), android.R.layout.simple_spinner_dropdown_item, mTaskLists);
@@ -166,17 +177,33 @@ public class MainActivity extends ListActivity implements TaskListDialogListener
             }
         });
 
-        getListView().setOnItemClickListener(new AdapterView.OnItemClickListener()
-        {
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id)
-            {
-                Task task = (Task)getListView().getItemAtPosition(position);
+        getListView().setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Task task = (Task) getListView().getItemAtPosition(position);
                 onOpenTask(task);
             }
         });
 
 
+
         loadTaskLists();
+
+
+    }
+
+    public ListView getListView()
+    {
+        return (ListView)findViewById(android.R.id.list);
+    }
+
+    public Adapter getListAdapter()
+    {
+        return getListView().getAdapter();
+    }
+
+    public void setListAdapter(ListAdapter adapter)
+    {
+        getListView().setAdapter(adapter);
     }
 
     public void onSync()

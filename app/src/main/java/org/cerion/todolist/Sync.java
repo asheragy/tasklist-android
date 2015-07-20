@@ -318,15 +318,13 @@ public class Sync
 
     private static void getTokenAndSync(final Context context, final Callback callback)
     {
-        /*
         if(true) //Emulator, use manual code
         {
-            String token = "ya29.pgHfcRyQeYabfAfvynoVnoBYUS3sbGZy40Sw408oyQ1ikcjLPvEbj6652uVby6aFWLLNX2eh60j2zg";
+            String token = "ya29.tgG6qjtK7gUqGR-nooXQUN42wcmMJiH3mIB7mqfaipNpYdOWQbDzdgDQ5WIIfhNOj6gtfQ";
             SyncTask task = new SyncTask(context,token,callback);
             task.execute();
             return;
         }
-        */
 
         Date dtLastToken = Prefs.getPrefDate(context,Prefs.PREF_AUTHTOKEN_DATE);
         long dtDiff = (System.currentTimeMillis() - dtLastToken.getTime()) / 1000;

@@ -53,6 +53,21 @@ public class TaskListAdapter extends ArrayAdapter<Task>
         else
             ((TextView)row.findViewById(R.id.modified)).setText(task.updated.toString());
 
+
+        if(task.due != null && task.due.getTime() != 0)
+            ((TextView)row.findViewById(R.id.dueDate)).setText("Has Due Date");
+        else
+            ((TextView)row.findViewById(R.id.dueDate)).setText("");
+
+/*
+        if(task.notes != null && task.notes.length() > 0)
+            ((TextView)row.findViewById(R.id.noteText)).setText("Has Note");
+        else
+            ((TextView)row.findViewById(R.id.noteText)).setText("");
+
+*/
+        row.findViewById(R.id.modified).setVisibility(View.GONE);
+        row.findViewById(R.id.taskid).setVisibility(View.GONE);
         return row;
     }
 }

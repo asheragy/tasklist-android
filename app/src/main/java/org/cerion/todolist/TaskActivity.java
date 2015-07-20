@@ -2,6 +2,7 @@ package org.cerion.todolist;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.Menu;
@@ -12,7 +13,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 
-public class TaskActivity extends Activity
+public class TaskActivity extends ActionBarActivity
 {
     public static final String EXTRA_TASK_ID = "taskId";
     //private String mTaskId;

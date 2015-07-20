@@ -127,11 +127,14 @@ public class Database extends SQLiteOpenHelper
             String id = c.getString(c.getColumnIndexOrThrow(COLUMN_ID));
             Task task = new Task(list,id);
             task.title = c.getString(c.getColumnIndexOrThrow(COLUMN_TITLE));
+            task.notes = c.getString(c.getColumnIndexOrThrow(COLUMN_NOTES));
             task.deleted = (c.getInt(c.getColumnIndexOrThrow(COLUMN_DELETED)) == 1);
 
             long updated = c.getLong(c.getColumnIndexOrThrow(COLUMN_UPDATED));
-            task.updated = new Date();
-            task.updated.setTime(updated);
+            task.updated = new Date(updated);
+
+            task.due = new Date(c.getLong(c.getColumnIndexOrThrow(COLUMN_DUE)));
+
 
             return task;
         }
@@ -178,12 +181,15 @@ public class Database extends SQLiteOpenHelper
     {
         Log.d(TAG,"updateTask");
 
-        String where = Tasks.COLUMN_ID + "='" + task.id + "' AND " + Tasks.COLUMN_LISTID + "='" + task.listId + "'";
+        //String where = Tasks.COLUMN_ID + "='" + task.id + "' AND " + Tasks.COLUMN_LISTID + "='" + task.listId + "'";
+        String where = String.format("%s='%s' AND %s='%s'", Tasks.COLUMN_ID, task.id, Tasks.COLUMN_LISTID, task.listId);
+
         ContentValues values = new ContentValues();
         values.put(Tasks.COLUMN_TITLE, task.title);
         values.put(Tasks.COLUMN_NOTES, task.notes);
         values.put(Tasks.COLUMN_DELETED, task.deleted);
         values.put(Tasks.COLUMN_UPDATED, task.updated.getTime());
+        values.put(Tasks.COLUMN_DUE, task.due.getTime());
 
         update(Tasks.TABLE_NAME, values, where);
     }

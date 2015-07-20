@@ -115,6 +115,8 @@ public class TasksAPI
                             task.due = mDateFormat.parse(item.getString("due"));
                             System.out.println(sDue + " = " + task.due);
                         }
+                        else
+                            task.due = new Date(0);
 
                         if(item.has("deleted"))
                             task.deleted = item.getBoolean("deleted");

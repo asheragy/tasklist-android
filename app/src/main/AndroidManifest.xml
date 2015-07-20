@@ -27,7 +27,9 @@
         </activity>
         <activity
             android:name=".TaskActivity"
-            android:label="@string/title_activity_task" >
+            android:label="@string/title_activity_task"
+            android:parentActivityName=".MainActivity" >
+            >
         </activity>
     </application>
 
