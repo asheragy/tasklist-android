@@ -320,7 +320,7 @@ public class Sync
     {
         if(true) //Emulator, use manual code
         {
-            String token = "ya29.tgG6qjtK7gUqGR-nooXQUN42wcmMJiH3mIB7mqfaipNpYdOWQbDzdgDQ5WIIfhNOj6gtfQ";
+            String token = "ya29.twE088jjWwFo3pBIUxzPHo5Xsh6HPoh-Y5Kc1z_IGW1eo4KLCU-Af5rjBc9KghzuyqlCcA";
             SyncTask task = new SyncTask(context,token,callback);
             task.execute();
             return;
@@ -416,6 +416,7 @@ public class Sync
                 mStatus.setText("Error");
                 */
 
+            Prefs.savePrefDate(mContext,Prefs.LAST_SYNC, new Date());
             mCallback.onSuccess();
         }
     }

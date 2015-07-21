@@ -1,6 +1,5 @@
-package org.cerion.todolist;
+package org.cerion.todolist.ui;
 
-import android.app.Activity;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.text.Editable;
@@ -11,6 +10,11 @@ import android.view.View;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
+
+import org.cerion.todolist.R;
+import org.cerion.todolist.Task;
+import org.cerion.todolist.TaskList;
+import org.cerion.todolist.ui.MainActivity;
 
 
 public class TaskActivity extends ActionBarActivity

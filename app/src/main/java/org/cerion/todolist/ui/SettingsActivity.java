@@ -1,4 +1,4 @@
-package org.cerion.todolist;
+package org.cerion.todolist.ui;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -13,6 +13,8 @@ import android.preference.PreferenceManager;
 import android.preference.RingtonePreference;
 import android.text.TextUtils;
 import android.util.Log;
+
+import org.cerion.todolist.R;
 
 import java.util.Map;
 

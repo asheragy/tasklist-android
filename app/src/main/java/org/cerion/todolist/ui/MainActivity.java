@@ -1,9 +1,7 @@
-package org.cerion.todolist;
+package org.cerion.todolist.ui;
 
 
-import android.app.Activity;
 import android.app.DialogFragment;
-import android.app.ListActivity;
 import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
@@ -19,37 +17,46 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.Window;
 import android.widget.Adapter;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.support.v7.app.ActionBarActivity;
+
+import org.cerion.todolist.Database;
+import org.cerion.todolist.Prefs;
+import org.cerion.todolist.R;
+import org.cerion.todolist.Sync;
+import org.cerion.todolist.Task;
+import org.cerion.todolist.TaskList;
 import org.cerion.todolist.dialogs.AlertDialogFragment;
 import org.cerion.todolist.dialogs.TaskListDialogFragment;
 import org.cerion.todolist.dialogs.TaskListDialogFragment.TaskListDialogListener;
 
 
 import java.util.ArrayList;
+import java.util.Date;
 
 public class MainActivity extends ActionBarActivity implements TaskListDialogListener
 {
-    public static final String TAG = MainActivity.class.getSimpleName();
+    private static final String TAG = MainActivity.class.getSimpleName();
 
-    public TextView mStatus;
-    public Button mAuth;
-    public Button mVerify;
-    public Button mDownload;
-    GestureDetector mGestureDetector;
-    ActionBar mActionBar;
-
+    private TextView mStatus;
+    private Button mAuth;
+    private Button mVerify;
+    private ProgressBar mProgressBar;
+    private ImageView mImageSync;
+    private GestureDetector mGestureDetector;
+    private ActionBar mActionBar;
 
     public static ArrayList<TaskList> mTaskLists; //TODO, make accessable to TaskActivity without using public static, better object oriented way?
-    public static ArrayAdapter<TaskList> mAdapter;
+    private static ArrayAdapter<TaskList> mAdapter;
 
 
     @Override
@@ -61,7 +68,9 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
         mStatus = (TextView)findViewById(R.id.status);
         mAuth   = (Button)findViewById(R.id.auth);
         mVerify = (Button)findViewById(R.id.verify);
-        mDownload=(Button)findViewById(R.id.download);
+        mProgressBar=(ProgressBar)findViewById(R.id.progressBar);
+        mImageSync= (ImageView) findViewById(R.id.syncImage);
+        mProgressBar.setVisibility(View.INVISIBLE);
 
         getListView().setEmptyView(findViewById(android.R.id.empty));
 
@@ -91,12 +100,9 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
             }
         });
 
-
-        mDownload.setOnClickListener(new View.OnClickListener()
-        {
+        mImageSync.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v)
-            {
+            public void onClick(View v) {
                 onSync();
             }
         });
@@ -185,10 +191,8 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
         });
 
 
-
+        updateLastSync();
         loadTaskLists();
-
-
     }
 
     public ListView getListView()
@@ -214,29 +218,52 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
         boolean isConnected = networkInfo != null && networkInfo.isConnected();
 
 
-        if(isConnected)
+        if(isConnected) {
+            setInSync(true);
             Sync.syncTaskLists(this, new Sync.Callback() {
                 @Override
                 public void onSuccess() {
                     refreshList();
+                    setInSync(false);
+                    updateLastSync();
                 }
 
                 @Override
                 public void onFailure(Exception e) {
+                    setInSync(false);
                     String message = "Sync Failed, unknown error";
-                    if(e != null) {
+                    if (e != null) {
                         message = "Exception: " + e.getMessage();
                     }
                     DialogFragment dialog = AlertDialogFragment.newInstance("Error", message);
                     dialog.show(getFragmentManager(), "dialog");
                 }
             });
+        }
         else
         {
             DialogFragment dialog = AlertDialogFragment.newInstance("Error", "Internet not available");
             dialog.show(getFragmentManager(), "dialog");
         }
 
+    }
+
+    public void updateLastSync()
+    {
+        String sText = "Last Sync: ";
+        Date lastSync = Prefs.getPrefDate(this,Prefs.LAST_SYNC);
+        if(lastSync == null || lastSync.getTime() == 0)
+            sText += "Never";
+        else
+            sText += lastSync;
+
+        mStatus.setText(sText);
+    }
+
+    public void setInSync(boolean bSyncing)
+    {
+        mProgressBar.setVisibility(bSyncing ? View.VISIBLE : View.INVISIBLE);
+        getListView().setVisibility(bSyncing ? View.INVISIBLE : View.VISIBLE);
     }
 
     public void onOpenTask(Task task)

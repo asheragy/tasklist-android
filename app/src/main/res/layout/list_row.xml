@@ -12,9 +12,9 @@
         android:textSize="18sp"
         android:text="Title"
         android:textColor="@android:color/black"
-        android:background="@color/green"
         android:id="@+id/title"
-        android:layout_alignParentLeft="true" />
+        android:layout_alignParentLeft="true"
+        android:singleLine="true" />
 
 
 
@@ -25,8 +25,7 @@
         android:id="@+id/dueDate"
         android:textColor="@android:color/black"
         android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true"
-        android:visibility="gone" />
+        android:layout_alignParentEnd="true" />
 
 
     <TextView
@@ -38,7 +37,7 @@
         android:textColor="@android:color/darker_gray"
         android:layout_below="@+id/title"
         android:layout_alignParentLeft="true"
-        android:visibility="gone" />
+        android:singleLine="true" />
 
 
     <!-- Debug layouts -->
@@ -50,8 +49,7 @@
         android:textColor="@android:color/black"
         android:id="@+id/modified"
         android:layout_below="@+id/noteText"
-        android:layout_alignParentLeft="true"
-        android:visibility="gone" />
+        android:layout_alignParentLeft="true" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -62,7 +60,6 @@
         android:id="@+id/taskid"
         android:layout_alignTop="@+id/modified"
         android:layout_toRightOf="@+id/modified"
-        android:paddingLeft="10dp"
-        android:visibility="gone" />
+        android:paddingLeft="10dp" />
 
 </RelativeLayout>
