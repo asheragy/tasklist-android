@@ -34,10 +34,10 @@
         android:textAppearance="?android:attr/textAppearanceSmall"
         android:text="Note"
         android:id="@+id/noteText"
-        android:textColor="@android:color/darker_gray"
         android:layout_below="@+id/title"
         android:layout_alignParentLeft="true"
-        android:singleLine="true" />
+        android:singleLine="true"
+        android:textColor="?android:attr/textColorSecondary" />
 
 
     <!-- Debug layouts -->

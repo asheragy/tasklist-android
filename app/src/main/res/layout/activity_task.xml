@@ -8,34 +8,31 @@
                 android:paddingBottom="@dimen/activity_vertical_margin"
                 android:orientation="vertical"
                 android:focusable="true" android:focusableInTouchMode="true"
+                android:background="@android:color/white"
                 tools:context="org.cerion.andy.todolist.TaskActivity">
 
     <TextView
-        android:text="ID"
+        tools:text="ID"
         android:id="@+id/taskid"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:singleLine="true"
+        android:visibility="visible" />
 
     <TextView
-        android:text="MODIFIED"
+        tools:text="MODIFIED"
         android:id="@+id/modified"
-        android:paddingBottom="20dp"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:visibility="visible" />
 
     <!-- Display Fields -->
-    <TextView
-        android:text="LIST"
-        android:id="@+id/list"
-        android:paddingBottom="10dp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
 
     <EditText
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="TITLE"
-        android:id="@+id/title"/>
+        android:id="@+id/title" />
 
 
     <LinearLayout
@@ -90,14 +87,14 @@
             android:layout_height="wrap_content"
             android:text="Cancel"
             android:layout_weight="1"
-            android:id="@+id/cancel"/>
+            android:id="@+id/cancelButton"/>
 
         <Button
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:text="Save"
             android:layout_weight="1"
-            android:id="@+id/save"/>
+            android:id="@+id/saveButton"/>
     </LinearLayout>
 
 

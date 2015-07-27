@@ -29,9 +29,10 @@ public class Sync
 
 
     private static final String AUTH_TOKEN_TYPE = "Manage your tasks"; //human readable version
-    //public static final int RESULT_UNKNOWN = -1;
-    //public static final int RESULT_NOCHANGE = 0;
-    //public static final int RESULT_CHANGES = 1;
+
+    public static final int RESULT_UNKNOWN = -1;
+    public static final int RESULT_SUCCESS = 0;
+    public static final int RESULT_AUTHERROR = 1;
     //public static final int RESULT_AUTHERROR = 2;
 
     //Instance variablesr
@@ -44,8 +45,11 @@ public class Sync
 
     public interface Callback
     {
-        void onSuccess();
-        void onFailure(Exception e);
+        //Unable to verify account or get sync token
+        void onAuthError(Exception e);
+
+        //A non-successful sync can still have data changed
+        void onSyncFinish(int result, boolean bDataChanged, Exception e);
     }
 
     public static void syncTaskLists(Context context, Callback callback)
@@ -61,11 +65,11 @@ public class Sync
         mSyncKeys = mDb.getSyncKeys();
     }
 
-    private void run()
-    {
+    private int run() throws TasksAPI.TasksAPIException {
         ArrayList<TaskList> googleLists = mAPI.getTaskLists();
         if(googleLists.size() == 0)
-            return;// RESULT_AUTHERROR;
+            return RESULT_UNKNOWN;
+
 
         ArrayList<TaskList> dbLists = mDb.getTaskLists();
 
@@ -161,7 +165,8 @@ public class Sync
         for(TaskList list : lists)
             syncTasks(list);
 
-        //TODO, full sync where we don't check saved values
+        syncTasks(null); //Sync local tasks that have not yet been added to a list
+
 
         //Save results
         Date lastSync = new Date();
@@ -169,90 +174,79 @@ public class Sync
 
         mDb.print();
 
-        int changes = googleToDb[0] + googleToDb[1] + googleToDb[2] + dbToGoogle[0] + dbToGoogle[1] + dbToGoogle[2];
-        Log.d(TAG,"Add/Change/Deletes = " + changes);
         Log.d(TAG, "Google to DB: Lists (" + googleToDb[0] + "," + googleToDb[1] + "," + googleToDb[2] + ") Tasks (" + googleToDb[3] + "," + googleToDb[4] + "," + googleToDb[5] + ")");
         Log.d(TAG, "DB to Google: Lists (" + dbToGoogle[0] + "," + dbToGoogle[1] + "," + dbToGoogle[2] + ") Tasks (" + dbToGoogle[3] + "," + dbToGoogle[4] + "," + dbToGoogle[5] + ")");
 
-        //if(changes > 0)
-        //    return RESULT_CHANGES;
-        //else
-        //    return RESULT_NOCHANGE;
+        return RESULT_SUCCESS;
     }
 
-    private void syncTasks(TaskList list)
-    {
-        String key = "updated_" + list.id;
-        String lastUpdatedSaved = mSyncKeys.get(key);
-
-        String listId = list.id;
-        Log.d(TAG, "syncTasks() " + listId + "\t" + lastUpdatedSaved + "\t" + list.updated);
+    private void syncTasks(TaskList list) throws TasksAPI.TasksAPIException {
         Date dtLastUpdated = null;
+        ArrayList<Task> dbTasks;
+        String listId = null;
 
-        try
-        {
-            if(lastUpdatedSaved != null)
-                dtLastUpdated = mDateFormat.parse(lastUpdatedSaved);
-        }
-        catch (ParseException e)
-        {
-            //e.printStackTrace();
-        }
+        if(list != null) {
+            listId = list.id;
+            String key = "updated_" + listId;
+            String lastUpdatedSaved = mSyncKeys.get(key);
 
-        ArrayList<Task> webTasks = null;
-        if(dtLastUpdated == null) //TODO or reread
-        {
-            Log.d(TAG, "New list, getting all");
-            webTasks = mAPI.getTasks(listId,null);
+            Log.d(TAG, "syncTasks() " + listId + "\t" + lastUpdatedSaved + "\t" + list.updated);
 
-        }
-        else if(list.updated.after(dtLastUpdated))
-        {
-            Log.d(TAG, "Getting updated Tasks");
-            Log.d(TAG, "Web   = " + list.updated);
-            Log.d(TAG, "Saved = " + dtLastUpdated);
-            dtLastUpdated.setTime(dtLastUpdated.getTime() + 1000); //Increase by 1 second to avoid getting previous updated record which already synced
-            webTasks = mAPI.getTasks(listId,dtLastUpdated);
-        }
-        //else
-        //    Log.d(TAG, "No changes");
+            try {
+                if (lastUpdatedSaved != null)
+                    dtLastUpdated = mDateFormat.parse(lastUpdatedSaved);
+            } catch (ParseException e) {
+                //e.printStackTrace();
+            }
 
-        ArrayList<Task> dbTasks = mDb.getTasks(listId);
-
-        if(webTasks != null)
-        {
-            for (Task task : webTasks)
+            ArrayList<Task> webTasks = null;
+            if (dtLastUpdated == null) //TODO or reread
             {
-                Task dbTask = getTask(dbTasks,task.id);
-                if(dbTask != null)
-                {
-                    if (task.deleted)
-                    {
-                        googleToDb[SYNC_DELETE_TASK]++;
-                        mDb.deleteTask(task);
-                        //TODO, Remove from list
+                Log.d(TAG, "New list, getting all");
+                webTasks = mAPI.getTasks(listId, null);
+
+            } else if (list.updated.after(dtLastUpdated)) {
+                Log.d(TAG, "Getting updated Tasks");
+                Log.d(TAG, "Web   = " + list.updated);
+                Log.d(TAG, "Saved = " + dtLastUpdated);
+                dtLastUpdated.setTime(dtLastUpdated.getTime() + 1000); //Increase by 1 second to avoid getting previous updated record which already synced
+                webTasks = mAPI.getTasks(listId, dtLastUpdated);
+            }
+            //else
+            //    Log.d(TAG, "No changes");
+
+            dbTasks = mDb.getTasks(listId);
+
+            if (webTasks != null) {
+                for (Task task : webTasks) {
+                    Task dbTask = getTask(dbTasks, task.id);
+                    if (dbTask != null) {
+                        if (task.deleted) {
+                            googleToDb[SYNC_DELETE_TASK]++;
+                            mDb.deleteTask(task);
+                            //TODO, Remove from list
+                        } else {
+                            googleToDb[SYNC_CHANGE_TASK]++;
+                            mDb.updateTask(task);
+                            //TODO conflicts
+                            //TODO, if web wins delete from dbTasks so we don't process on db->web phase
+                        }
+                    } else if (task.deleted) {
+                        //Task was deleted from web before it was ever added to our database
+                    } else {
+                        googleToDb[SYNC_ADD_TASK]++;
+                        mDb.addTask(task);
                     }
-                    else
-                    {
-                        googleToDb[SYNC_CHANGE_TASK]++;
-                        mDb.updateTask(task);
-                        //TODO conflicts
-                        //TODO, if web wins delete from dbTasks so we don't process on db->web phase
-                    }
-                }
-                else if(task.deleted)
-                {
-                    //Task was deleted from web before it was ever added to our database
-                }
-                else
-                {
-                    googleToDb[SYNC_ADD_TASK]++;
-                    mDb.addTask(task);
                 }
             }
-        }
 
-        //Database -> Web
+        }
+        else
+            dbTasks = mDb.getTasks("");
+
+        /**************
+        Database -> Web
+         **************/
         boolean bListUpdated = false;
         for (Task task : dbTasks)
         {
@@ -282,45 +276,60 @@ public class Sync
             }
             else if(task.hasTempId())
             {
-                dbToGoogle[SYNC_ADD_TASK]++;
-                bListUpdated = true;
-                Log.d(TAG,"TODO add task");
+                Task updated = mAPI.addTask(task);
+                if(updated != null) {
+                    mDb.setTaskIds(task,updated.id,updated.listId);
+                    dbToGoogle[SYNC_ADD_TASK]++;
+                    bListUpdated = true;
+
+                    if(listId == null) //When adding a new task without a list this will be the default task list id
+                        listId = updated.listId;
+
+                }
             }
             else if(bModified)
             {
-                mAPI.updateTask(task);
-                dbToGoogle[SYNC_CHANGE_TASK]++;
-                bListUpdated = true;
-                Log.d(TAG,"Modified: " + task.title);
+                if(mAPI.updateTask(task)) {
+                    dbToGoogle[SYNC_CHANGE_TASK]++;
+                    bListUpdated = true;
+                    //Log.d(TAG, "Modified: " + task.title);
+                }
             }
 
         }
 
-        if(bListUpdated)
-        {
-            //TODO, get single list instead of all
-            ArrayList<TaskList> lists = mAPI.getTaskLists();
-            TaskList updatedList = TaskList.get(lists,listId);
-            if(updatedList != null)
-            {
-                Log.d(TAG,"New Updated = " + updatedList.updated);
-                list.updated = updatedList.updated; //Updated modified time
+        if(listId != null) {
+            Date updated = null;
+            if(list != null)
+                updated = list.updated;
+
+            if (bListUpdated && listId != null) {
+                //TODO, get single list instead of all
+                ArrayList<TaskList> lists = null;
+                try {
+                    lists = mAPI.getTaskLists();
+                } catch (TasksAPI.TasksAPIException e) {
+                    e.printStackTrace();
+                }
+                TaskList updatedList = TaskList.get(lists, listId);
+                if (updatedList != null) {
+                    Log.d(TAG, "New Updated = " + updatedList.updated);
+                    updated = updatedList.updated; //Updated modified time
+                }
+
             }
 
+            //TODO, skip this if something failed
+            if(updated != null)
+                mDb.setSyncKey("updated_" + listId, mDateFormat.format(updated));
         }
-
-
-        //TODO add db dirty flag for anytime user change is made, after sync reset variable??
-
-        //TODO, skip this if something failed above
-        mDb.setSyncKey("updated_" + list.id, mDateFormat.format(list.updated));
     }
 
     private static void getTokenAndSync(final Context context, final Callback callback)
     {
         if(true) //Emulator, use manual code
         {
-            String token = "ya29.twE088jjWwFo3pBIUxzPHo5Xsh6HPoh-Y5Kc1z_IGW1eo4KLCU-Af5rjBc9KghzuyqlCcA";
+            String token = "ya29.vQFRk3G5awsljUHsp65har_xmSXi_EV1IKPkkaAW5fxj4fkSsYwzKwptnWb7MoP93mLKSg";
             SyncTask task = new SyncTask(context,token,callback);
             task.execute();
             return;
@@ -370,7 +379,7 @@ public class Sync
                     }
                     catch (Exception e)
                     {
-                        callback.onFailure(e);
+                        callback.onAuthError(e);
                         Log.d("TEST","ERROR");
                     }
                 }
@@ -385,6 +394,10 @@ public class Sync
         private Context mContext;
         private String mAuthToken;
         private Callback mCallback;
+        private int mResult = RESULT_UNKNOWN;
+        private int mChanges = 0;
+        private Exception mError = null;
+
         public SyncTask(Context context, String sAuth, Callback callback)
         {
             mContext = context;
@@ -393,10 +406,23 @@ public class Sync
         }
 
         @Override
-        protected Void doInBackground(Void... params)
-        {
+        protected Void doInBackground(Void... params) {
             Sync sync = new Sync(mContext,mAuthToken);
-            sync.run();
+
+            mResult = RESULT_UNKNOWN;
+
+            try {
+                mResult = sync.run();
+            } catch (TasksAPI.TasksAPIException e) {
+                mError = e;
+                if(e.mCode == 401)
+                    mResult = RESULT_AUTHERROR;
+            }
+
+            for(int i = 0; i < sync.dbToGoogle.length; i++) {
+                mChanges += sync.dbToGoogle[i];
+                mChanges += sync.googleToDb[i];
+            }
 
             return null;
         }
@@ -404,20 +430,11 @@ public class Sync
         @Override
         protected void onPostExecute(Void aVoid)
         {
-            /*
-            if(mResult == Sync.RESULT_CHANGES)
-            {
-                mStatus.setText("Updated");
-                loadTaskLists(); //Refresh UI
-            }
-            else if(mResult == Sync.RESULT_NOCHANGE)
-                mStatus.setText("No Changes");
-            else
-                mStatus.setText("Error");
-                */
+            Log.d(TAG,"Result=" + mResult + " Changes=" + mChanges);
+            if(mResult == RESULT_SUCCESS)
+                Prefs.savePrefDate(mContext,Prefs.LAST_SYNC, new Date());
 
-            Prefs.savePrefDate(mContext,Prefs.LAST_SYNC, new Date());
-            mCallback.onSuccess();
+            mCallback.onSyncFinish(mResult,mChanges > 0,mError);
         }
     }
 

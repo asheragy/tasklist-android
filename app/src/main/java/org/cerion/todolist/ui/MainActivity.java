@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.util.Log;
@@ -20,8 +19,6 @@ import android.view.View;
 import android.widget.Adapter;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListAdapter;
 import android.widget.ListView;
@@ -43,42 +40,34 @@ import org.cerion.todolist.dialogs.TaskListDialogFragment.TaskListDialogListener
 import java.util.ArrayList;
 import java.util.Date;
 
-public class MainActivity extends ActionBarActivity implements TaskListDialogListener
-{
+public class MainActivity extends ActionBarActivity implements TaskListDialogListener {
     private static final String TAG = MainActivity.class.getSimpleName();
+    private static final String STATE_NAV_INDEX = "stateNavIndex";
 
     private TextView mStatus;
-    private Button mAuth;
-    private Button mVerify;
     private ProgressBar mProgressBar;
-    private ImageView mImageSync;
     private GestureDetector mGestureDetector;
     private ActionBar mActionBar;
 
     public static ArrayList<TaskList> mTaskLists; //TODO, make accessable to TaskActivity without using public static, better object oriented way?
     private static ArrayAdapter<TaskList> mAdapter;
+    private static int mLastIndexPosition = -1;
 
 
     @Override
-    protected void onCreate(Bundle savedInstanceState)
-    {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(TAG,"onCreate " + (savedInstanceState == null ? "null" : "saveState"));
         setContentView(R.layout.activity_main);
 
-        mStatus = (TextView)findViewById(R.id.status);
-        mAuth   = (Button)findViewById(R.id.auth);
-        mVerify = (Button)findViewById(R.id.verify);
-        mProgressBar=(ProgressBar)findViewById(R.id.progressBar);
-        mImageSync= (ImageView) findViewById(R.id.syncImage);
+        mStatus = (TextView) findViewById(R.id.status);
+        mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
         mProgressBar.setVisibility(View.INVISIBLE);
-
         getListView().setEmptyView(findViewById(android.R.id.empty));
-
         registerForContextMenu(getListView());
 
-
         /*
-        mAuth.setOnClickListener(new View.OnClickListener()
+        findViewById(R.id.auth).setOnClickListener(new View.OnClickListener()
         {
             @Override
             public void onClick(View v)
@@ -88,19 +77,7 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
         });
         */
 
-
-
-        mVerify.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View v)
-            {
-                VerifyAuthTask task = new VerifyAuthTask();
-                task.execute();
-            }
-        });
-
-        mImageSync.setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.syncImage).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onSync();
@@ -109,10 +86,9 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
 
         //mToken = Prefs.getPref(this,Prefs.PREF_AUTHTOKEN);
 
-        if(mTaskLists == null)
-        {
+        if (mTaskLists == null) {
             mTaskLists = new ArrayList<>();
-            mTaskLists.add( new TaskList("","Default") );
+            mTaskLists.add(new TaskList("", "Default"));
         }
 
 
@@ -121,15 +97,10 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
 
 
         mAdapter = new ArrayAdapter<TaskList>(mActionBar.getThemedContext(), android.R.layout.simple_spinner_dropdown_item, mTaskLists);
-        ActionBar.OnNavigationListener navigationListener = new ActionBar.OnNavigationListener()
-        {
+        ActionBar.OnNavigationListener navigationListener = new ActionBar.OnNavigationListener() {
             @Override
-            public boolean onNavigationItemSelected(int itemPosition, long itemId)
-            {
-                TaskList list = mTaskLists.get(itemPosition);
-                Log.d(TAG,list.title);
-
-                loadTasks(list);
+            public boolean onNavigationItemSelected(int itemPosition, long itemId) {
+                refreshTasks();
                 return false;
             }
         };
@@ -137,31 +108,26 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
 
         mActionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
         mActionBar.setListNavigationCallbacks(mAdapter, navigationListener);
-        mActionBar.setSelectedNavigationItem(0);
+        mActionBar.setSelectedNavigationItem( mLastIndexPosition == -1 ? 0 : mLastIndexPosition);
         mActionBar.setDisplayShowTitleEnabled(false); //TODO set in styles otherwise title shows until code runs this line
 
-        LinearLayout layout = (LinearLayout)findViewById(R.id.root);
 
-        mGestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener()
-        {
+        LinearLayout layout = (LinearLayout) findViewById(R.id.root);
+
+        mGestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
             public static final int MAJOR_MOVE = 50; //TODO change at runtime using DisplayMetrics() class
 
-            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY)
-            {
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
                 //Log.d(TAG,"onFling");
                 int dx = (int) (e2.getX() - e1.getX());
-                if (Math.abs(dx) > MAJOR_MOVE && Math.abs(velocityX) > Math.abs(velocityY))
-                {
+                if (Math.abs(dx) > MAJOR_MOVE && Math.abs(velocityX) > Math.abs(velocityY)) {
                     int index = mActionBar.getSelectedNavigationIndex();
 
-                    if (velocityX > 0)
-                    {
-                        Log.d(TAG,"onPrevious");
+                    if (velocityX > 0) {
+                        Log.d(TAG, "onPrevious");
                         index--;
-                    }
-                    else
-                    {
-                        Log.d(TAG,"onNext");
+                    } else {
+                        Log.d(TAG, "onNext");
                         index++;
                     }
 
@@ -192,67 +158,68 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
 
 
         updateLastSync();
-        loadTaskLists();
+        refreshLists();
     }
 
-    public ListView getListView()
-    {
-        return (ListView)findViewById(android.R.id.list);
+    public ListView getListView() {
+        return (ListView) findViewById(android.R.id.list);
     }
 
-    public Adapter getListAdapter()
-    {
+    public Adapter getListAdapter() {
         return getListView().getAdapter();
     }
 
-    public void setListAdapter(ListAdapter adapter)
-    {
+    public void setListAdapter(ListAdapter adapter) {
         getListView().setAdapter(adapter);
     }
 
-    public void onSync()
-    {
-        //TODO, another file to put this function?
-        ConnectivityManager cm = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+    public void onSync() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = cm.getActiveNetworkInfo();
         boolean isConnected = networkInfo != null && networkInfo.isConnected();
 
-
-        if(isConnected) {
+        if (isConnected) {
             setInSync(true);
             Sync.syncTaskLists(this, new Sync.Callback() {
                 @Override
-                public void onSuccess() {
-                    refreshList();
-                    setInSync(false);
-                    updateLastSync();
+                public void onAuthError(Exception e) {
+                    //TODO, May need to check account in settings or just auto open it?
+                    DialogFragment dialog = AlertDialogFragment.newInstance("Error", "Auth Error");
+                    dialog.show(getFragmentManager(), "dialog");
                 }
 
                 @Override
-                public void onFailure(Exception e) {
+                public void onSyncFinish(int result, boolean bDataChanged, Exception e) {
                     setInSync(false);
-                    String message = "Sync Failed, unknown error";
-                    if (e != null) {
-                        message = "Exception: " + e.getMessage();
+
+                    if(result == Sync.RESULT_SUCCESS) {
+                        updateLastSync(); //Update last sync time only if successful
                     }
-                    DialogFragment dialog = AlertDialogFragment.newInstance("Error", message);
-                    dialog.show(getFragmentManager(), "dialog");
+                    else {
+                        String message = "Sync Failed, unknown error";
+                        if (e != null)
+                            message = e.getMessage();
+
+                        DialogFragment dialog = AlertDialogFragment.newInstance("Sync failed", message);
+                        dialog.show(getFragmentManager(), "dialog");
+                    }
+
+                    if(bDataChanged)
+                        refreshAll();
                 }
+
             });
-        }
-        else
-        {
+        } else {
             DialogFragment dialog = AlertDialogFragment.newInstance("Error", "Internet not available");
             dialog.show(getFragmentManager(), "dialog");
         }
 
     }
 
-    public void updateLastSync()
-    {
+    public void updateLastSync() {
         String sText = "Last Sync: ";
-        Date lastSync = Prefs.getPrefDate(this,Prefs.LAST_SYNC);
-        if(lastSync == null || lastSync.getTime() == 0)
+        Date lastSync = Prefs.getPrefDate(this, Prefs.LAST_SYNC);
+        if (lastSync == null || lastSync.getTime() == 0)
             sText += "Never";
         else
             sText += lastSync;
@@ -260,18 +227,29 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
         mStatus.setText(sText);
     }
 
-    public void setInSync(boolean bSyncing)
-    {
+    public void setInSync(boolean bSyncing) {
         mProgressBar.setVisibility(bSyncing ? View.VISIBLE : View.INVISIBLE);
         getListView().setVisibility(bSyncing ? View.INVISIBLE : View.VISIBLE);
     }
 
-    public void onOpenTask(Task task)
-    {
-        TaskActivity.mTask = task;
+    public void onOpenTask(Task task) {
         Intent intent = new Intent(this, TaskActivity.class);
-        intent.putExtra(TaskActivity.EXTRA_TASK_ID,task.id);
-        startActivity(intent);
+        if(task != null)
+            intent.putExtra(TaskActivity.EXTRA_TASK, task);
+        intent.putExtra(TaskActivity.EXTRA_TASKLIST, mTaskLists.get(mActionBar.getSelectedNavigationIndex()));
+        startActivityForResult(intent, 0);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data)
+    {
+        Log.d(TAG,"onActivityResult: " + resultCode);
+        if(resultCode == RESULT_OK)
+        {
+            refreshTasks();
+        }
+        //else Canceled and no data was changed
+
     }
 
     @Override
@@ -285,29 +263,7 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
 
     @Override
     public void onFinishTaskListDialog() {
-        loadTaskLists();
-    }
-
-
-
-    private class VerifyAuthTask extends AsyncTask<Void, Void, Void>
-    {
-        private boolean mValid = false;
-        @Override
-        protected Void doInBackground(Void... params)
-        {
-            //mValid = TasksAPI.verifyAuth();
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid)
-        {
-            if(mValid)
-                mStatus.setText("Auth Success");
-            else
-                mStatus.setText("Auth Failed");
-        }
+        refreshLists();
     }
 
     @Override
@@ -318,29 +274,28 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item)
-    {
+    public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings)
-        {
+        if (id == R.id.action_settings) {
             Intent i = new Intent(this, SettingsActivity.class);
-            startActivityForResult(i, RESULT_OK);
+            startActivity(i);
             return true;
         }
-        else if(id == R.id.action_add)
-        {
+        else if(id == R.id.action_add) {
             TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_ADD,null);
             dialog.show(getFragmentManager(), "dialog");
         }
-        else if(id == R.id.action_rename)
-        {
+        else if(id == R.id.action_rename) {
             TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME,getCurrentList());
             dialog.show(getFragmentManager(), "dialog");
+        }
+        else if(id == R.id.action_add_task) {
+            onOpenTask(null);
         }
 
         return super.onOptionsItemSelected(item);
@@ -370,14 +325,14 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
                 db = Database.getInstance(this);
                 task.setDeleted(true);
                 db.updateTask(task);
-                refreshList();
+                refreshTasks();
                 return true;
             case R.id.undelete:
                 Log.d(TAG,"onUnDelete: " + task.title);
                 db = Database.getInstance(this);
                 task.setDeleted(false);
                 db.updateTask(task);
-                refreshList();
+                refreshTasks();
                 return true;
 
             case R.id.modify:
@@ -386,7 +341,7 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
                 task.title += "x";
                 task.setModified();
                 db.updateTask(task);
-                refreshList();
+                refreshTasks();
                 return true;
 
             default:
@@ -399,8 +354,15 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
         return mAdapter.getItem(mActionBar.getSelectedNavigationIndex() );
     }
 
-    public void loadTaskLists()
+    public void refreshAll()
     {
+        refreshLists();
+        refreshTasks();
+    }
+
+    public void refreshLists()
+    {
+        Log.d(TAG,"refreshLists");
         Database db = Database.getInstance(this);
         ArrayList<TaskList> dbLists = db.getTaskLists();
 
@@ -410,24 +372,23 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
             mTaskLists.add(list);
 
         mAdapter.notifyDataSetChanged();
-
-        //TODO save current list ID so it will be selected on reload
     }
 
-    public void refreshList()
+    public void refreshTasks()
     {
+        Log.d(TAG,"refreshTasks");
         int index = mActionBar.getSelectedNavigationIndex();
+        mLastIndexPosition = index;
         TaskList list = mTaskLists.get(index);
-        loadTasks(list);
-    }
 
-    public void loadTasks(TaskList list)
-    {
+
         Database db = Database.getInstance(this);
         ArrayList<Task> tasks = db.getTasks(list.id);
 
         TaskListAdapter myAdapter = new TaskListAdapter(this,R.layout.list_row, tasks);
         ///ArrayAdapter<Task> myAdapter = new ArrayAdapter <>(this, R.layout.list_row, R.id.textView, tasks);
         setListAdapter(myAdapter);
+
     }
+
 }

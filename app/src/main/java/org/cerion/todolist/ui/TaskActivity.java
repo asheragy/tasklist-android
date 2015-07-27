@@ -11,21 +11,26 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import org.cerion.todolist.Database;
 import org.cerion.todolist.R;
 import org.cerion.todolist.Task;
 import org.cerion.todolist.TaskList;
 import org.cerion.todolist.ui.MainActivity;
 
+import java.util.Date;
+
 
 public class TaskActivity extends ActionBarActivity
 {
-    public static final String EXTRA_TASK_ID = "taskId";
-    //private String mTaskId;
-    public static Task mTask; //TODO, read from database or something better
+    public static final String EXTRA_TASK = "task";
+    public static final String EXTRA_TASKLIST = "taskList";
+
+    private Task mTask;
+    private TaskList mTaskList;
+    private boolean mNewTask = false;
 
     private View mEditButtons;
     private TextView mTextTaskId;
-    private TextView mTextList;
     private TextView mTextUpdated;
     private EditText mTitle;
     private TextView mTextNotes;
@@ -38,10 +43,17 @@ public class TaskActivity extends ActionBarActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_task);
 
-        //mTaskId = getIntent().getStringExtra("taskId");
+        //TODO, pass in current list + position
+        mTask = (Task)getIntent().getSerializableExtra(EXTRA_TASK);
+        //Should only ever need the current task list, maybe default for adding new tasks though?
+        mTaskList = (TaskList)getIntent().getSerializableExtra(EXTRA_TASKLIST);
+
+        if(mTask == null) {
+            mNewTask = true;
+            mTask = new Task( mTaskList.id == null ? "" : mTaskList.id );
+        }
 
         mTextTaskId = (TextView)findViewById(R.id.taskid);
-        mTextList = (TextView)findViewById(R.id.list);
         mTextUpdated = (TextView)findViewById(R.id.modified);
         mTitle = (EditText)findViewById(R.id.title);
         mTextNotes = (TextView)findViewById(R.id.notes);
@@ -49,30 +61,44 @@ public class TaskActivity extends ActionBarActivity
         mTextDue = (TextView)findViewById(R.id.due);
         mEditButtons = findViewById(R.id.edit_buttons);
 
+        mTextTaskId.setVisibility(View.GONE);
+        //mTextUpdated.setVisibility(View.GONE);
 
-        mTitle.addTextChangedListener(new TextWatcher()
-        {
+        mTitle.addTextChangedListener(new TextWatcher() {
 
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after)
-            {
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
             }
 
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count)
-            {
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
 
             }
 
             @Override
-            public void afterTextChanged(Editable s)
-            {
-                if(!s.toString().contentEquals(mTask.title))
+            public void afterTextChanged(Editable s) {
+                if (!s.toString().contentEquals(mTask.title)) {
                     setEditMode(true);
+                }
             }
         });
 
+        findViewById(R.id.saveButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                saveTask();
+            }
+        });
+
+        findViewById(R.id.cancelButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //loadTask(mTask);
+                setResult(RESULT_CANCELED);
+                finish();
+            }
+        });
 
         loadTask(mTask);
     }
@@ -86,15 +112,33 @@ public class TaskActivity extends ActionBarActivity
 
     }
 
+    public void saveTask()
+    {
+        mTask.setModified();
+        mTask.title = mTitle.getText().toString();
+        Database database = Database.getInstance(this);
+
+        if(mNewTask)
+            database.addTask(mTask);
+        else
+            database.updateTask(mTask);
+
+        setResult(RESULT_OK);
+        finish();
+
+    }
+
     public void loadTask(Task task)
     {
-        TaskList parent = TaskList.get(MainActivity.mTaskLists,task.listId);
+        TaskList parent = mTaskList;//TaskList.get(MainActivity.mTaskLists,task.listId);
+        setTitle(parent.title);
 
-
-        mTextList.setText(parent.title);
-        mTextTaskId.setText("TASKID: " + task.id);
-        mTextUpdated.setText(mTask.updated.toString());
+        mTextTaskId.setText(task.id);
         mTitle.setText(task.title);
+
+        if(task.updated != null)
+            mTextUpdated.setText(task.updated.toString());
+
         mTextNotes.setText(task.notes);
 
         mCheckComplete.setChecked(mTask.completed);

@@ -2,11 +2,12 @@ package org.cerion.todolist;
 
 import android.util.Log;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Random;
 
-public class TaskList
+public class TaskList implements Serializable
 {
     public String id;
     public String title;

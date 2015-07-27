@@ -2,17 +2,16 @@ package org.cerion.todolist;
 
 import android.util.Log;
 
+import com.squareup.okhttp.MediaType;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.RequestBody;
+import com.squareup.okhttp.Response;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.io.BufferedInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -25,9 +24,24 @@ public class TasksAPI
     private static final String TAG = TasksAPI.class.getSimpleName();
     private static final String API_KEY = "AIzaSyAHgDGorXJ1I0WqzpWE6Pm2o894T-j4pdQ";
     private static final boolean mLogFullResults = true;
+    private static final int GET    = 0;
+    private static final int PUT    = 1;
+    private static final int POST   = 2;
+    private static final int PATCH  = 3;
+    private static final int DELETE = 4;
 
     private SimpleDateFormat mDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
     private String mAuthKey;
+
+
+    //Error from tasks API, json encoded with error code and message
+    public static class TasksAPIException extends Exception {
+        public int mCode;
+        public TasksAPIException(String message, int code) {
+            super("Error " + code + ": " + message);
+            mCode = code;
+        }
+    }
 
     public TasksAPI(String authKey)
     {
@@ -38,14 +52,48 @@ public class TasksAPI
     public boolean deleteTask(Task task)
     {
         String sURL = "https://www.googleapis.com/tasks/v1/lists/" + task.listId + "/tasks/" + task.id + "?key=" + API_KEY;
-        String result = getInetData(sURL,null,"DELETE");
+        String result = getInetData(sURL,null,DELETE);
         Log.d(TAG, "deleteTask = " + result);
         //TODO, detect failure, if task does not exist that should return success too
         return true;
     }
 
-    public boolean updateTask(Task task)
-    {
+    public Task addTask(Task task) throws TasksAPIException {
+        String listId = "@default";
+        if(task.listId != null && task.listId.length() > 0)
+            listId = task.listId;
+
+        String sURL = "https://www.googleapis.com/tasks/v1/lists/" + listId + "/tasks" + "?key=" + API_KEY;
+        JSONObject json = new JSONObject();
+
+        try
+        {
+            json.put("title", task.title);
+
+            JSONObject item = getJSON(sURL,json,POST);
+            if(item != null && item.has("id") && item.has("selfLink")) {
+                String newId = item.getString("id");
+
+                String tokens[] = item.getString("selfLink").split("/");
+                for(int i = 0; i < tokens.length - 1; i++) {
+                    String token = tokens[i];
+                    if(token.contentEquals("lists")) {
+                        String newListId = tokens[i+1];
+                        return new Task(newListId,newId);
+                    }
+                }
+            }
+        }
+        catch (JSONException e)
+        {
+            Log.e(TAG,"exception",e);
+        }
+
+        return null;
+    }
+
+
+    public boolean updateTask(Task task) throws TasksAPIException {
         String sURL = "https://www.googleapis.com/tasks/v1/lists/" + task.listId + "/tasks/" + task.id + "?key=" + API_KEY;
         JSONObject json = new JSONObject();
         boolean bResult = false;
@@ -55,21 +103,52 @@ public class TasksAPI
             json.put("id", task.id);
             json.put("title", task.title);
 
-            JSONObject result = getJSON(sURL,json,"PATCH");
+            JSONObject result = getJSON(sURL,json,PATCH);
             if(result != null && task.id.contentEquals( result.getString("id") ))
                 bResult = true;
         }
         catch (JSONException e)
         {
-            e.printStackTrace();
+            Log.e(TAG,"",e);
         }
 
         return bResult;
     }
 
+    private Task getTask(JSONObject item, String listId) throws JSONException {
+        try {
+            Task task = new Task(listId, item.getString("id"));
+            task.title = item.getString("title");
+            task.updated = mDateFormat.parse(item.getString("updated"));
 
-    public ArrayList<Task> getTasks(String listId, Date dtUpdatedMin)
-    {
+            if(item.has("notes"))
+                task.notes = item.getString("notes");
+            else
+                task.notes = "";
+            task.completed = (item.getString("status").equals("completed"));
+
+            if(item.has("due"))
+            {
+                String sDue = item.getString("due");
+                task.due = mDateFormat.parse(item.getString("due"));
+                System.out.println(sDue + " = " + task.due);
+            }
+            else
+                task.due = new Date(0);
+
+            if(item.has("deleted"))
+                task.deleted = item.getBoolean("deleted");
+
+            return task;
+        }
+        catch (ParseException e) {
+            Log.e(TAG,"exception",e);
+        }
+
+        return null;
+    }
+
+    public ArrayList<Task> getTasks(String listId, Date dtUpdatedMin) throws TasksAPIException {
         String sURL = "https://www.googleapis.com/tasks/v1/lists/" + listId + "/tasks?key=" + API_KEY;
         if(dtUpdatedMin != null)
         {
@@ -96,43 +175,13 @@ public class TasksAPI
                 for(int i = 0; i < count; i++)
                 {
                     JSONObject item = items.getJSONObject(i);
-                    //String updated = item.getString("updated");
-                    try
-                    {
-                        Task task = new Task(listId, item.getString("id"));
-                        task.title = item.getString("title");
-                        task.updated = mDateFormat.parse(item.getString("updated"));
-
-                        if(item.has("notes"))
-                            task.notes = item.getString("notes");
-                        else
-                            task.notes = "";
-                        task.completed = (item.getString("status").equals("completed"));
-
-                        if(item.has("due"))
-                        {
-                            String sDue = item.getString("due");
-                            task.due = mDateFormat.parse(item.getString("due"));
-                            System.out.println(sDue + " = " + task.due);
-                        }
-                        else
-                            task.due = new Date(0);
-
-                        if(item.has("deleted"))
-                            task.deleted = item.getBoolean("deleted");
-
+                    Task task = getTask(item,listId);
+                    if(task != null)
                         result.add(task);
-                    }
-                    catch (ParseException e)
-                    {
-                        e.printStackTrace();
-                    }
-
                 }
             }
-            catch (JSONException e)
-            {
-                e.printStackTrace();
+            catch (JSONException e) {
+                Log.e(TAG,"exception",e);
             }
 
         }
@@ -141,74 +190,45 @@ public class TasksAPI
     }
 
 
-    private TaskList getTaskList(JSONObject item)
-    {
-        try
-        {
-            String updated = item.getString("updated");
-            try
-            {
-                Date dt = mDateFormat.parse(updated);
-                TaskList list = new TaskList(item.getString("id"), item.getString("title"));
-                list.updated = dt;
-                return list;
-            }
-            catch (ParseException e)
-            {
-                e.printStackTrace();
-            }
+    private TaskList getTaskList(JSONObject item) throws JSONException {
+        TaskList result = null;
+        String id = item.getString("id");
+        String title = item.getString("title");
+        String updated = item.getString("updated");
+        try {
+            Date dt = mDateFormat.parse(updated);
+            result = new TaskList(id, title);
+            result.updated = dt;
         }
-        catch (JSONException e)
-        {
-            e.printStackTrace();
+        catch (ParseException e) {
+            Log.e(TAG, "exception", e);
         }
 
-        return null;
+        return result;
     }
 
-    public ArrayList<TaskList> getTaskLists()
-    {
+    public ArrayList<TaskList> getTaskLists() throws TasksAPIException {
         String sURL = "https://www.googleapis.com/tasks/v1/users/@me/lists?key=" + API_KEY;
         JSONObject json = getJSON(sURL);
         ArrayList<TaskList> result = new ArrayList<>();
 
-        if(json != null)
-        {
-            try
-            {
-                JSONArray items = json.getJSONArray("items");
-                Log.d(TAG,items.length() + " task lists");
+        if(json != null) {
+            try {
 
-                for(int i = 0; i < items.length(); i++)
-                {
+                JSONArray items = json.getJSONArray("items");
+                Log.d(TAG, items.length() + " task lists");
+
+                for (int i = 0; i < items.length(); i++) {
                     JSONObject item = items.getJSONObject(i);
                     TaskList list = getTaskList(item);
-                    if(list != null)
+                    if (list != null)
                         result.add(list);
-                    else
-                        Log.d(TAG,"Failed to parse task");
-                    /*
-                    String updated = item.getString("updated");
-                    try
-                    {
-                        //SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-
-                        Date dt = mDateFormat.parse(updated);
-                        TaskList list = new TaskList(item.getString("id"), item.getString("title"));
-                        list.updated = dt;
-                        result.add(list);
-                    }
-                    catch (ParseException e)
-                    {
-                        e.printStackTrace();
-                    }
-                    */
 
                 }
             }
-            catch (JSONException e)
-            {
-                e.printStackTrace();
+
+            catch (JSONException e) {
+                Log.e(TAG, "exception", e);
             }
 
         }
@@ -216,8 +236,7 @@ public class TasksAPI
         return result;
     }
 
-    public boolean updateTaskList(TaskList list)
-    {
+    public boolean updateTaskList(TaskList list) throws TasksAPIException {
         String sURL = "https://www.googleapis.com/tasks/v1/users/@me/lists/" + list.id + "?key=" + API_KEY;
         JSONObject json = new JSONObject();
         boolean bResult = false;
@@ -227,7 +246,7 @@ public class TasksAPI
             json.put("id", list.id);
             json.put("title", list.title);
 
-            JSONObject result = getJSON(sURL,json,"PUT");
+            JSONObject result = getJSON(sURL,json,PUT);
             if(result != null && list.title.contentEquals( result.getString("title") ))
                 bResult = true;
         }
@@ -239,8 +258,7 @@ public class TasksAPI
         return bResult;
     }
 
-    public TaskList addTaskList(TaskList list)
-    {
+    public TaskList addTaskList(TaskList list) throws TasksAPIException {
         String sURL = "https://www.googleapis.com/tasks/v1/users/@me/lists?key=" + API_KEY;
         JSONObject json = new JSONObject();
         TaskList result = null;
@@ -249,7 +267,7 @@ public class TasksAPI
         {
             json.put("title", list.title);
 
-            JSONObject item = getJSON(sURL,json,"POST");
+            JSONObject item = getJSON(sURL,json,POST);
             if(item != null)
                 result = getTaskList(item);
         }
@@ -261,32 +279,88 @@ public class TasksAPI
         return result;
     }
 
-    private JSONObject getJSON(String sURL)
-    {
-        return getJSON(sURL, null, null);
+    private JSONObject getJSON(String sURL) throws TasksAPIException {
+        return getJSON(sURL, null, GET);
     }
 
-    private JSONObject getJSON(String sURL, JSONObject requestBody, String sRequestMethod)
-    {
+    private JSONObject getJSON(String sURL, JSONObject requestBody, int method) throws TasksAPIException {
         String sRequestBody = null;
         if(requestBody != null)
             sRequestBody = requestBody.toString();
 
-        String sData = getInetData(sURL,sRequestBody,sRequestMethod);
+        String sData = getInetData(sURL,sRequestBody,method);
         JSONObject json = null;
 
         try
         {
             json = new JSONObject(sData);
+
+            if(json.has("error"))
+            {
+                json = json.getJSONObject("error");
+
+                int code = json.getInt("code");
+                String message = json.getString("message");
+
+                throw new TasksAPIException(message,code);
+            }
         }
         catch (JSONException e)
         {
-            e.printStackTrace();
+            Log.d(TAG, "exception", e);
         }
 
         return json;
     }
 
+
+    private String getInetData(String sURL, String sRequestBody, int method)
+    {
+        Log.d(TAG,"Command=" + sURL);
+        if(sRequestBody != null)
+            Log.d(TAG,"Body=" + sRequestBody);
+
+        String sResult = "";
+
+        OkHttpClient client = new OkHttpClient();
+        Request.Builder requestBuilder = new Request.Builder().url(sURL).addHeader("Authorization", "Bearer " + mAuthKey);
+        //connection.setRequestProperty("Content-type", "application/json");
+
+        if(sRequestBody != null)
+        {
+            MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+            RequestBody body = RequestBody.create(JSON, sRequestBody);
+
+            if(method == POST)
+                requestBuilder = requestBuilder.post(body);
+            else if(method == PUT)
+                requestBuilder = requestBuilder.put(body);
+            else if(method == PATCH)
+                requestBuilder = requestBuilder.patch(body);
+        }
+        else if(method == DELETE)
+            requestBuilder = requestBuilder.delete();
+        else
+            requestBuilder = requestBuilder.get();
+
+        Request request = requestBuilder.build();
+
+        try {
+            Response response = client.newCall(request).execute();
+            Log.d(TAG, "Result=" + response.code());
+            sResult = response.body().string();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        if(mLogFullResults)
+            Log.d(TAG,"Data=" + sResult);
+        return sResult;
+    }
+
+
+    /* Without OkHttp
     private String getInetData(String sURL, String sRequestBody, String sRequestMethod)
     {
         Log.d(TAG,"Command=" + sURL);
@@ -360,5 +434,6 @@ public class TasksAPI
             Log.d(TAG,"Data=" + sResult);
         return sResult;
     }
+    */
 
 }

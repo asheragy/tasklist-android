@@ -194,6 +194,18 @@ public class Database extends SQLiteOpenHelper
         update(Tasks.TABLE_NAME, values, where);
     }
 
+    public void setTaskIds(Task task, String sNewId, String sNewListId)
+    {
+        String where = String.format("%s='%s' AND %s='%s'", Tasks.COLUMN_ID, task.id, Tasks.COLUMN_LISTID, task.listId);
+        ContentValues values = new ContentValues();
+        values.put(Tasks.COLUMN_ID, sNewId);
+        if(sNewListId != null)
+            values.put(Tasks.COLUMN_LISTID, sNewListId);
+
+        update(Tasks.TABLE_NAME, values, where);
+
+    }
+
     public void addTaskList(TaskList taskList)
     {
         Log.d(TAG,"addTaskList: " + taskList.title);
