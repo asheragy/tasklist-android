@@ -12,6 +12,7 @@ public class TaskList implements Serializable
     public String id;
     public String title;
     public Date updated;
+    public boolean bDefault = false;
     private int renamed;
 
     public TaskList(String id, String title)
@@ -69,10 +70,8 @@ public class TaskList implements Serializable
         return id.startsWith("temp_");
     }
 
-    public static TaskList get(ArrayList<TaskList> lists, String sId)
-    {
-        for(TaskList list : lists)
-        {
+    public static TaskList get(ArrayList<TaskList> lists, String sId) {
+        for(TaskList list : lists) {
             if(list.id == null)
                 continue;
 
@@ -82,4 +81,6 @@ public class TaskList implements Serializable
 
         return null;
     }
+
+
 }

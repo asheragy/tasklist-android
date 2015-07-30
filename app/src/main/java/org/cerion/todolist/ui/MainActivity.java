@@ -40,6 +40,25 @@ import org.cerion.todolist.dialogs.TaskListDialogFragment.TaskListDialogListener
 import java.util.ArrayList;
 import java.util.Date;
 
+/* Checklist
+
+All fields both ways Tasks
+
+Task add delete update WEB
+Task add delete update Device
+List add delete update WEB
+List add delete update Device
+
+conflict delete/update both directions
+conflict delete both
+
+Add list on web with tasks (should be fine)
+Add list on db with tasks then sync (ids should all be correct)
+Add list on db with tasks then delete task and sync (no leftover deletions)
+delete list on Web, all tasks should get deleted
+
+*/
+
 public class MainActivity extends ActionBarActivity implements TaskListDialogListener {
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final String STATE_NAV_INDEX = "stateNavIndex";
@@ -230,12 +249,14 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
     public void setInSync(boolean bSyncing) {
         mProgressBar.setVisibility(bSyncing ? View.VISIBLE : View.INVISIBLE);
         getListView().setVisibility(bSyncing ? View.INVISIBLE : View.VISIBLE);
+        findViewById(R.id.syncImage).setVisibility(bSyncing ? View.INVISIBLE : View.VISIBLE);
     }
 
     public void onOpenTask(Task task) {
         Intent intent = new Intent(this, TaskActivity.class);
         if(task != null)
             intent.putExtra(TaskActivity.EXTRA_TASK, task);
+        intent.putExtra(TaskActivity.EXTRA_DEFAULT_LIST, getDefaultList());
         intent.putExtra(TaskActivity.EXTRA_TASKLIST, mTaskLists.get(mActionBar.getSelectedNavigationIndex()));
         startActivityForResult(intent, 0);
     }
@@ -243,7 +264,7 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data)
     {
-        Log.d(TAG,"onActivityResult: " + resultCode);
+        Log.d(TAG, "onActivityResult: " + resultCode);
         if(resultCode == RESULT_OK)
         {
             refreshTasks();
@@ -367,7 +388,7 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
         ArrayList<TaskList> dbLists = db.getTaskLists();
 
         mTaskLists.clear();
-        mTaskLists.add( new TaskList(null,"All Tasks")); //null is placeholder for "all lists"
+        mTaskLists.add(new TaskList(null, "All Tasks")); //null is placeholder for "all lists"
         for(TaskList list : dbLists)
             mTaskLists.add(list);
 
@@ -389,6 +410,17 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
         ///ArrayAdapter<Task> myAdapter = new ArrayAdapter <>(this, R.layout.list_row, R.id.textView, tasks);
         setListAdapter(myAdapter);
 
+    }
+
+    private TaskList getDefaultList() {
+        for(TaskList list : mTaskLists) {
+            if(list.id == null)
+                continue;
+            if(list.bDefault)
+                return list;
+        }
+
+        return null;
     }
 
 }

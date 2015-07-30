@@ -66,7 +66,7 @@ public class Sync
     }
 
     private int run() throws TasksAPI.TasksAPIException {
-        ArrayList<TaskList> googleLists = mAPI.getTaskLists();
+        ArrayList<TaskList> googleLists = mAPI.taskLists.getList();
         if(googleLists.size() == 0)
             return RESULT_UNKNOWN;
 
@@ -121,7 +121,7 @@ public class Sync
         {
             if(dbList.hasTempId())
             {
-                TaskList addedList = mAPI.addTaskList(dbList);
+                TaskList addedList = mAPI.taskLists.add(dbList);
                 if(addedList != null)
                 {
                     mDb.setTaskListId(dbList, addedList.id);
@@ -139,7 +139,7 @@ public class Sync
 
                 if (googleList != null)
                 {
-                    if(mAPI.updateTaskList(dbList))
+                    if(mAPI.taskLists.update(dbList))
                     {
                         //Save state in db to indicate rename was successful
                         dbList.setRenamed(false);
@@ -180,6 +180,7 @@ public class Sync
         return RESULT_SUCCESS;
     }
 
+    //TODO, remove listId null checks, making this work on newly added tasks without a list was a bad idea
     private void syncTasks(TaskList list) throws TasksAPI.TasksAPIException {
         Date dtLastUpdated = null;
         ArrayList<Task> dbTasks;
@@ -307,7 +308,7 @@ public class Sync
                 //TODO, get single list instead of all
                 ArrayList<TaskList> lists = null;
                 try {
-                    lists = mAPI.getTaskLists();
+                    lists = mAPI.taskLists.getList();
                 } catch (TasksAPI.TasksAPIException e) {
                     e.printStackTrace();
                 }
@@ -329,7 +330,7 @@ public class Sync
     {
         if(true) //Emulator, use manual code
         {
-            String token = "ya29.vQFRk3G5awsljUHsp65har_xmSXi_EV1IKPkkaAW5fxj4fkSsYwzKwptnWb7MoP93mLKSg";
+            String token = "ya29.wAFpyt90TPiOtDt7w16NsOXuSEd6T2zWob8Qq2yul94Ho8yLQo0b8cqEfbjemHBQpHqMttE";
             SyncTask task = new SyncTask(context,token,callback);
             task.execute();
             return;

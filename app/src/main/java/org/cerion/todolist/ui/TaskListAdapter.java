@@ -2,6 +2,7 @@ package org.cerion.todolist.ui;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -52,6 +53,11 @@ public class TaskListAdapter extends ArrayAdapter<Task>
 
         TextView title = (TextView)row.findViewById(R.id.title);
         title.setText( task.title.length() > 0 ? task.title : "<Blank>" );
+        if(task.completed)
+            title.setPaintFlags(title.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+        else
+            title.setPaintFlags(title.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
+
 
         //TODO, add viewholder pattern
         //holder.txtTitle.setText(weather.title);
@@ -77,6 +83,7 @@ public class TaskListAdapter extends ArrayAdapter<Task>
             ((TextView)row.findViewById(R.id.noteText)).setText(task.notes);
         else
             ((TextView)row.findViewById(R.id.noteText)).setText("");
+
 
         row.findViewById(R.id.modified).setVisibility(View.GONE);
         row.findViewById(R.id.taskid).setVisibility(View.GONE);

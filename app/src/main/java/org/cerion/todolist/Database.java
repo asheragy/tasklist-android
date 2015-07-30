@@ -16,7 +16,7 @@ import java.util.Map;
 public class Database extends SQLiteOpenHelper
 {
     public static final String TAG = "Database";
-    public static final int DATABASE_VERSION = 5;
+    public static final int DATABASE_VERSION = 6;
     public static final String DATABASE_NAME = "tasks.db";
 
     //public static final int QUERY_INSERT = 0;
@@ -79,12 +79,14 @@ public class Database extends SQLiteOpenHelper
         public static final String TABLE_NAME = "tasklists";
         public static final String COLUMN_ID = "id";
         public static final String COLUMN_TITLE = "title";
-        public static final String COLUMN_RENAMED = "renamed";
+        public static final String COLUMN_RENAMED = "isRenamed";
+        public static final String COLUMN_DEFAULT = "isDefault";
 
         public static final String SQL_CREATE = "create table " + TABLE_NAME + "("
                 + COLUMN_ID + " TEXT NOT NULL, "
                 + COLUMN_TITLE + " TEXT NOT NULL, "
                 + COLUMN_RENAMED   + " INTEGER DEFAULT 0, "
+                + COLUMN_DEFAULT   + " INTEGER DEFAULT 0, "
                 + "PRIMARY KEY (id))";
 
         private static TaskList get(Cursor c)
@@ -92,8 +94,11 @@ public class Database extends SQLiteOpenHelper
             String title = c.getString(c.getColumnIndexOrThrow(COLUMN_TITLE));
             String id = c.getString(c.getColumnIndexOrThrow(COLUMN_ID));
             int renamed = c.getInt(c.getColumnIndexOrThrow(COLUMN_RENAMED));
+            int def = c.getInt(c.getColumnIndexOrThrow(COLUMN_DEFAULT));
 
-            return new TaskList(id,title,(renamed == 1 ? true : false));
+            TaskList result = new TaskList(id,title,(renamed == 1 ? true : false));
+            result.bDefault = (def == 1);
+            return result;
         }
 
     }
@@ -128,6 +133,7 @@ public class Database extends SQLiteOpenHelper
             Task task = new Task(list,id);
             task.title = c.getString(c.getColumnIndexOrThrow(COLUMN_TITLE));
             task.notes = c.getString(c.getColumnIndexOrThrow(COLUMN_NOTES));
+            task.completed = (c.getInt(c.getColumnIndexOrThrow(COLUMN_COMPLETE)) == 1);
             task.deleted = (c.getInt(c.getColumnIndexOrThrow(COLUMN_DELETED)) == 1);
 
             long updated = c.getLong(c.getColumnIndexOrThrow(COLUMN_UPDATED));
@@ -137,6 +143,17 @@ public class Database extends SQLiteOpenHelper
 
 
             return task;
+        }
+
+        private static ContentValues getValues(Task task)
+        {
+            ContentValues values = new ContentValues();
+            values.put(Tasks.COLUMN_TITLE, task.title);
+            values.put(Tasks.COLUMN_NOTES, task.notes);
+            values.put(Tasks.COLUMN_COMPLETE, task.completed);
+            values.put(Tasks.COLUMN_DUE, task.due.getTime());
+            values.put(Tasks.COLUMN_DELETED, task.deleted);
+            return values;
         }
     }
 
@@ -160,13 +177,12 @@ public class Database extends SQLiteOpenHelper
 
     public void addTask(Task task)
     {
-        Log.d(TAG,"addTask: " + task.title);
+        Log.d(TAG, "addTask: " + task.title);
 
-        ContentValues values = new ContentValues();
+        ContentValues values = Tasks.getValues(task);
         values.put(Tasks.COLUMN_ID, task.id);
         values.put(Tasks.COLUMN_LISTID, task.listId);
-        values.put(Tasks.COLUMN_TITLE, task.title);
-        values.put(Tasks.COLUMN_NOTES, task.notes);
+
         insert(Tasks.TABLE_NAME, values);
     }
 
@@ -180,16 +196,11 @@ public class Database extends SQLiteOpenHelper
     public void updateTask(Task task)
     {
         Log.d(TAG,"updateTask");
-
-        //String where = Tasks.COLUMN_ID + "='" + task.id + "' AND " + Tasks.COLUMN_LISTID + "='" + task.listId + "'";
         String where = String.format("%s='%s' AND %s='%s'", Tasks.COLUMN_ID, task.id, Tasks.COLUMN_LISTID, task.listId);
 
-        ContentValues values = new ContentValues();
-        values.put(Tasks.COLUMN_TITLE, task.title);
-        values.put(Tasks.COLUMN_NOTES, task.notes);
-        values.put(Tasks.COLUMN_DELETED, task.deleted);
+        ContentValues values = Tasks.getValues(task);
+        //TODO, should this be set on add too? Can at least be the default value
         values.put(Tasks.COLUMN_UPDATED, task.updated.getTime());
-        values.put(Tasks.COLUMN_DUE, task.due.getTime());
 
         update(Tasks.TABLE_NAME, values, where);
     }
@@ -212,6 +223,7 @@ public class Database extends SQLiteOpenHelper
         ContentValues values = new ContentValues();
         values.put(TaskLists.COLUMN_ID, taskList.id);
         values.put(TaskLists.COLUMN_TITLE, taskList.title);
+        values.put(TaskLists.COLUMN_DEFAULT, taskList.bDefault);
 
         insert(TaskLists.TABLE_NAME, values);
     }
@@ -221,6 +233,7 @@ public class Database extends SQLiteOpenHelper
         String where = TaskLists.COLUMN_ID + "='" + taskList.id + "'";
         ContentValues values = new ContentValues();
         values.put(TaskLists.COLUMN_TITLE, taskList.title);
+        values.put(TaskLists.COLUMN_DEFAULT, taskList.bDefault);
         if(taskList.hasRenamed())
             values.put(TaskLists.COLUMN_RENAMED, (taskList.isRenamed() ? 1 : 0) );
 

@@ -8,6 +8,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -24,9 +25,11 @@ public class TaskActivity extends ActionBarActivity
 {
     public static final String EXTRA_TASK = "task";
     public static final String EXTRA_TASKLIST = "taskList";
+    public static final String EXTRA_DEFAULT_LIST = "defaultList";
 
     private Task mTask;
-    private TaskList mTaskList;
+    private TaskList mCurrentList;
+    private TaskList mDefaultList;
     private boolean mNewTask = false;
 
     private View mEditButtons;
@@ -45,12 +48,13 @@ public class TaskActivity extends ActionBarActivity
 
         //TODO, pass in current list + position
         mTask = (Task)getIntent().getSerializableExtra(EXTRA_TASK);
-        //Should only ever need the current task list, maybe default for adding new tasks though?
-        mTaskList = (TaskList)getIntent().getSerializableExtra(EXTRA_TASKLIST);
+        mCurrentList = (TaskList)getIntent().getSerializableExtra(EXTRA_TASKLIST);
+        mDefaultList = (TaskList)getIntent().getSerializableExtra(EXTRA_DEFAULT_LIST);
 
         if(mTask == null) {
             mNewTask = true;
-            mTask = new Task( mTaskList.id == null ? "" : mTaskList.id );
+            //If current list is "All Tasks" then add new to default list
+            mTask = new Task( mCurrentList.id == null ? mDefaultList.id : mCurrentList.id );
         }
 
         mTextTaskId = (TextView)findViewById(R.id.taskid);
@@ -81,6 +85,13 @@ public class TaskActivity extends ActionBarActivity
                 if (!s.toString().contentEquals(mTask.title)) {
                     setEditMode(true);
                 }
+            }
+        });
+
+        mCheckComplete.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                setEditMode(true);
             }
         });
 
@@ -116,6 +127,7 @@ public class TaskActivity extends ActionBarActivity
     {
         mTask.setModified();
         mTask.title = mTitle.getText().toString();
+        mTask.completed = mCheckComplete.isChecked();
         Database database = Database.getInstance(this);
 
         if(mNewTask)
@@ -130,7 +142,7 @@ public class TaskActivity extends ActionBarActivity
 
     public void loadTask(Task task)
     {
-        TaskList parent = mTaskList;//TaskList.get(MainActivity.mTaskLists,task.listId);
+        TaskList parent = mCurrentList;//TaskList.get(MainActivity.mTaskLists,task.listId);
         setTitle(parent.title);
 
         mTextTaskId.setText(task.id);
