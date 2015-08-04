@@ -12,16 +12,13 @@ import android.widget.TextView;
 import org.cerion.todolist.R;
 import org.cerion.todolist.Task;
 
-import java.text.SimpleDateFormat;
 import java.util.List;
-import java.util.TimeZone;
 
 public class TaskListAdapter extends ArrayAdapter<Task>
 {
     Context mContext;
     int mResourceId;
     List<Task> mTasks;
-    SimpleDateFormat mDateFormat = null;
 
     public TaskListAdapter(Context context, int resource, List<Task> objects)
     {
@@ -29,10 +26,6 @@ public class TaskListAdapter extends ArrayAdapter<Task>
         mContext = context;
         mResourceId = resource;
         mTasks = objects;
-
-        //mDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");
-        mDateFormat = new SimpleDateFormat("EEE, MMM d, yyyy");
-        mDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 
     }
 
@@ -72,8 +65,7 @@ public class TaskListAdapter extends ArrayAdapter<Task>
 
 
         if(task.due != null && task.due.getTime() != 0) {
-            String sDue = mDateFormat.format(task.due);
-            ((TextView) row.findViewById(R.id.dueDate)).setText(sDue);
+            ((TextView) row.findViewById(R.id.dueDate)).setText(task.getDue());
         }
         else
             ((TextView)row.findViewById(R.id.dueDate)).setText("");

@@ -71,7 +71,7 @@ public class Sync
             return RESULT_UNKNOWN;
 
 
-        ArrayList<TaskList> dbLists = mDb.getTaskLists();
+        ArrayList<TaskList> dbLists = mDb.taskLists.getList();
 
         //Google->Local (Added or Updated)
         for(TaskList curr : googleLists)
@@ -85,14 +85,14 @@ public class Sync
                     if(!dbList.isRenamed())
                     {
                         googleToDb[SYNC_CHANGE_LIST]++;
-                        mDb.updateTaskList(curr);
+                        mDb.taskLists.update(curr);
                     }
                 }
             }
             else //Does not exist locally, add it
             {
                 googleToDb[SYNC_ADD_LIST]++;
-                mDb.addTaskList(curr);
+                mDb.taskLists.add(curr);
             }
         }
 
@@ -107,14 +107,14 @@ public class Sync
             if(googleList == null)
             {
                 googleToDb[SYNC_DELETE_LIST]++;
-                mDb.deleteTaskList(curr);
+                mDb.taskLists.delete(curr);
             }
 
         }
 
         //If any changes made to local database, just reload it
         if(googleToDb[SYNC_DELETE_LIST] > 0 || googleToDb[SYNC_ADD_LIST] > 0)
-            dbLists = mDb.getTaskLists();
+            dbLists = mDb.taskLists.getList();
 
         //Local -> Google
         for(TaskList dbList : dbLists)
@@ -143,7 +143,7 @@ public class Sync
                     {
                         //Save state in db to indicate rename was successful
                         dbList.setRenamed(false);
-                        mDb.updateTaskList(dbList);
+                        mDb.taskLists.update(dbList);
                         dbToGoogle[SYNC_CHANGE_LIST]++;
                     }
                     else
@@ -204,14 +204,14 @@ public class Sync
             if (dtLastUpdated == null) //TODO or reread
             {
                 Log.d(TAG, "New list, getting all");
-                webTasks = mAPI.getTasks(listId, null);
+                webTasks = mAPI.tasks.getList(listId, null);
 
             } else if (list.updated.after(dtLastUpdated)) {
                 Log.d(TAG, "Getting updated Tasks");
                 Log.d(TAG, "Web   = " + list.updated);
                 Log.d(TAG, "Saved = " + dtLastUpdated);
                 dtLastUpdated.setTime(dtLastUpdated.getTime() + 1000); //Increase by 1 second to avoid getting previous updated record which already synced
-                webTasks = mAPI.getTasks(listId, dtLastUpdated);
+                webTasks = mAPI.tasks.getList(listId, dtLastUpdated);
             }
             //else
             //    Log.d(TAG, "No changes");
@@ -267,7 +267,7 @@ public class Sync
                 {
                     mDb.deleteTask(task);
                 }
-                else if (mAPI.deleteTask(task))
+                else if (mAPI.tasks.delete(task))
                 {
                     dbToGoogle[SYNC_DELETE_TASK]++;
                     bListUpdated = true;
@@ -277,7 +277,7 @@ public class Sync
             }
             else if(task.hasTempId())
             {
-                Task updated = mAPI.addTask(task);
+                Task updated = mAPI.tasks.add(task);
                 if(updated != null) {
                     mDb.setTaskIds(task,updated.id,updated.listId);
                     dbToGoogle[SYNC_ADD_TASK]++;
@@ -290,7 +290,7 @@ public class Sync
             }
             else if(bModified)
             {
-                if(mAPI.updateTask(task)) {
+                if(mAPI.tasks.update(task)) {
                     dbToGoogle[SYNC_CHANGE_TASK]++;
                     bListUpdated = true;
                     //Log.d(TAG, "Modified: " + task.title);
@@ -330,7 +330,7 @@ public class Sync
     {
         if(true) //Emulator, use manual code
         {
-            String token = "ya29.wAFpyt90TPiOtDt7w16NsOXuSEd6T2zWob8Qq2yul94Ho8yLQo0b8cqEfbjemHBQpHqMttE";
+            String token = "ya29.xQEcrJ4RHlGTH93QTJRp1wQeE8Fq_DkeCyq5aYXz6snGz2zvK8rzo0fd5YVMhr9HAeJosEs";
             SyncTask task = new SyncTask(context,token,callback);
             task.execute();
             return;

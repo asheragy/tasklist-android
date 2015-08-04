@@ -34,6 +34,7 @@ public class TasksAPI
     private String mAuthKey;
 
     public TaskLists taskLists;
+    public Tasks tasks;
 
     //Error from tasks API, json encoded with error code and message
     public static class TasksAPIException extends Exception {
@@ -49,10 +50,10 @@ public class TasksAPI
         mDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
         mAuthKey = authKey;
         taskLists = new TaskLists(this);
+        tasks = new Tasks(this);
     }
 
-    public static class TaskLists
-    {
+    public static class TaskLists {
         private TasksAPI parent = null;
         private TaskLists(TasksAPI api)
         {
@@ -153,147 +154,160 @@ public class TasksAPI
     }
 
 
-    public boolean deleteTask(Task task)
-    {
-        String sURL = "https://www.googleapis.com/tasks/v1/lists/" + task.listId + "/tasks/" + task.id + "?key=" + API_KEY;
-        String result = getInetData(sURL,null,DELETE);
-        Log.d(TAG, "deleteTask = " + result);
-        //TODO, detect failure, if task does not exist that should return success too
-        return true;
-    }
+    public static class Tasks {
+        private TasksAPI parent = null;
+        private Tasks(TasksAPI api) {
+            parent = api;
+        }
 
-    public Task addTask(Task task) throws TasksAPIException {
-        String listId = "@default";
-        if(task.listId != null && task.listId.length() > 0)
-            listId = task.listId;
-
-        String sURL = "https://www.googleapis.com/tasks/v1/lists/" + listId + "/tasks" + "?key=" + API_KEY;
-        JSONObject json = new JSONObject();
-
-        try
+        public boolean delete(Task task)
         {
-            json.put("title", task.title);
+            String sURL = "https://www.googleapis.com/tasks/v1/lists/" + task.listId + "/tasks/" + task.id + "?key=" + API_KEY;
+            String result = parent.getInetData(sURL,null,DELETE);
+            Log.d(TAG, "deleteTask = " + result);
+            //TODO, detect failure, if task does not exist that should return success too
+            return true;
+        }
 
-            JSONObject item = getJSON(sURL,json,POST);
-            if(item != null && item.has("id") && item.has("selfLink")) {
-                String newId = item.getString("id");
+        public Task add(Task task) throws TasksAPIException {
+            String listId = "@default";
+            if(task.listId != null && task.listId.length() > 0)
+                listId = task.listId;
 
-                String tokens[] = item.getString("selfLink").split("/");
-                for(int i = 0; i < tokens.length - 1; i++) {
-                    String token = tokens[i];
-                    if(token.contentEquals("lists")) {
-                        String newListId = tokens[i+1];
-                        return new Task(newListId,newId);
+            String sURL = "https://www.googleapis.com/tasks/v1/lists/" + listId + "/tasks" + "?key=" + API_KEY;
+            JSONObject json = new JSONObject();
+
+            try
+            {
+                json.put("title", task.title);
+                if(task.due.getTime() > 0)
+                    json.put("due", parent.mDateFormat.format(task.due));
+
+                JSONObject item = parent.getJSON(sURL,json,POST);
+                if(item != null && item.has("id") && item.has("selfLink")) {
+                    String newId = item.getString("id");
+
+                    String tokens[] = item.getString("selfLink").split("/");
+                    for(int i = 0; i < tokens.length - 1; i++) {
+                        String token = tokens[i];
+                        if(token.contentEquals("lists")) {
+                            String newListId = tokens[i+1];
+                            return new Task(newListId,newId);
+                        }
                     }
                 }
             }
-        }
-        catch (JSONException e)
-        {
-            Log.e(TAG,"exception",e);
-        }
-
-        return null;
-    }
-
-
-    public boolean updateTask(Task task) throws TasksAPIException {
-        String sURL = "https://www.googleapis.com/tasks/v1/lists/" + task.listId + "/tasks/" + task.id + "?key=" + API_KEY;
-        JSONObject json = new JSONObject();
-        boolean bResult = false;
-
-        try
-        {
-            json.put("id", task.id);
-            json.put("title", task.title);
-            json.put("status", task.completed ? "completed" : "needsAction" );
-            if(!task.completed)
-                json.put("completed", JSONObject.NULL);
-
-            JSONObject result = getJSON(sURL,json,PATCH);
-            if(result != null && task.id.contentEquals( result.getString("id") ))
-                bResult = true;
-        }
-        catch (JSONException e)
-        {
-            Log.e(TAG,"",e);
-        }
-
-        return bResult;
-    }
-
-    private Task getTask(JSONObject item, String listId) throws JSONException {
-        try {
-            Task task = new Task(listId, item.getString("id"));
-            task.title = item.getString("title");
-            task.updated = mDateFormat.parse(item.getString("updated"));
-
-            if(item.has("notes"))
-                task.notes = item.getString("notes");
-            else
-                task.notes = "";
-            task.completed = (item.getString("status").equals("completed"));
-
-            if(item.has("due"))
+            catch (JSONException e)
             {
-                String sDue = item.getString("due");
-                task.due = mDateFormat.parse(item.getString("due"));
-                System.out.println(sDue + " = " + task.due);
-            }
-            else
-                task.due = new Date(0);
-
-            if(item.has("deleted"))
-                task.deleted = item.getBoolean("deleted");
-
-            return task;
-        }
-        catch (ParseException e) {
-            Log.e(TAG,"exception",e);
-        }
-
-        return null;
-    }
-
-    public ArrayList<Task> getTasks(String listId, Date dtUpdatedMin) throws TasksAPIException {
-        String sURL = "https://www.googleapis.com/tasks/v1/lists/" + listId + "/tasks?key=" + API_KEY;
-        if(dtUpdatedMin != null)
-        {
-            sURL += "&updatedMin=" + mDateFormat.format(dtUpdatedMin);
-            sURL += "&showDeleted=true";
-        }
-
-        JSONObject json = getJSON(sURL);
-        ArrayList<Task> result = new ArrayList<>();
-
-        if(json != null)
-        {
-            try
-            {
-                JSONArray items = null;
-                int count = 0;
-                if(json.has("items"))
-                {
-                    items = json.getJSONArray("items");
-                    count = items.length();
-                }
-                Log.d(TAG, count + " tasks");
-
-                for(int i = 0; i < count; i++)
-                {
-                    JSONObject item = items.getJSONObject(i);
-                    Task task = getTask(item,listId);
-                    if(task != null)
-                        result.add(task);
-                }
-            }
-            catch (JSONException e) {
                 Log.e(TAG,"exception",e);
             }
 
+            return null;
         }
 
-        return result;
+
+        public boolean update(Task task) throws TasksAPIException {
+            String sURL = "https://www.googleapis.com/tasks/v1/lists/" + task.listId + "/tasks/" + task.id + "?key=" + API_KEY;
+            JSONObject json = new JSONObject();
+            boolean bResult = false;
+
+            try
+            {
+                json.put("id", task.id);
+                json.put("title", task.title);
+                json.put("status", task.completed ? "completed" : "needsAction" );
+                if(!task.completed)
+                    json.put("completed", JSONObject.NULL);
+                if(task.due.getTime() > 0)
+                    json.put("due", parent.mDateFormat.format(task.due));
+                else
+                    json.put("due", JSONObject.NULL);
+
+                JSONObject result = parent.getJSON(sURL,json,PATCH);
+                if(result != null && task.id.contentEquals( result.getString("id") ))
+                    bResult = true;
+            }
+            catch (JSONException e)
+            {
+                Log.e(TAG,"",e);
+            }
+
+            return bResult;
+        }
+
+        private Task parseItem(JSONObject item, String listId) throws JSONException {
+            try {
+                Task task = new Task(listId, item.getString("id"));
+                task.title = item.getString("title");
+                task.updated = parent.mDateFormat.parse(item.getString("updated"));
+
+                if(item.has("notes"))
+                    task.notes = item.getString("notes");
+                else
+                    task.notes = "";
+                task.completed = (item.getString("status").equals("completed"));
+
+                if(item.has("due"))
+                {
+                    String sDue = item.getString("due");
+                    task.due = parent.mDateFormat.parse(item.getString("due"));
+                    System.out.println(sDue + " = " + task.due);
+                }
+                else
+                    task.due = new Date(0);
+
+                if(item.has("deleted"))
+                    task.deleted = item.getBoolean("deleted");
+
+                return task;
+            }
+            catch (ParseException e) {
+                Log.e(TAG,"exception",e);
+            }
+
+            return null;
+        }
+
+        public ArrayList<Task> getList(String listId, Date dtUpdatedMin) throws TasksAPIException {
+            String sURL = "https://www.googleapis.com/tasks/v1/lists/" + listId + "/tasks?key=" + API_KEY;
+            if(dtUpdatedMin != null)
+            {
+                sURL += "&updatedMin=" + parent.mDateFormat.format(dtUpdatedMin);
+                sURL += "&showDeleted=true";
+            }
+
+            JSONObject json = parent.getJSON(sURL);
+            ArrayList<Task> result = new ArrayList<>();
+
+            if(json != null)
+            {
+                try
+                {
+                    JSONArray items = null;
+                    int count = 0;
+                    if(json.has("items"))
+                    {
+                        items = json.getJSONArray("items");
+                        count = items.length();
+                    }
+                    Log.d(TAG, count + " tasks");
+
+                    for(int i = 0; i < count; i++)
+                    {
+                        JSONObject item = items.getJSONObject(i);
+                        Task task = parseItem(item,listId);
+                        if(task != null)
+                            result.add(task);
+                    }
+                }
+                catch (JSONException e) {
+                    Log.e(TAG,"exception",e);
+                }
+
+            }
+
+            return result;
+        }
     }
 
     private JSONObject getJSON(String sURL) throws TasksAPIException {

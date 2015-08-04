@@ -1,5 +1,7 @@
 package org.cerion.todolist.ui;
 
+import android.app.DatePickerDialog;
+import android.app.DialogFragment;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.text.Editable;
@@ -7,8 +9,10 @@ import android.text.TextWatcher;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -16,12 +20,13 @@ import org.cerion.todolist.Database;
 import org.cerion.todolist.R;
 import org.cerion.todolist.Task;
 import org.cerion.todolist.TaskList;
-import org.cerion.todolist.ui.MainActivity;
+import org.cerion.todolist.dialogs.DatePickerFragment;
 
-import java.util.Date;
+import java.util.Calendar;
+import java.util.TimeZone;
 
 
-public class TaskActivity extends ActionBarActivity
+public class TaskActivity extends ActionBarActivity implements DatePickerDialog.OnDateSetListener
 {
     public static final String EXTRA_TASK = "task";
     public static final String EXTRA_TASKLIST = "taskList";
@@ -39,6 +44,7 @@ public class TaskActivity extends ActionBarActivity
     private TextView mTextNotes;
     private TextView mTextDue;
     private CheckBox mCheckComplete;
+    private Button mRemoveDueDate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -64,6 +70,7 @@ public class TaskActivity extends ActionBarActivity
         mCheckComplete = (CheckBox)findViewById(R.id.completed);
         mTextDue = (TextView)findViewById(R.id.due);
         mEditButtons = findViewById(R.id.edit_buttons);
+        mRemoveDueDate = (Button)findViewById(R.id.removeDate);
 
         mTextTaskId.setVisibility(View.GONE);
         //mTextUpdated.setVisibility(View.GONE);
@@ -88,9 +95,25 @@ public class TaskActivity extends ActionBarActivity
             }
         });
 
+        mTextDue.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onEditDueDate();
+            }
+        });
+
         mCheckComplete.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                setEditMode(true);
+            }
+        });
+
+        mRemoveDueDate.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mTask.due.setTime(0);
+                setDue();
                 setEditMode(true);
             }
         });
@@ -112,6 +135,12 @@ public class TaskActivity extends ActionBarActivity
         });
 
         loadTask(mTask);
+    }
+
+    private void onEditDueDate()
+    {
+        DialogFragment newFragment = DatePickerFragment.newInstance(mTask.due);
+        newFragment.show(getFragmentManager(), "datePicker");
     }
 
     public void setEditMode(boolean bEdit)
@@ -137,7 +166,6 @@ public class TaskActivity extends ActionBarActivity
 
         setResult(RESULT_OK);
         finish();
-
     }
 
     public void loadTask(Task task)
@@ -155,15 +183,24 @@ public class TaskActivity extends ActionBarActivity
 
         mCheckComplete.setChecked(mTask.completed);
 
-        if(mTask.due != null)
-            mTextDue.setText(mTask.due.toString());
-        else
-            mTextDue.setText("No Due Date");
+        setDue();
 
         if(mTask.deleted)
             findViewById(R.id.deleted).setVisibility(View.VISIBLE);
 
         setEditMode(false);
+    }
+
+    private void setDue()
+    {
+        if(mTask.due != null && mTask.due.getTime() != 0) {
+            mTextDue.setText(mTask.getDue());
+            mRemoveDueDate.setVisibility(View.VISIBLE);
+        }
+        else {
+            mTextDue.setText("No Due Date");
+            mRemoveDueDate.setVisibility(View.GONE);
+        }
     }
 
     @Override
@@ -189,5 +226,21 @@ public class TaskActivity extends ActionBarActivity
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
+
+        Calendar c = Calendar.getInstance();
+        c.setTimeZone(TimeZone.getTimeZone("UTC"));
+        c.setTimeInMillis(0);
+        c.set(Calendar.YEAR,year);
+        c.set(Calendar.MONTH,monthOfYear);
+        c.set(Calendar.DAY_OF_MONTH,dayOfMonth);
+
+        mTask.due = c.getTime();
+        setDue(); //refresh display
+
+        setEditMode(true);
     }
 }

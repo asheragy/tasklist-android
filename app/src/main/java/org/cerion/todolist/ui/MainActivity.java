@@ -385,7 +385,7 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
     {
         Log.d(TAG,"refreshLists");
         Database db = Database.getInstance(this);
-        ArrayList<TaskList> dbLists = db.getTaskLists();
+        ArrayList<TaskList> dbLists = db.taskLists.getList();
 
         mTaskLists.clear();
         mTaskLists.add(new TaskList(null, "All Tasks")); //null is placeholder for "all lists"

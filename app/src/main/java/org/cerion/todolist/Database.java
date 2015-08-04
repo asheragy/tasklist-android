@@ -19,6 +19,8 @@ public class Database extends SQLiteOpenHelper
     public static final int DATABASE_VERSION = 6;
     public static final String DATABASE_NAME = "tasks.db";
 
+    public TaskLists taskLists;
+
     //public static final int QUERY_INSERT = 0;
     //public static final int QUERY_UPDATE = 1;
     //public static final int QUERY_DELETE = 2;
@@ -28,6 +30,7 @@ public class Database extends SQLiteOpenHelper
     private Database(Context context)
     {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
+        taskLists = new TaskLists(this);
     }
     public synchronized static Database getInstance(Context context)
     {
@@ -74,13 +77,19 @@ public class Database extends SQLiteOpenHelper
         public static final String SQL_CREATE = "create table " + TABLE_NAME + "(key TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY (key))";
     }
 
-    private static abstract class TaskLists
+    public static class TaskLists
     {
+        private Database parent;
         public static final String TABLE_NAME = "tasklists";
         public static final String COLUMN_ID = "id";
         public static final String COLUMN_TITLE = "title";
         public static final String COLUMN_RENAMED = "isRenamed";
         public static final String COLUMN_DEFAULT = "isDefault";
+
+        TaskLists(Database db)
+        {
+            parent = db;
+        }
 
         public static final String SQL_CREATE = "create table " + TABLE_NAME + "("
                 + COLUMN_ID + " TEXT NOT NULL, "
@@ -99,6 +108,60 @@ public class Database extends SQLiteOpenHelper
             TaskList result = new TaskList(id,title,(renamed == 1 ? true : false));
             result.bDefault = (def == 1);
             return result;
+        }
+
+        public ArrayList<TaskList> getList()
+        {
+            SQLiteDatabase db = parent.getReadableDatabase();
+
+            Cursor c = db.query(TABLE_NAME, null, null, null, null, null, null);
+            ArrayList<TaskList> result = new ArrayList<>();
+
+            if(c != null)
+            {
+                while (c.moveToNext())
+                {
+                    TaskList list = TaskLists.get(c);
+                    result.add(list);
+                }
+                c.close();
+            }
+
+            return result;
+        }
+
+        public void add(TaskList taskList)
+        {
+            Log.d(TAG,"addTaskList: " + taskList.title);
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_ID, taskList.id);
+            values.put(COLUMN_TITLE, taskList.title);
+            values.put(COLUMN_DEFAULT, taskList.bDefault);
+
+            parent.insert(TABLE_NAME, values);
+        }
+
+        public void update(TaskList taskList)
+        {
+            String where = COLUMN_ID + "='" + taskList.id + "'";
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_TITLE, taskList.title);
+            values.put(COLUMN_DEFAULT, taskList.bDefault);
+            if(taskList.hasRenamed())
+                values.put(COLUMN_RENAMED, (taskList.isRenamed() ? 1 : 0) );
+
+            parent.update(TABLE_NAME, values, where);
+        }
+
+        public void delete(TaskList taskList)
+        {
+            Log.d(TAG, "deleteTaskList: " + taskList.title);
+            String where = COLUMN_ID + "='" + taskList.id + "'";
+            parent.delete(TABLE_NAME, where);
+
+            //Also delete tasks linked to this list
+            where = Tasks.COLUMN_LISTID + "='" + taskList.id + "'";
+            parent.delete(Tasks.TABLE_NAME, where);
         }
 
     }
@@ -121,7 +184,7 @@ public class Database extends SQLiteOpenHelper
                 + COLUMN_TITLE + " TEXT NOT NULL, "
                 + COLUMN_UPDATED   + " INTEGER, "
                 + COLUMN_NOTES   + " TEXT NOT NULL, "
-                + COLUMN_DUE   + " INTEGER, "
+                + COLUMN_DUE   + " INTEGER NOT NULL, "
                 + COLUMN_COMPLETE   + " INTEGER DEFAULT 0, "
                 + COLUMN_DELETED   + " INTEGER DEFAULT 0, "
                 + "PRIMARY KEY (id,listid))";
@@ -217,29 +280,6 @@ public class Database extends SQLiteOpenHelper
 
     }
 
-    public void addTaskList(TaskList taskList)
-    {
-        Log.d(TAG,"addTaskList: " + taskList.title);
-        ContentValues values = new ContentValues();
-        values.put(TaskLists.COLUMN_ID, taskList.id);
-        values.put(TaskLists.COLUMN_TITLE, taskList.title);
-        values.put(TaskLists.COLUMN_DEFAULT, taskList.bDefault);
-
-        insert(TaskLists.TABLE_NAME, values);
-    }
-
-    public void updateTaskList(TaskList taskList)
-    {
-        String where = TaskLists.COLUMN_ID + "='" + taskList.id + "'";
-        ContentValues values = new ContentValues();
-        values.put(TaskLists.COLUMN_TITLE, taskList.title);
-        values.put(TaskLists.COLUMN_DEFAULT, taskList.bDefault);
-        if(taskList.hasRenamed())
-            values.put(TaskLists.COLUMN_RENAMED, (taskList.isRenamed() ? 1 : 0) );
-
-        update(TaskLists.TABLE_NAME, values, where);
-    }
-
     public void setTaskListId(TaskList taskList, String sNewId)
     {
         String where = TaskLists.COLUMN_ID + "='" + taskList.id + "'";
@@ -249,38 +289,6 @@ public class Database extends SQLiteOpenHelper
         update(TaskLists.TABLE_NAME, values, where);
 
         //TODO, update tasks by replacing list id
-    }
-
-
-    public void deleteTaskList(TaskList taskList)
-    {
-        Log.d(TAG, "deleteTaskList: " + taskList.title);
-        String where = TaskLists.COLUMN_ID + "='" + taskList.id + "'";
-        delete(TaskLists.TABLE_NAME, where);
-
-        //Also delete tasks linked to this list
-        where = Tasks.COLUMN_LISTID + "='" + taskList.id + "'";
-        delete(Tasks.TABLE_NAME, where);
-    }
-
-    public ArrayList<TaskList> getTaskLists()
-    {
-        SQLiteDatabase db = this.getReadableDatabase();
-
-        Cursor c = db.query(TaskLists.TABLE_NAME,null,null,null,null,null, null);
-        ArrayList<TaskList> result = new ArrayList<>();
-
-        if(c != null && c.moveToFirst())
-        {
-            do
-            {
-                TaskList list = TaskLists.get(c);
-                result.add(list);
-            }
-            while (c.moveToNext());
-        }
-
-        return result;
     }
 
     public ArrayList<Task> getTasks(String listId)
@@ -380,7 +388,13 @@ public class Database extends SQLiteOpenHelper
         {
             while(c.moveToNext())
             {
-                String s = c.getString(0) + "\t" + c.getString(1);
+                String s0 = c.getString(0);
+                String s1 = c.getString(1);
+                s0 = String.format("%1$-" + 55 + "s", s0);
+                if(s1.length() == 0)
+                    s1 = "<Blank>";
+
+                String s = s0 + "\t" + s1;
                 //String s = c.getString(c.getColumnIndexOrThrow(Sync.COLUMN_KEY)) + "\t" + c.getString(c.getColumnIndexOrThrow(Sync.COLUMN_VALUE))
                 Log.d(TAG, s);
             }

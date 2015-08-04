@@ -57,7 +57,7 @@ public class TaskListDialogFragment extends DialogFragment {
 
                     Database db = Database.getInstance(getActivity());
                     TaskList update = new TaskList(TaskList.generateId(), name);
-                    db.addTaskList(update);
+                    db.taskLists.add(update);
 
                     ((TaskListDialogListener) getActivity()).onFinishTaskListDialog();
                 }
@@ -76,7 +76,7 @@ public class TaskListDialogFragment extends DialogFragment {
 
                     TaskList update = new TaskList(listId, newName, true);
                     Database db = Database.getInstance(getActivity());
-                    db.updateTaskList(update);
+                    db.taskLists.update(update);
 
                     ((TaskListDialogListener) getActivity()).onFinishTaskListDialog();
                 }
