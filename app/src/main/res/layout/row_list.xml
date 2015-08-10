@@ -33,7 +33,7 @@
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceSmall"
         android:text="Note"
-        android:id="@+id/noteText"
+        android:id="@+id/notes"
         android:layout_below="@+id/title"
         android:layout_alignParentLeft="true"
         android:singleLine="true"

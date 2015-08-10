@@ -1,32 +1,28 @@
 package org.cerion.todolist.ui;
 
-import android.app.DatePickerDialog;
 import android.app.DialogFragment;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
-import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import org.cerion.todolist.Database;
+import org.cerion.todolist.data.Database;
 import org.cerion.todolist.R;
-import org.cerion.todolist.Task;
-import org.cerion.todolist.TaskList;
+import org.cerion.todolist.data.Task;
+import org.cerion.todolist.data.TaskList;
 import org.cerion.todolist.dialogs.DatePickerFragment;
 
-import java.util.Calendar;
-import java.util.TimeZone;
+import java.util.Date;
 
 
-public class TaskActivity extends ActionBarActivity implements DatePickerDialog.OnDateSetListener
+public class TaskActivity extends ActionBarActivity implements DatePickerFragment.DatePickerListener
 {
     public static final String EXTRA_TASK = "task";
     public static final String EXTRA_TASKLIST = "taskList";
@@ -41,7 +37,7 @@ public class TaskActivity extends ActionBarActivity implements DatePickerDialog.
     private TextView mTextTaskId;
     private TextView mTextUpdated;
     private EditText mTitle;
-    private TextView mTextNotes;
+    private TextView mNotes;
     private TextView mTextDue;
     private CheckBox mCheckComplete;
     private Button mRemoveDueDate;
@@ -66,7 +62,7 @@ public class TaskActivity extends ActionBarActivity implements DatePickerDialog.
         mTextTaskId = (TextView)findViewById(R.id.taskid);
         mTextUpdated = (TextView)findViewById(R.id.modified);
         mTitle = (EditText)findViewById(R.id.title);
-        mTextNotes = (TextView)findViewById(R.id.notes);
+        mNotes = (TextView)findViewById(R.id.notes);
         mCheckComplete = (CheckBox)findViewById(R.id.completed);
         mTextDue = (TextView)findViewById(R.id.due);
         mEditButtons = findViewById(R.id.edit_buttons);
@@ -75,25 +71,28 @@ public class TaskActivity extends ActionBarActivity implements DatePickerDialog.
         mTextTaskId.setVisibility(View.GONE);
         //mTextUpdated.setVisibility(View.GONE);
 
-        mTitle.addTextChangedListener(new TextWatcher() {
 
+        TextWatcher watcher = new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
             }
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-
+                Log.d("TAG","onTextChanged");
             }
 
             @Override
             public void afterTextChanged(Editable s) {
-                if (!s.toString().contentEquals(mTask.title)) {
+                if(s == mTitle.getEditableText() && !s.toString().contentEquals(mTask.title))
                     setEditMode(true);
-                }
+                else if(s == mNotes.getEditableText() && !s.toString().contentEquals(mTask.notes))
+                    setEditMode(true);
             }
-        });
+        };
+
+        mTitle.addTextChangedListener(watcher);
+        mNotes.addTextChangedListener(watcher);
 
         mTextDue.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -121,16 +120,14 @@ public class TaskActivity extends ActionBarActivity implements DatePickerDialog.
         findViewById(R.id.saveButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                saveTask();
+                onFinish(true);
             }
         });
 
         findViewById(R.id.cancelButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //loadTask(mTask);
-                setResult(RESULT_CANCELED);
-                finish();
+                onFinish(false);
             }
         });
 
@@ -152,19 +149,25 @@ public class TaskActivity extends ActionBarActivity implements DatePickerDialog.
 
     }
 
-    public void saveTask()
+    public void onFinish(boolean bSave)
     {
-        mTask.setModified();
-        mTask.title = mTitle.getText().toString();
-        mTask.completed = mCheckComplete.isChecked();
-        Database database = Database.getInstance(this);
+        if(bSave) {
+            mTask.setModified();
+            mTask.title = mTitle.getText().toString();
+            mTask.notes = mNotes.getText().toString();
+            mTask.completed = mCheckComplete.isChecked();
+            Database database = Database.getInstance(this);
 
-        if(mNewTask)
-            database.addTask(mTask);
+            if (mNewTask)
+                database.addTask(mTask);
+            else
+                database.updateTask(mTask);
+
+            setResult(RESULT_OK);
+        }
         else
-            database.updateTask(mTask);
+            setResult(RESULT_CANCELED);
 
-        setResult(RESULT_OK);
         finish();
     }
 
@@ -179,7 +182,7 @@ public class TaskActivity extends ActionBarActivity implements DatePickerDialog.
         if(task.updated != null)
             mTextUpdated.setText(task.updated.toString());
 
-        mTextNotes.setText(task.notes);
+        mNotes.setText(task.notes);
 
         mCheckComplete.setChecked(mTask.completed);
 
@@ -203,44 +206,11 @@ public class TaskActivity extends ActionBarActivity implements DatePickerDialog.
         }
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu)
-    {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_task, menu);
-        return true;
-    }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item)
-    {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings)
-        {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
-
-        Calendar c = Calendar.getInstance();
-        c.setTimeZone(TimeZone.getTimeZone("UTC"));
-        c.setTimeInMillis(0);
-        c.set(Calendar.YEAR,year);
-        c.set(Calendar.MONTH,monthOfYear);
-        c.set(Calendar.DAY_OF_MONTH,dayOfMonth);
-
-        mTask.due = c.getTime();
+    public void onSelectDate(Date date) {
+        mTask.due = date;
         setDue(); //refresh display
-
         setEditMode(true);
     }
 }

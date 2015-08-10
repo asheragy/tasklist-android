@@ -1,4 +1,4 @@
-package org.cerion.todolist;
+package org.cerion.todolist.data;
 
 import android.util.Log;
 
@@ -180,8 +180,12 @@ public class TasksAPI
             try
             {
                 json.put("title", task.title);
+                json.put("notes", task.notes);
+                //Only need to set these if non-default value
                 if(task.due.getTime() > 0)
                     json.put("due", parent.mDateFormat.format(task.due));
+                if(task.completed)
+                    json.put("status", "completed");
 
                 JSONObject item = parent.getJSON(sURL,json,POST);
                 if(item != null && item.has("id") && item.has("selfLink")) {
@@ -215,7 +219,9 @@ public class TasksAPI
             {
                 json.put("id", task.id);
                 json.put("title", task.title);
+                json.put("notes", task.notes);
                 json.put("status", task.completed ? "completed" : "needsAction" );
+
                 if(!task.completed)
                     json.put("completed", JSONObject.NULL);
                 if(task.due.getTime() > 0)
@@ -241,14 +247,10 @@ public class TasksAPI
                 task.title = item.getString("title");
                 task.updated = parent.mDateFormat.parse(item.getString("updated"));
 
-                if(item.has("notes"))
-                    task.notes = item.getString("notes");
-                else
-                    task.notes = "";
+                if(item.has("notes")) task.notes = item.getString("notes");
                 task.completed = (item.getString("status").equals("completed"));
 
-                if(item.has("due"))
-                {
+                if(item.has("due")) {
                     String sDue = item.getString("due");
                     task.due = parent.mDateFormat.parse(item.getString("due"));
                     System.out.println(sDue + " = " + task.due);
@@ -347,7 +349,13 @@ public class TasksAPI
 
     private String getInetData(String sURL, String sRequestBody, int method)
     {
-        Log.d(TAG,"Command=" + sURL);
+        String command = "GET";
+        if(method == POST) command = "POST";
+        else if(method == PUT) command = "PUT";
+        else if(method == PATCH) command = "PATCH";
+        else if(method == DELETE) command = "DELETE";
+        Log.d(TAG,command + "=" + sURL);
+
         if(sRequestBody != null)
             Log.d(TAG,"Body=" + sRequestBody);
 
@@ -386,7 +394,7 @@ public class TasksAPI
         }
 
         if(mLogFullResults)
-            Log.d(TAG,"Data=" + sResult);
+            Log.d(TAG,"Body=" + sResult);
         return sResult;
     }
 

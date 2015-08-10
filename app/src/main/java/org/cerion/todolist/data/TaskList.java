@@ -1,4 +1,4 @@
-package org.cerion.todolist;
+package org.cerion.todolist.data;
 
 import android.util.Log;
 
@@ -44,7 +44,7 @@ public class TaskList implements Serializable
             renamed = 0;
     }
 
-    //TODO, can probably get rid of this, local lists have field and web lists do not
+
     public boolean hasRenamed()
     {
         return (renamed >= 0);
@@ -61,7 +61,7 @@ public class TaskList implements Serializable
     public static String generateId()
     {
         Random rand = new Random();
-        int i = rand.nextInt();
+        long i = rand.nextInt() + (1L << 31);
         return "temp_" + i;
     }
 

@@ -1,4 +1,4 @@
-package org.cerion.todolist;
+package org.cerion.todolist.data;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -57,6 +57,8 @@ public class Database extends SQLiteOpenHelper
         long result = db.update(sTable, values, sWhere, null);
         if(result < 0)
             Log.e(TAG, "update: " + values.toString() + " where: " + sWhere);
+        else if(result >= 0)
+            Log.d(TAG, "updated " + result + " rows");
     }
 
     private void delete(String sTable, String sWhere)
@@ -65,7 +67,7 @@ public class Database extends SQLiteOpenHelper
         long result = db.delete(sTable, sWhere, null);
         if(result < 0)
             Log.e(TAG, "delete: " + sWhere);
-        else if(result > 1)
+        else
             Log.d(TAG, "deleted " + result + " rows");
     }
 
@@ -285,10 +287,13 @@ public class Database extends SQLiteOpenHelper
         String where = TaskLists.COLUMN_ID + "='" + taskList.id + "'";
         ContentValues values = new ContentValues();
         values.put(TaskLists.COLUMN_ID, sNewId);
-
         update(TaskLists.TABLE_NAME, values, where);
 
-        //TODO, update tasks by replacing list id
+        //Update tasks with this list Id
+        where = String.format("%s='%s'", Tasks.COLUMN_LISTID, taskList.id);
+        values = new ContentValues();
+        values.put(Tasks.COLUMN_LISTID, sNewId);
+        update(Tasks.TABLE_NAME,values,where);
     }
 
     public ArrayList<Task> getTasks(String listId)
@@ -358,6 +363,36 @@ public class Database extends SQLiteOpenHelper
         }
 
         return result;
+    }
+
+    public void logLists()
+    {
+        Log.d(TAG,"--- TaskLists ---");
+        ArrayList<TaskList> lists = this.taskLists.getList();
+        for(TaskList list : lists)
+        {
+            String id = String.format("%1$-" + 43 + "s", list.id);
+
+            Log.d(TAG,id + " " + list.title);
+        }
+    }
+
+    public void logTasks()
+    {
+        Log.d(TAG,"--- TaskLists ---");
+        ArrayList<Task> tasks = this.getTasks(null);
+        for(Task task : tasks)
+        {
+            String listid = String.format("%1$-" + 43 + "s", task.listId);
+            String id =     String.format("%1$-" + 55 + "s", task.id);
+            Log.d(TAG,listid + " " + id + " " + task.title);
+        }
+    }
+
+    public void log()
+    {
+        logLists();
+        logTasks();
     }
 
     public void print()

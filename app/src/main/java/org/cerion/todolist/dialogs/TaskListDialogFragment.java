@@ -8,8 +8,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.EditText;
 
-import org.cerion.todolist.Database;
-import org.cerion.todolist.TaskList;
+import org.cerion.todolist.data.Database;
+import org.cerion.todolist.data.TaskList;
 
 public class TaskListDialogFragment extends DialogFragment {
 

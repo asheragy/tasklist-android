@@ -1,4 +1,4 @@
-package org.cerion.todolist;
+package org.cerion.todolist.data;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -8,6 +8,8 @@ import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+
+import org.cerion.todolist.R;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -165,9 +167,6 @@ public class Sync
         for(TaskList list : lists)
             syncTasks(list);
 
-        syncTasks(null); //Sync local tasks that have not yet been added to a list
-
-
         //Save results
         Date lastSync = new Date();
         mDb.setSyncKey("lastSync", lastSync.toString());
@@ -180,70 +179,68 @@ public class Sync
         return RESULT_SUCCESS;
     }
 
-    //TODO, remove listId null checks, making this work on newly added tasks without a list was a bad idea
+
     private void syncTasks(TaskList list) throws TasksAPI.TasksAPIException {
         Date dtLastUpdated = null;
         ArrayList<Task> dbTasks;
-        String listId = null;
+        String listId = list.id;
 
-        if(list != null) {
-            listId = list.id;
-            String key = "updated_" + listId;
-            String lastUpdatedSaved = mSyncKeys.get(key);
+        String key = "updated_" + listId;
+        String lastUpdatedSaved = mSyncKeys.get(key);
 
-            Log.d(TAG, "syncTasks() " + listId + "\t" + lastUpdatedSaved + "\t" + list.updated);
+        Log.d(TAG, "syncTasks() " + listId + "\t" + lastUpdatedSaved + "\t" + list.updated);
 
-            try {
-                if (lastUpdatedSaved != null)
-                    dtLastUpdated = mDateFormat.parse(lastUpdatedSaved);
-            } catch (ParseException e) {
-                //e.printStackTrace();
-            }
+        try {
+            if (lastUpdatedSaved != null)
+                dtLastUpdated = mDateFormat.parse(lastUpdatedSaved);
+        } catch (ParseException e) {
+            Log.e(TAG,"exception",e);
+        }
 
-            ArrayList<Task> webTasks = null;
-            if (dtLastUpdated == null) //TODO or reread
-            {
-                Log.d(TAG, "New list, getting all");
-                webTasks = mAPI.tasks.getList(listId, null);
+        ArrayList<Task> webTasks = null;
+        if (dtLastUpdated == null) //TODO or reread
+        {
+            Log.d(TAG, "New list, getting all");
+            webTasks = mAPI.tasks.getList(listId, null);
 
-            } else if (list.updated.after(dtLastUpdated)) {
-                Log.d(TAG, "Getting updated Tasks");
-                Log.d(TAG, "Web   = " + list.updated);
-                Log.d(TAG, "Saved = " + dtLastUpdated);
-                dtLastUpdated.setTime(dtLastUpdated.getTime() + 1000); //Increase by 1 second to avoid getting previous updated record which already synced
-                webTasks = mAPI.tasks.getList(listId, dtLastUpdated);
-            }
-            //else
-            //    Log.d(TAG, "No changes");
+        } else if (list.updated.after(dtLastUpdated)) {
+            //The default list can get its modified time updated without having any new tasks, we'll get 0 tasks here sometimes but not much we can do about it
+            Log.d(TAG, "Getting updated Tasks");
+            Log.d(TAG, "Web   = " + list.updated);
+            Log.d(TAG, "Saved = " + dtLastUpdated);
+            dtLastUpdated.setTime(dtLastUpdated.getTime() + 1000); //Increase by 1 second to avoid getting previous updated record which already synced
+            webTasks = mAPI.tasks.getList(listId, dtLastUpdated);
+        }
+        //else
+        //    Log.d(TAG, "No changes");
 
-            dbTasks = mDb.getTasks(listId);
+        dbTasks = mDb.getTasks(listId);
 
-            if (webTasks != null) {
-                for (Task task : webTasks) {
-                    Task dbTask = getTask(dbTasks, task.id);
-                    if (dbTask != null) {
-                        if (task.deleted) {
-                            googleToDb[SYNC_DELETE_TASK]++;
-                            mDb.deleteTask(task);
-                            //TODO, Remove from list
-                        } else {
-                            googleToDb[SYNC_CHANGE_TASK]++;
-                            mDb.updateTask(task);
-                            //TODO conflicts
-                            //TODO, if web wins delete from dbTasks so we don't process on db->web phase
-                        }
-                    } else if (task.deleted) {
-                        //Task was deleted from web before it was ever added to our database
+        if (webTasks != null) {
+            for (Task task : webTasks) {
+                Task dbTask = getTask(dbTasks, task.id);
+                if (dbTask != null) {
+                    if (task.deleted) {
+                        googleToDb[SYNC_DELETE_TASK]++;
+                        mDb.deleteTask(task);
                     } else {
-                        googleToDb[SYNC_ADD_TASK]++;
-                        mDb.addTask(task);
+                        googleToDb[SYNC_CHANGE_TASK]++;
+                        mDb.updateTask(task);
+                        //TODO conflicts, nothing to do for now just log when it happens...
                     }
+                } else if (task.deleted) {
+                    //Task was deleted from web before it was ever added to our database
+                } else {
+                    mDb.addTask(task);
+                    googleToDb[SYNC_ADD_TASK]++;
                 }
             }
 
+            //Web tasks modified database, reget list for next loop incase something changed
+            dbTasks = mDb.getTasks(listId);
         }
-        else
-            dbTasks = mDb.getTasks("");
+
+
 
         /**************
         Database -> Web
@@ -299,44 +296,40 @@ public class Sync
 
         }
 
-        if(listId != null) {
-            Date updated = null;
-            if(list != null)
-                updated = list.updated;
 
-            if (bListUpdated && listId != null) {
-                //TODO, get single list instead of all
-                ArrayList<TaskList> lists = null;
-                try {
-                    lists = mAPI.taskLists.getList();
-                } catch (TasksAPI.TasksAPIException e) {
-                    e.printStackTrace();
-                }
-                TaskList updatedList = TaskList.get(lists, listId);
-                if (updatedList != null) {
-                    Log.d(TAG, "New Updated = " + updatedList.updated);
-                    updated = updatedList.updated; //Updated modified time
-                }
+        Date updated = list.updated;
 
+        if (bListUpdated) {
+            //TODO, get single list instead of all
+            ArrayList<TaskList> lists = null;
+            try {
+                lists = mAPI.taskLists.getList();
+            } catch (TasksAPI.TasksAPIException e) {
+                e.printStackTrace();
             }
 
-            //TODO, skip this if something failed
-            if(updated != null)
-                mDb.setSyncKey("updated_" + listId, mDateFormat.format(updated));
+            TaskList updatedList = TaskList.get(lists, listId);
+            if (updatedList != null) {
+                Log.d(TAG, "New Updated = " + updatedList.updated);
+                updated = updatedList.updated; //Updated modified time
+            }
         }
+
+        if(updated != null)
+            mDb.setSyncKey("updated_" + listId, mDateFormat.format(updated));
     }
 
     private static void getTokenAndSync(final Context context, final Callback callback)
     {
         if(true) //Emulator, use manual code
         {
-            String token = "ya29.xQEcrJ4RHlGTH93QTJRp1wQeE8Fq_DkeCyq5aYXz6snGz2zvK8rzo0fd5YVMhr9HAeJosEs";
+            String token = "ya29.yAEsn2LhSdItkaLJSwXBZm9e51-OtIHxpY5FRfIgFHopAElTiAeGr_AHYncfefM_AbgLmJw";
             SyncTask task = new SyncTask(context,token,callback);
             task.execute();
             return;
         }
 
-        Date dtLastToken = Prefs.getPrefDate(context,Prefs.PREF_AUTHTOKEN_DATE);
+        Date dtLastToken = Prefs.getPrefDate(context, Prefs.PREF_AUTHTOKEN_DATE);
         long dtDiff = (System.currentTimeMillis() - dtLastToken.getTime()) / 1000;
         if(dtDiff < 3500) //Token is a little less than 1 hour old
         {

@@ -1,4 +1,4 @@
-package org.cerion.todolist;
+package org.cerion.todolist.data;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
@@ -19,7 +19,7 @@ public class Task implements Serializable {
 
     private static String generateId() {
         Random rand = new Random();
-        int i = rand.nextInt();
+        long i = rand.nextInt() + (1L << 31);
         return "temp_" + i;
     }
 

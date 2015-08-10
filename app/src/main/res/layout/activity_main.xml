@@ -40,6 +40,12 @@
             android:text="Get Token"
             android:id="@+id/auth"/>
 
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Log Database"
+            android:id="@+id/logdb" />
+
     </LinearLayout>
 
 

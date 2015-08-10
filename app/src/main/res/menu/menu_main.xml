@@ -2,6 +2,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools" tools:context=".MainActivity">
 
+    <item android:id="@+id/action_add_task"
+        android:title="Add Task"
+        android:icon="@android:drawable/ic_menu_add"
+        app:showAsAction="always"/>
+
     <item android:id="@+id/action_settings" android:title="@string/action_settings"
         android:orderInCategory="100"/>
 
@@ -11,7 +16,6 @@
     <item android:id="@+id/action_rename" android:title="Rename List"
         android:orderInCategory="100"/>
 
-    <item android:id="@+id/action_add_task" android:title="Add Task"
-        android:orderInCategory="100"/>
+
 
 </menu>

@@ -1,4 +1,4 @@
-package org.cerion.todolist;
+package org.cerion.todolist.data;
 
 import android.content.Context;
 import android.content.SharedPreferences;

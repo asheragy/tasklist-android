@@ -11,9 +11,14 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
 
-public class DatePickerFragment extends DialogFragment implements DatePickerDialog.OnDateSetListener {
+public class DatePickerFragment extends DialogFragment implements DatePickerDialog.OnDateSetListener
+{
 
     private static final String DATE = "date";
+
+    public interface DatePickerListener {
+        void onSelectDate(Date date);
+    }
 
     public static DatePickerFragment newInstance(Date date) {
         DatePickerFragment frag = new DatePickerFragment();
@@ -45,9 +50,15 @@ public class DatePickerFragment extends DialogFragment implements DatePickerDial
     }
 
 
-    //TODO, based on examples there might be a better prefered way of doing this callback...
     @Override
     public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
-        ((DatePickerDialog.OnDateSetListener) getActivity()).onDateSet(view,year,monthOfYear,dayOfMonth);
+        Calendar c = Calendar.getInstance();
+        c.setTimeZone(TimeZone.getTimeZone("UTC"));
+        c.setTimeInMillis(0);
+        c.set(Calendar.YEAR, year);
+        c.set(Calendar.MONTH,monthOfYear);
+        c.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+
+        ((DatePickerListener)getActivity()).onSelectDate(c.getTime());
     }
 }

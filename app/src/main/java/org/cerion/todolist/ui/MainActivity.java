@@ -10,28 +10,25 @@ import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.util.Log;
 import android.view.ContextMenu;
-import android.view.GestureDetector;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Adapter;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.LinearLayout;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.support.v7.app.ActionBarActivity;
 
-import org.cerion.todolist.Database;
-import org.cerion.todolist.Prefs;
+import org.cerion.todolist.data.Database;
+import org.cerion.todolist.data.Prefs;
 import org.cerion.todolist.R;
-import org.cerion.todolist.Sync;
-import org.cerion.todolist.Task;
-import org.cerion.todolist.TaskList;
+import org.cerion.todolist.data.Sync;
+import org.cerion.todolist.data.Task;
+import org.cerion.todolist.data.TaskList;
 import org.cerion.todolist.dialogs.AlertDialogFragment;
 import org.cerion.todolist.dialogs.TaskListDialogFragment;
 import org.cerion.todolist.dialogs.TaskListDialogFragment.TaskListDialogListener;
@@ -61,17 +58,17 @@ delete list on Web, all tasks should get deleted
 
 public class MainActivity extends ActionBarActivity implements TaskListDialogListener {
     private static final String TAG = MainActivity.class.getSimpleName();
-    private static final String STATE_NAV_INDEX = "stateNavIndex";
+    //private static final String STATE_NAV_INDEX = "stateNavIndex";
 
+    private static final String NEW_LISTID = "new";
     private TextView mStatus;
     private ProgressBar mProgressBar;
-    private GestureDetector mGestureDetector;
+    //private GestureDetector mGestureDetector;
     private ActionBar mActionBar;
+    private ArrayList<TaskList> mTaskLists;
+    private ArrayAdapter<TaskList> mActionBarAdapter;
 
-    public static ArrayList<TaskList> mTaskLists; //TODO, make accessable to TaskActivity without using public static, better object oriented way?
-    private static ArrayAdapter<TaskList> mAdapter;
-    private static int mLastIndexPosition = -1;
-
+    private static String mCurrListId = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,22 +76,12 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
         Log.d(TAG,"onCreate " + (savedInstanceState == null ? "null" : "saveState"));
         setContentView(R.layout.activity_main);
 
+        mActionBar = getSupportActionBar();
         mStatus = (TextView) findViewById(R.id.status);
         mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
         mProgressBar.setVisibility(View.INVISIBLE);
         getListView().setEmptyView(findViewById(android.R.id.empty));
         registerForContextMenu(getListView());
-
-        /*
-        findViewById(R.id.auth).setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View v)
-            {
-                setAuthToken();
-            }
-        });
-        */
 
         findViewById(R.id.syncImage).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -103,38 +90,31 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
             }
         });
 
-        //mToken = Prefs.getPref(this,Prefs.PREF_AUTHTOKEN);
-
-        if (mTaskLists == null) {
-            mTaskLists = new ArrayList<>();
-            mTaskLists.add(new TaskList("", "Default"));
-        }
-
-
-        //mActionBar = getActionBar();
-        mActionBar = getSupportActionBar();
-
-
-        mAdapter = new ArrayAdapter<TaskList>(mActionBar.getThemedContext(), android.R.layout.simple_spinner_dropdown_item, mTaskLists);
-        ActionBar.OnNavigationListener navigationListener = new ActionBar.OnNavigationListener() {
+        findViewById(R.id.logdb).setOnClickListener(new View.OnClickListener() {
             @Override
-            public boolean onNavigationItemSelected(int itemPosition, long itemId) {
-                refreshTasks();
-                return false;
+            public void onClick(View v) {
+                Database db = Database.getInstance(MainActivity.this);
+                db.log();
             }
-        };
+        });
 
 
-        mActionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
-        mActionBar.setListNavigationCallbacks(mAdapter, navigationListener);
-        mActionBar.setSelectedNavigationItem( mLastIndexPosition == -1 ? 0 : mLastIndexPosition);
-        mActionBar.setDisplayShowTitleEnabled(false); //TODO set in styles otherwise title shows until code runs this line
+        getListView().setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Task task = (Task) getListView().getItemAtPosition(position);
+                onOpenTask(task);
+            }
+        });
 
 
+        updateLastSync();
+        refreshLists();
+
+
+        /* Not using for now, maybe switch to tab list or navigation drawer
         LinearLayout layout = (LinearLayout) findViewById(R.id.root);
-
         mGestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
-            public static final int MAJOR_MOVE = 50; //TODO change at runtime using DisplayMetrics() class
+            public static final int MAJOR_MOVE = 50; to do change at runtime using DisplayMetrics() class
 
             public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
                 //Log.d(TAG,"onFling");
@@ -167,17 +147,10 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
                 return true;
             }
         });
-
-        getListView().setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Task task = (Task) getListView().getItemAtPosition(position);
-                onOpenTask(task);
-            }
-        });
+        */
 
 
-        updateLastSync();
-        refreshLists();
+
     }
 
     public ListView getListView() {
@@ -273,6 +246,7 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
 
     }
 
+    /*
     @Override
     public boolean onTouchEvent(MotionEvent event)
     {
@@ -281,6 +255,7 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
             bResult = mGestureDetector.onTouchEvent(event);
         return bResult;
     }
+    */
 
     @Override
     public void onFinishTaskListDialog() {
@@ -308,8 +283,7 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
             return true;
         }
         else if(id == R.id.action_add) {
-            TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_ADD,null);
-            dialog.show(getFragmentManager(), "dialog");
+            onAddTaskList();
         }
         else if(id == R.id.action_rename) {
             TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME,getCurrentList());
@@ -320,6 +294,11 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    public void onAddTaskList() {
+        TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_ADD,null);
+        dialog.show(getFragmentManager(), "dialog");
     }
 
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo)
@@ -370,11 +349,6 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
         }
     }
 
-    public TaskList getCurrentList()
-    {
-        return mAdapter.getItem(mActionBar.getSelectedNavigationIndex() );
-    }
-
     public void refreshAll()
     {
         refreshLists();
@@ -383,33 +357,78 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
 
     public void refreshLists()
     {
-        Log.d(TAG,"refreshLists");
+        Log.d(TAG, "refreshLists");
         Database db = Database.getInstance(this);
         ArrayList<TaskList> dbLists = db.taskLists.getList();
 
-        mTaskLists.clear();
+        if (mTaskLists == null)
+            mTaskLists = new ArrayList<>();
+        else
+            mTaskLists.clear();
+
         mTaskLists.add(new TaskList(null, "All Tasks")); //null is placeholder for "all lists"
         for(TaskList list : dbLists)
             mTaskLists.add(list);
+        mTaskLists.add(new TaskList(NEW_LISTID, "<Add List>"));
 
-        mAdapter.notifyDataSetChanged();
+        if(mActionBarAdapter == null) {
+            mActionBarAdapter = new ArrayAdapter<>(mActionBar.getThemedContext(), android.R.layout.simple_spinner_dropdown_item, mTaskLists);
+            ActionBar.OnNavigationListener navigationListener = new ActionBar.OnNavigationListener() {
+                @Override
+                public boolean onNavigationItemSelected(int itemPosition, long itemId) {
+                    Log.d(TAG,"position = " + itemPosition + " index = " + mActionBar.getSelectedNavigationIndex() );
+                    if(itemPosition == mActionBar.getNavigationItemCount() - 1) {
+                        onAddTaskList();
+                        //Prefered action is to prevent current selection, not select the old one...
+                        mActionBar.setSelectedNavigationItem( getListPosition(mCurrListId) );
+                    }
+                    else {
+                        Log.d(TAG,"navigation listener, refreshing tasks");
+                        mCurrListId = mTaskLists.get(itemPosition).id;
+                        refreshTasks();
+                    }
+
+                    return false;
+                }
+            };
+
+            mActionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
+            mActionBar.setListNavigationCallbacks(mActionBarAdapter, navigationListener);
+        }
+        else
+            mActionBarAdapter.notifyDataSetChanged();
+
+        mActionBar.setSelectedNavigationItem(getListPosition(mCurrListId));
     }
 
     public void refreshTasks()
     {
         Log.d(TAG,"refreshTasks");
-        int index = mActionBar.getSelectedNavigationIndex();
-        mLastIndexPosition = index;
-        TaskList list = mTaskLists.get(index);
-
-
         Database db = Database.getInstance(this);
-        ArrayList<Task> tasks = db.getTasks(list.id);
+        ArrayList<Task> tasks = db.getTasks(mCurrListId);
 
-        TaskListAdapter myAdapter = new TaskListAdapter(this,R.layout.list_row, tasks);
-        ///ArrayAdapter<Task> myAdapter = new ArrayAdapter <>(this, R.layout.list_row, R.id.textView, tasks);
+        TaskListAdapter myAdapter = new TaskListAdapter(this,R.layout.row_list, tasks);
         setListAdapter(myAdapter);
+    }
 
+    private int getListPosition(String id)
+    {
+        int index = 0;
+        if(id != null) {
+            for (int i = 1; i < mActionBarAdapter.getCount() - 1; i++) { //Skip first and last list
+                TaskList curr = mActionBarAdapter.getItem(i);
+                if (curr.id.contentEquals(id))
+                    index = i;
+            }
+        }
+
+        return index;
+    }
+
+    //TODO, save curr/default as TaskList variables that are always valid, then we don't need these functions
+    public TaskList getCurrentList()
+    {
+        return mActionBarAdapter.getItem(mActionBar.getSelectedNavigationIndex() );
     }
 
     private TaskList getDefaultList() {
