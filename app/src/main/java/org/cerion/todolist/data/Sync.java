@@ -9,8 +9,6 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 
-import org.cerion.todolist.R;
-
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -35,7 +33,8 @@ public class Sync
     public static final int RESULT_UNKNOWN = -1;
     public static final int RESULT_SUCCESS = 0;
     public static final int RESULT_AUTHERROR = 1;
-    //public static final int RESULT_AUTHERROR = 2;
+    public static final int RESULT_NO_GOOGLE_ACCOUNT = 2;
+    public static final int RESULT_GET_TOKEN_ERROR = 3;
 
     //Instance variablesr
     private SimpleDateFormat mDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
@@ -48,7 +47,7 @@ public class Sync
     public interface Callback
     {
         //Unable to verify account or get sync token
-        void onAuthError(Exception e);
+        void onAuthError(int result, Exception e);
 
         //A non-successful sync can still have data changed
         void onSyncFinish(int result, boolean bDataChanged, Exception e);
@@ -321,7 +320,7 @@ public class Sync
 
     private static void getTokenAndSync(final Context context, final Callback callback)
     {
-        if(true) //Emulator, use manual code
+        if(false) //Emulator, use manual code
         {
             String token = "ya29.yAEsn2LhSdItkaLJSwXBZm9e51-OtIHxpY5FRfIgFHopAElTiAeGr_AHYncfefM_AbgLmJw";
             SyncTask task = new SyncTask(context,token,callback);
@@ -329,12 +328,12 @@ public class Sync
             return;
         }
 
-        Date dtLastToken = Prefs.getPrefDate(context, Prefs.PREF_AUTHTOKEN_DATE);
+        Date dtLastToken = Prefs.getPrefDate(context, Prefs.KEY_AUTHTOKEN_DATE);
         long dtDiff = (System.currentTimeMillis() - dtLastToken.getTime()) / 1000;
         if(dtDiff < 3500) //Token is a little less than 1 hour old
         {
             Log.d(TAG,"Using existing token, remaining minutes: " + (3600 - dtDiff) / 60);
-            String token = Prefs.getPref(context, Prefs.PREF_AUTHTOKEN);
+            String token = Prefs.getPref(context, Prefs.KEY_AUTHTOKEN);
             SyncTask task = new SyncTask(context,token,callback);
             task.execute();
             return;
@@ -343,42 +342,39 @@ public class Sync
         Log.d(TAG,"Getting Token");
         AccountManager accountManager = AccountManager.get(context);
         Account[] accounts = accountManager.getAccountsByType("com.google");
-        String accountName = Prefs.getPref(context,context.getString(R.string.pref_key_account));
+        String accountName = Prefs.getPref(context,Prefs.KEY_ACCOUNT_NAME);
         Account account = null;
 
-        for(Account tmpAccount: accounts)
-        {
+        for(Account tmpAccount: accounts) {
             if(tmpAccount.name.contentEquals(accountName))
                 account = tmpAccount;
         }
 
-        if(account != null)
-        {
+        if(account != null) {
             accountManager.getAuthToken(account, AUTH_TOKEN_TYPE, null, true, new AccountManagerCallback<Bundle>()
             {
                 public void run(AccountManagerFuture<Bundle> future)
                 {
-                    try
-                    {
+                    try {
                         // If the user has authorized your application to use the tasks API a token is available.
                         String token = future.getResult().getString(AccountManager.KEY_AUTHTOKEN);
-                        Prefs.savePref(context, Prefs.PREF_AUTHTOKEN, token);
-                        Prefs.savePrefDate(context,Prefs.PREF_AUTHTOKEN_DATE,new Date());
+                        Prefs.savePref(context, Prefs.KEY_AUTHTOKEN, token);
+                        Prefs.savePrefDate(context,Prefs.KEY_AUTHTOKEN_DATE,new Date());
 
-                        //syncTaskLists(context,token);
                         Log.d(TAG,"Starting SyncTask");
                         SyncTask task = new SyncTask(context,token,callback);
                         task.execute();
 
                     }
-                    catch (Exception e)
-                    {
-                        callback.onAuthError(e);
-                        Log.d("TEST","ERROR");
+                    catch (Exception e) {
+                        callback.onAuthError(RESULT_GET_TOKEN_ERROR,e);
                     }
                 }
             }, null);
         }
+        else
+            callback.onAuthError(RESULT_NO_GOOGLE_ACCOUNT,null);
+
 
         Log.d(TAG, "Getting Token END");
     }
@@ -426,7 +422,7 @@ public class Sync
         {
             Log.d(TAG,"Result=" + mResult + " Changes=" + mChanges);
             if(mResult == RESULT_SUCCESS)
-                Prefs.savePrefDate(mContext,Prefs.LAST_SYNC, new Date());
+                Prefs.savePrefDate(mContext,Prefs.KEY_LAST_SYNC, new Date());
 
             mCallback.onSyncFinish(mResult,mChanges > 0,mError);
         }

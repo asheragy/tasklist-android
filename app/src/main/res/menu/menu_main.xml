@@ -7,15 +7,12 @@
         android:icon="@android:drawable/ic_menu_add"
         app:showAsAction="always"/>
 
-    <item android:id="@+id/action_settings" android:title="@string/action_settings"
-        android:orderInCategory="100"/>
-
     <item android:id="@+id/action_add" android:title="Add List"
           android:orderInCategory="100"/>
 
     <item android:id="@+id/action_rename" android:title="Rename List"
         android:orderInCategory="100"/>
 
-
+    <item android:id="@+id/action_account" android:title="Select Account"/>
 
 </menu>

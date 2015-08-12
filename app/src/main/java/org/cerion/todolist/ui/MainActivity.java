@@ -1,6 +1,8 @@
 package org.cerion.todolist.ui;
 
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.app.DialogFragment;
 import android.content.Context;
 import android.content.Intent;
@@ -22,6 +24,8 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.support.v7.app.ActionBarActivity;
+
+import com.google.android.gms.common.AccountPicker;
 
 import org.cerion.todolist.data.Database;
 import org.cerion.todolist.data.Prefs;
@@ -59,6 +63,9 @@ delete list on Web, all tasks should get deleted
 public class MainActivity extends ActionBarActivity implements TaskListDialogListener {
     private static final String TAG = MainActivity.class.getSimpleName();
     //private static final String STATE_NAV_INDEX = "stateNavIndex";
+
+    private static final int EDIT_TASK_REQUEST = 0;
+    private static final int PICK_ACCOUNT_REQUEST = 1;
 
     private static final String NEW_LISTID = "new";
     private TextView mStatus;
@@ -174,13 +181,20 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
             setInSync(true);
             Sync.syncTaskLists(this, new Sync.Callback() {
                 @Override
-                public void onAuthError(Exception e) {
-                    //TODO, May need to check account in settings or just auto open it?
-                    DialogFragment dialog = AlertDialogFragment.newInstance("Error", "Auth Error");
-                    dialog.show(getFragmentManager(), "dialog");
+                public void onAuthError(int result, Exception e) {
+                    setInSync(false);
+
+                    if(result == Sync.RESULT_NO_GOOGLE_ACCOUNT) {
+                        onChooseAccount(); //select or add google account
+                    }
+                    else {
+                        DialogFragment dialog = AlertDialogFragment.newInstance("Error", "Auth Error");
+                        dialog.show(getFragmentManager(), "dialog");
+                    }
                 }
 
                 @Override
+                //TODO, remove data changed paraemter and just always refresh
                 public void onSyncFinish(int result, boolean bDataChanged, Exception e) {
                     setInSync(false);
 
@@ -210,7 +224,7 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
 
     public void updateLastSync() {
         String sText = "Last Sync: ";
-        Date lastSync = Prefs.getPrefDate(this, Prefs.LAST_SYNC);
+        Date lastSync = Prefs.getPrefDate(this, Prefs.KEY_LAST_SYNC);
         if (lastSync == null || lastSync.getTime() == 0)
             sText += "Never";
         else
@@ -231,19 +245,22 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
             intent.putExtra(TaskActivity.EXTRA_TASK, task);
         intent.putExtra(TaskActivity.EXTRA_DEFAULT_LIST, getDefaultList());
         intent.putExtra(TaskActivity.EXTRA_TASKLIST, mTaskLists.get(mActionBar.getSelectedNavigationIndex()));
-        startActivityForResult(intent, 0);
+        startActivityForResult(intent, EDIT_TASK_REQUEST);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data)
     {
         Log.d(TAG, "onActivityResult: " + resultCode);
-        if(resultCode == RESULT_OK)
-        {
-            refreshTasks();
-        }
-        //else Canceled and no data was changed
 
+        if(resultCode == RESULT_OK) {
+            if (requestCode == EDIT_TASK_REQUEST)
+                refreshTasks();
+            else if (requestCode == PICK_ACCOUNT_REQUEST) {
+                String accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
+                Prefs.savePref(this,Prefs.KEY_ACCOUNT_NAME,accountName);
+            }
+        }
     }
 
     /*
@@ -276,13 +293,7 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            Intent i = new Intent(this, SettingsActivity.class);
-            startActivity(i);
-            return true;
-        }
-        else if(id == R.id.action_add) {
+        if(id == R.id.action_add) {
             onAddTaskList();
         }
         else if(id == R.id.action_rename) {
@@ -292,8 +303,17 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
         else if(id == R.id.action_add_task) {
             onOpenTask(null);
         }
+        else if(id == R.id.action_account) {
+            onChooseAccount();
+        }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    public void onChooseAccount()
+    {
+        Intent intent = AccountPicker.newChooseAccountIntent(null, null, new String[]{"com.google"}, false, null, null, null, null);
+        startActivityForResult(intent, PICK_ACCOUNT_REQUEST);
     }
 
     public void onAddTaskList() {
@@ -301,22 +321,18 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
         dialog.show(getFragmentManager(), "dialog");
     }
 
-    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo)
-    {
-        if (v.getId()==android.R.id.list)
-        {
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        if (v.getId()==android.R.id.list) {
             MenuInflater inflater = getMenuInflater();
             inflater.inflate(R.menu.list_context_menu, menu);
         }
     }
 
-    public boolean onContextItemSelected(MenuItem item)
-    {
+    public boolean onContextItemSelected(MenuItem item) {
         AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
         Task task = (Task)getListAdapter().getItem(info.position);
 
         Database db;
-        //ArrayAdapter<Task> adapter = (ArrayAdapter)getListAdapter();
 
         switch (item.getItemId())
         {

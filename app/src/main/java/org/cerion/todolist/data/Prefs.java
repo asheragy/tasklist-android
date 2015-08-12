@@ -10,9 +10,10 @@ import java.util.Date;
 public class Prefs
 {
     public static final String TAG = "prefs";
-    public static final String PREF_AUTHTOKEN = "authToken";
-    public static final String PREF_AUTHTOKEN_DATE = "authTokenDate";
-    public static final String LAST_SYNC = "lastSync";
+    public static final String KEY_AUTHTOKEN = "authToken";
+    public static final String KEY_AUTHTOKEN_DATE = "authTokenDate";
+    public static final String KEY_LAST_SYNC = "lastSync";
+    public static final String KEY_ACCOUNT_NAME = "accountName2";
 
     public static void savePref(Context context, String key, String value)
     {

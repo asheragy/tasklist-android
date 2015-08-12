@@ -10,7 +10,7 @@ public class Task implements Serializable {
     public String id;
     public String listId;
     public String title = "";
-    public Date updated;
+    public Date updated = new Date(0);
     public String notes = "";
     public boolean completed;
     public Date due = new Date(0);

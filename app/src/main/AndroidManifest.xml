@@ -14,6 +14,7 @@
         android:theme="@style/AppTheme" >
         <activity
             android:name=".ui.MainActivity"
+            android:screenOrientation="portrait"
             android:label="" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -22,12 +23,9 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ui.SettingsActivity"
-            android:label="@string/title_activity_settings" >
-        </activity>
-        <activity
             android:name=".ui.TaskActivity"
             android:label="@string/title_activity_task"
+            android:screenOrientation="portrait"
             android:parentActivityName=".ui.MainActivity" >
             >
         </activity>

@@ -21,10 +21,6 @@ public class Database extends SQLiteOpenHelper
 
     public TaskLists taskLists;
 
-    //public static final int QUERY_INSERT = 0;
-    //public static final int QUERY_UPDATE = 1;
-    //public static final int QUERY_DELETE = 2;
-
     //Singleton class
     private static Database mInstance;
     private Database(Context context)
@@ -107,7 +103,7 @@ public class Database extends SQLiteOpenHelper
             int renamed = c.getInt(c.getColumnIndexOrThrow(COLUMN_RENAMED));
             int def = c.getInt(c.getColumnIndexOrThrow(COLUMN_DEFAULT));
 
-            TaskList result = new TaskList(id,title,(renamed == 1 ? true : false));
+            TaskList result = new TaskList(id,title, (renamed == 1) );
             result.bDefault = (def == 1);
             return result;
         }
@@ -184,7 +180,7 @@ public class Database extends SQLiteOpenHelper
                 + COLUMN_ID + " TEXT NOT NULL, "
                 + COLUMN_LISTID + " TEXT NOT NULL, "
                 + COLUMN_TITLE + " TEXT NOT NULL, "
-                + COLUMN_UPDATED   + " INTEGER, "
+                + COLUMN_UPDATED   + " INTEGER DEFAULT 0, "
                 + COLUMN_NOTES   + " TEXT NOT NULL, "
                 + COLUMN_DUE   + " INTEGER NOT NULL, "
                 + COLUMN_COMPLETE   + " INTEGER DEFAULT 0, "
@@ -218,6 +214,7 @@ public class Database extends SQLiteOpenHelper
             values.put(Tasks.COLUMN_COMPLETE, task.completed);
             values.put(Tasks.COLUMN_DUE, task.due.getTime());
             values.put(Tasks.COLUMN_DELETED, task.deleted);
+            values.put(Tasks.COLUMN_UPDATED, task.updated.getTime());
             return values;
         }
     }
@@ -262,10 +259,7 @@ public class Database extends SQLiteOpenHelper
     {
         Log.d(TAG,"updateTask");
         String where = String.format("%s='%s' AND %s='%s'", Tasks.COLUMN_ID, task.id, Tasks.COLUMN_LISTID, task.listId);
-
         ContentValues values = Tasks.getValues(task);
-        //TODO, should this be set on add too? Can at least be the default value
-        values.put(Tasks.COLUMN_UPDATED, task.updated.getTime());
 
         update(Tasks.TABLE_NAME, values, where);
     }
