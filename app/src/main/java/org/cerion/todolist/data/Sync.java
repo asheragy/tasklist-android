@@ -32,9 +32,7 @@ public class Sync
 
     public static final int RESULT_UNKNOWN = -1;
     public static final int RESULT_SUCCESS = 0;
-    public static final int RESULT_AUTHERROR = 1;
-    public static final int RESULT_NO_GOOGLE_ACCOUNT = 2;
-    public static final int RESULT_GET_TOKEN_ERROR = 3;
+    public static final int RESULT_FAILED = 1;
 
     //Instance variablesr
     private SimpleDateFormat mDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
@@ -46,11 +44,8 @@ public class Sync
 
     public interface Callback
     {
-        //Unable to verify account or get sync token
-        void onAuthError(int result, Exception e);
-
-        //A non-successful sync can still have data changed
-        void onSyncFinish(int result, boolean bDataChanged, Exception e);
+        void onAuthError(Exception e); //Unable to verify account or get sync token
+        void onSyncFinish(int result, Exception e);
     }
 
     public static void syncTaskLists(Context context, Callback callback)
@@ -58,7 +53,7 @@ public class Sync
         getTokenAndSync(context,callback);
     }
 
-    public Sync(Context context, String sAuthKey)
+    private Sync(Context context, String sAuthKey)
     {
         mDb = Database.getInstance(context);
         mAPI = new TasksAPI(sAuthKey);
@@ -143,7 +138,7 @@ public class Sync
                     if(mAPI.taskLists.update(dbList))
                     {
                         //Save state in db to indicate rename was successful
-                        dbList.setRenamed(false);
+                        dbList.clearRenamed();
                         mDb.taskLists.update(dbList);
                         dbToGoogle[SYNC_CHANGE_LIST]++;
                     }
@@ -160,15 +155,14 @@ public class Sync
         //Check for task changes
         if(googleLists.size() != dbLists.size())//TODO, when adding/deleting list modify other array so both match at this point
             Log.e(TAG,"ERROR: list sizes do not match");
-        //Use web lists since it has updated time set which we need for comparisons
-        ArrayList<TaskList> lists = googleLists;
 
-        for(TaskList list : lists)
+        //Loop web lists since it has updated time set which we need for comparisons
+        for(TaskList list : googleLists)
             syncTasks(list);
 
-        //Save results
-        Date lastSync = new Date();
-        mDb.setSyncKey("lastSync", lastSync.toString());
+        //Global last sync is only used in prefs and for UI purposes only
+        //Date lastSync = new Date();
+        //mDb.setSyncKey("lastSync", lastSync.toString());
 
         mDb.print();
 
@@ -197,7 +191,7 @@ public class Sync
         }
 
         ArrayList<Task> webTasks = null;
-        if (dtLastUpdated == null) //TODO or reread
+        if (dtLastUpdated == null)
         {
             Log.d(TAG, "New list, getting all");
             webTasks = mAPI.tasks.getList(listId, null);
@@ -213,30 +207,36 @@ public class Sync
         //else
         //    Log.d(TAG, "No changes");
 
-        dbTasks = mDb.getTasks(listId);
-
+        dbTasks = mDb.tasks.getList(listId);
         if (webTasks != null) {
             for (Task task : webTasks) {
                 Task dbTask = getTask(dbTasks, task.id);
                 if (dbTask != null) {
                     if (task.deleted) {
+                        mDb.tasks.delete(task);
                         googleToDb[SYNC_DELETE_TASK]++;
-                        mDb.deleteTask(task);
-                    } else {
-                        googleToDb[SYNC_CHANGE_TASK]++;
-                        mDb.updateTask(task);
-                        //TODO conflicts, nothing to do for now just log when it happens...
+                        dbTasks.remove(dbTask);
+                    } else if(dbTask.deleted) {
+                        Log.d(TAG,"Ignoring update since deleted on local"); //Local task is deleted and will be handled on next phase
+                    }
+                    else {
+                        //Conflict
+                        if(dbTask.updated.getTime() > task.updated.getTime())
+                            Log.e(TAG,"Conflict: Local task was updated most recently");
+                        else {
+                            dbTasks.remove(dbTask);
+                            mDb.tasks.update(task);
+                            googleToDb[SYNC_CHANGE_TASK]++;
+                        }
+
                     }
                 } else if (task.deleted) {
-                    //Task was deleted from web before it was ever added to our database
+                    Log.d(TAG,"Ignoring web delete since record was never added locally");
                 } else {
-                    mDb.addTask(task);
+                    mDb.tasks.add(task);
                     googleToDb[SYNC_ADD_TASK]++;
                 }
             }
-
-            //Web tasks modified database, reget list for next loop incase something changed
-            dbTasks = mDb.getTasks(listId);
         }
 
 
@@ -257,17 +257,17 @@ public class Sync
                 //Deleted tasks get processed then deleted from database
                 //Modified time is not required but should be logged for potential bugs elsewhere
                 if(!bModified)
-                    Log.d(TAG,"ERROR, deleted task not modified");
+                    Log.e(TAG,"ERROR, deleted task not modified");
 
                 if(task.hasTempId()) //If never added just delete from local database
                 {
-                    mDb.deleteTask(task);
+                    mDb.tasks.delete(task);
                 }
                 else if (mAPI.tasks.delete(task))
                 {
+                    mDb.tasks.delete(task);
                     dbToGoogle[SYNC_DELETE_TASK]++;
                     bListUpdated = true;
-                    mDb.deleteTask(task);
                 }
 
             }
@@ -289,25 +289,14 @@ public class Sync
                 if(mAPI.tasks.update(task)) {
                     dbToGoogle[SYNC_CHANGE_TASK]++;
                     bListUpdated = true;
-                    //Log.d(TAG, "Modified: " + task.title);
                 }
             }
 
         }
 
-
         Date updated = list.updated;
-
         if (bListUpdated) {
-            //TODO, get single list instead of all
-            ArrayList<TaskList> lists = null;
-            try {
-                lists = mAPI.taskLists.getList();
-            } catch (TasksAPI.TasksAPIException e) {
-                e.printStackTrace();
-            }
-
-            TaskList updatedList = TaskList.get(lists, listId);
+            TaskList updatedList = mAPI.taskLists.get(list.id);
             if (updatedList != null) {
                 Log.d(TAG, "New Updated = " + updatedList.updated);
                 updated = updatedList.updated; //Updated modified time
@@ -320,9 +309,9 @@ public class Sync
 
     private static void getTokenAndSync(final Context context, final Callback callback)
     {
-        if(false) //Emulator, use manual code
+        if(true) //Emulator, use manual code
         {
-            String token = "ya29.yAEsn2LhSdItkaLJSwXBZm9e51-OtIHxpY5FRfIgFHopAElTiAeGr_AHYncfefM_AbgLmJw";
+            String token = "ya29.0gGfhOXfgZcyuQcJ3m-OXNLCyHJsAT62EKMUC3tydREL04J5JjMmDeEjCspH7ckppextU8g";
             SyncTask task = new SyncTask(context,token,callback);
             task.execute();
             return;
@@ -367,13 +356,13 @@ public class Sync
 
                     }
                     catch (Exception e) {
-                        callback.onAuthError(RESULT_GET_TOKEN_ERROR,e);
+                        callback.onAuthError(e);
                     }
                 }
             }, null);
         }
         else
-            callback.onAuthError(RESULT_NO_GOOGLE_ACCOUNT,null);
+            callback.onAuthError(null);
 
 
         Log.d(TAG, "Getting Token END");
@@ -406,7 +395,7 @@ public class Sync
             } catch (TasksAPI.TasksAPIException e) {
                 mError = e;
                 if(e.mCode == 401)
-                    mResult = RESULT_AUTHERROR;
+                    mResult = RESULT_FAILED;
             }
 
             for(int i = 0; i < sync.dbToGoogle.length; i++) {
@@ -424,7 +413,7 @@ public class Sync
             if(mResult == RESULT_SUCCESS)
                 Prefs.savePrefDate(mContext,Prefs.KEY_LAST_SYNC, new Date());
 
-            mCallback.onSyncFinish(mResult,mChanges > 0,mError);
+            mCallback.onSyncFinish(mResult,mError);
         }
     }
 

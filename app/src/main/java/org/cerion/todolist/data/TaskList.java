@@ -33,15 +33,12 @@ public class TaskList implements Serializable
         return title;
     }
 
-    public void setRenamed(boolean bRenamed)
+    public void clearRenamed()
     {
         if(renamed == -1)
             Log.e("TaskList","renamed undefined in TaskList");
 
-        if(bRenamed)
-            renamed = 1;
-        else
-            renamed = 0;
+        renamed = 0;
     }
 
 

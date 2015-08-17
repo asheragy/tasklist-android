@@ -15,11 +15,12 @@ import java.util.Map;
 
 public class Database extends SQLiteOpenHelper
 {
-    public static final String TAG = "Database";
-    public static final int DATABASE_VERSION = 6;
-    public static final String DATABASE_NAME = "tasks.db";
+    private static final String TAG = "Database";
+    private static final int DATABASE_VERSION = 6;
+    private static final String DATABASE_NAME = "tasks.db";
 
     public TaskLists taskLists;
+    public Tasks tasks;
 
     //Singleton class
     private static Database mInstance;
@@ -27,6 +28,7 @@ public class Database extends SQLiteOpenHelper
     {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
         taskLists = new TaskLists(this);
+        tasks = new Tasks(this);
     }
     public synchronized static Database getInstance(Context context)
     {
@@ -166,6 +168,7 @@ public class Database extends SQLiteOpenHelper
 
     public static class Tasks
     {
+        private Database parent = null;
         public static final String TABLE_NAME = "tasks";
         public static final String COLUMN_ID = "id";
         public static final String COLUMN_LISTID = "listid";
@@ -186,6 +189,11 @@ public class Database extends SQLiteOpenHelper
                 + COLUMN_COMPLETE   + " INTEGER DEFAULT 0, "
                 + COLUMN_DELETED   + " INTEGER DEFAULT 0, "
                 + "PRIMARY KEY (id,listid))";
+
+        Tasks(Database db)
+        {
+            parent = db;
+        }
 
         private static Task get(Cursor c)
         {
@@ -217,6 +225,56 @@ public class Database extends SQLiteOpenHelper
             values.put(Tasks.COLUMN_UPDATED, task.updated.getTime());
             return values;
         }
+
+        public void add(Task task)
+        {
+            Log.d(TAG, "addTask: " + task.title);
+
+            ContentValues values = getValues(task);
+            values.put(COLUMN_ID, task.id);
+            values.put(COLUMN_LISTID, task.listId);
+
+            parent.insert(TABLE_NAME, values);
+        }
+
+        public void delete(Task task)
+        {
+            Log.d(TAG, "deleteTask: " + task.title);
+            String where = COLUMN_ID + "='" + task.id + "' AND " + COLUMN_LISTID + "='" + task.listId + "'";
+            parent.delete(TABLE_NAME, where);
+        }
+
+        public void update(Task task)
+        {
+            Log.d(TAG,"updateTask");
+            String where = String.format("%s='%s' AND %s='%s'", COLUMN_ID, task.id, COLUMN_LISTID, task.listId);
+            ContentValues values = getValues(task);
+
+            parent.update(TABLE_NAME, values, where);
+        }
+
+        public ArrayList<Task> getList(String listId)
+        {
+            SQLiteDatabase db = parent.getReadableDatabase();
+            String sWhere = null;
+            if(listId != null)
+                sWhere = COLUMN_LISTID + "='" + listId + "'";
+
+            Cursor c = db.query(TABLE_NAME, null, sWhere, null, null, null, null);
+            ArrayList<Task> result = new ArrayList<>();
+
+            if(c != null)
+            {
+                while (c.moveToNext())
+                {
+                    Task task = Tasks.get(c);
+                    result.add(task);
+                }
+                c.close();
+            }
+
+            return result;
+        }
     }
 
     @Override
@@ -235,33 +293,6 @@ public class Database extends SQLiteOpenHelper
         db.execSQL("DROP TABLE IF EXISTS " + Tasks.TABLE_NAME);
         db.execSQL("DROP TABLE IF EXISTS " + TaskLists.TABLE_NAME);
         onCreate(db);
-    }
-
-    public void addTask(Task task)
-    {
-        Log.d(TAG, "addTask: " + task.title);
-
-        ContentValues values = Tasks.getValues(task);
-        values.put(Tasks.COLUMN_ID, task.id);
-        values.put(Tasks.COLUMN_LISTID, task.listId);
-
-        insert(Tasks.TABLE_NAME, values);
-    }
-
-    public void deleteTask(Task task)
-    {
-        Log.d(TAG, "deleteTask: " + task.title);
-        String where = Tasks.COLUMN_ID + "='" + task.id + "' AND " + Tasks.COLUMN_LISTID + "='" + task.listId + "'";
-        delete(Tasks.TABLE_NAME, where);
-    }
-
-    public void updateTask(Task task)
-    {
-        Log.d(TAG,"updateTask");
-        String where = String.format("%s='%s' AND %s='%s'", Tasks.COLUMN_ID, task.id, Tasks.COLUMN_LISTID, task.listId);
-        ContentValues values = Tasks.getValues(task);
-
-        update(Tasks.TABLE_NAME, values, where);
     }
 
     public void setTaskIds(Task task, String sNewId, String sNewListId)
@@ -288,29 +319,6 @@ public class Database extends SQLiteOpenHelper
         values = new ContentValues();
         values.put(Tasks.COLUMN_LISTID, sNewId);
         update(Tasks.TABLE_NAME,values,where);
-    }
-
-    public ArrayList<Task> getTasks(String listId)
-    {
-        SQLiteDatabase db = this.getReadableDatabase();
-        String sWhere = null;
-        if(listId != null)
-            sWhere = Tasks.COLUMN_LISTID + "='" + listId + "'";
-
-        Cursor c = db.query(Tasks.TABLE_NAME,null,sWhere,null,null,null, null);
-        ArrayList<Task> result = new ArrayList<>();
-
-        if(c != null && c.moveToFirst())
-        {
-            do
-            {
-                Task task = Tasks.get(c);
-                result.add(task);
-            }
-            while (c.moveToNext());
-        }
-
-        return result;
     }
 
     public void setSyncKey(String key, String value)
@@ -359,22 +367,26 @@ public class Database extends SQLiteOpenHelper
         return result;
     }
 
-    public void logLists()
+    public void clearSyncKeys()
     {
-        Log.d(TAG,"--- TaskLists ---");
+        delete(Sync.TABLE_NAME,null);
+    }
+
+    private void logListsTable()
+    {
+        Log.d(TAG,"--- Table: " + TaskLists.TABLE_NAME);
         ArrayList<TaskList> lists = this.taskLists.getList();
         for(TaskList list : lists)
         {
             String id = String.format("%1$-" + 43 + "s", list.id);
-
             Log.d(TAG,id + " " + list.title);
         }
     }
 
-    public void logTasks()
+    private void logTasksTable()
     {
-        Log.d(TAG,"--- TaskLists ---");
-        ArrayList<Task> tasks = this.getTasks(null);
+        Log.d(TAG,"--- Table: " + Tasks.TABLE_NAME);
+        ArrayList<Task> tasks = this.tasks.getList(null);
         for(Task task : tasks)
         {
             String listid = String.format("%1$-" + 43 + "s", task.listId);
@@ -383,10 +395,30 @@ public class Database extends SQLiteOpenHelper
         }
     }
 
+    private void logSyncTable()
+    {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Log.d(TAG,"--- Table: " + Sync.TABLE_NAME);
+        Cursor c = db.query(Sync.TABLE_NAME,new String[]{ Sync.COLUMN_KEY, Sync.COLUMN_VALUE },null,null,null,null, null);
+
+        if(c != null)
+        {
+            while(c.moveToNext())
+            {
+                String s0 = c.getString(0);
+                String s1 = c.getString(1);
+                String s = String.format("%1$-" + 55 + "s", s0) + "\t" + s1;
+                Log.d(TAG, s);
+            }
+            c.close();
+        }
+    }
+
     public void log()
     {
-        logLists();
-        logTasks();
+        logListsTable();
+        logTasksTable();
+        logSyncTable();
     }
 
     public void print()

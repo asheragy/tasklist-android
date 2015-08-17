@@ -14,17 +14,15 @@ import org.cerion.todolist.data.Task;
 
 import java.util.List;
 
-public class TaskListAdapter extends ArrayAdapter<Task> {
-    Context mContext;
-    int mResourceId;
-    List<Task> mTasks;
+class TaskListAdapter extends ArrayAdapter<Task> {
+    private static final int RESOURCE_ID = R.layout.row_list;
+    private Context mContext;
+    private List<Task> mTasks;
 
-    public TaskListAdapter(Context context, int resource, List<Task> objects) {
-        super(context, resource, objects);
+    public TaskListAdapter(Context context, List<Task> objects) {
+        super(context, RESOURCE_ID, objects);
         mContext = context;
-        mResourceId = resource;
         mTasks = objects;
-
     }
 
     private static class ViewHolder {
@@ -42,7 +40,7 @@ public class TaskListAdapter extends ArrayAdapter<Task> {
 
         if(convertView == null) {
             LayoutInflater inflater = ((Activity)mContext).getLayoutInflater();
-            convertView = inflater.inflate(mResourceId, parent, false);
+            convertView = inflater.inflate(RESOURCE_ID, parent, false);
 
             viewHolder = new ViewHolder();
             viewHolder.title = (TextView)convertView.findViewById(R.id.title);
@@ -57,7 +55,11 @@ public class TaskListAdapter extends ArrayAdapter<Task> {
         }
 
         viewHolder.id.setText(task.id);
-        viewHolder.title.setText(task.title.length() > 0 ? task.title : "<Blank>");
+
+        String sTitle = task.title.length() > 0 ? task.title : "<Blank>";
+        if(task.deleted)
+            sTitle = "*DELETED* " + sTitle;
+        viewHolder.title.setText(sTitle);
         viewHolder.notes.setText(task.notes);
 
         if(task.completed)

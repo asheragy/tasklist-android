@@ -6,14 +6,15 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 
 import java.util.Date;
+import java.util.Map;
 
 public class Prefs
 {
-    public static final String TAG = "prefs";
+    private static final String TAG = "prefs";
     public static final String KEY_AUTHTOKEN = "authToken";
     public static final String KEY_AUTHTOKEN_DATE = "authTokenDate";
     public static final String KEY_LAST_SYNC = "lastSync";
-    public static final String KEY_ACCOUNT_NAME = "accountName2";
+    public static final String KEY_ACCOUNT_NAME = "accountName";
 
     public static void savePref(Context context, String key, String value)
     {
@@ -21,6 +22,14 @@ public class Prefs
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString(key,value);
+        editor.apply();
+    }
+
+    public static void remove(Context context, String key)
+    {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.remove(key);
         editor.apply();
     }
 
@@ -47,5 +56,17 @@ public class Prefs
         Date date = new Date();
         date.setTime(lDate);
         return date;
+    }
+
+    public static void logPrefs(Context context)
+    {
+        Log.d(TAG,"--- Prefs ---");
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        Map<String,?> keys = prefs.getAll();
+
+        for(Map.Entry<String,?> entry : keys.entrySet()){
+            Log.d("map values",entry.getKey() + ": " +
+                    entry.getValue().toString());
+        }
     }
 }

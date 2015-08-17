@@ -30,7 +30,6 @@ public class TaskActivity extends ActionBarActivity implements DatePickerFragmen
 
     private Task mTask;
     private TaskList mCurrentList;
-    private TaskList mDefaultList;
     private boolean mNewTask = false;
 
     private View mEditButtons;
@@ -48,15 +47,14 @@ public class TaskActivity extends ActionBarActivity implements DatePickerFragmen
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_task);
 
-        //TODO, pass in current list + position
         mTask = (Task)getIntent().getSerializableExtra(EXTRA_TASK);
         mCurrentList = (TaskList)getIntent().getSerializableExtra(EXTRA_TASKLIST);
-        mDefaultList = (TaskList)getIntent().getSerializableExtra(EXTRA_DEFAULT_LIST);
+        TaskList defaultList = (TaskList)getIntent().getSerializableExtra(EXTRA_DEFAULT_LIST);
 
         if(mTask == null) {
             mNewTask = true;
             //If current list is "All Tasks" then add new to default list
-            mTask = new Task( mCurrentList.id == null ? mDefaultList.id : mCurrentList.id );
+            mTask = new Task( mCurrentList.id == null ? defaultList.id : mCurrentList.id );
         }
 
         mTextTaskId = (TextView)findViewById(R.id.taskid);
@@ -140,7 +138,7 @@ public class TaskActivity extends ActionBarActivity implements DatePickerFragmen
         newFragment.show(getFragmentManager(), "datePicker");
     }
 
-    public void setEditMode(boolean bEdit)
+    private void setEditMode(boolean bEdit)
     {
         if(bEdit)
             mEditButtons.setVisibility(View.VISIBLE);
@@ -149,7 +147,7 @@ public class TaskActivity extends ActionBarActivity implements DatePickerFragmen
 
     }
 
-    public void onFinish(boolean bSave)
+    private void onFinish(boolean bSave)
     {
         if(bSave) {
             mTask.setModified();
@@ -159,9 +157,9 @@ public class TaskActivity extends ActionBarActivity implements DatePickerFragmen
             Database database = Database.getInstance(this);
 
             if (mNewTask)
-                database.addTask(mTask);
+                database.tasks.add(mTask);
             else
-                database.updateTask(mTask);
+                database.tasks.update(mTask);
 
             setResult(RESULT_OK);
         }
@@ -171,7 +169,7 @@ public class TaskActivity extends ActionBarActivity implements DatePickerFragmen
         finish();
     }
 
-    public void loadTask(Task task)
+    private void loadTask(Task task)
     {
         TaskList parent = mCurrentList;//TaskList.get(MainActivity.mTaskLists,task.listId);
         setTitle(parent.title);

@@ -1,7 +1,5 @@
 package org.cerion.todolist.ui;
 
-
-import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.DialogFragment;
 import android.content.Context;
@@ -53,6 +51,8 @@ List add delete update Device
 conflict delete/update both directions
 conflict delete both
 
+conflict both modified but 1 completed, both directions, completed should stick
+
 Add list on web with tasks (should be fine)
 Add list on db with tasks then sync (ids should all be correct)
 Add list on db with tasks then delete task and sync (no leftover deletions)
@@ -60,7 +60,10 @@ delete list on Web, all tasks should get deleted
 
 */
 
-public class MainActivity extends ActionBarActivity implements TaskListDialogListener {
+//TODO, add account switching, need to remove all non-temp id tasks
+public class MainActivity extends ActionBarActivity
+        implements TaskListDialogListener, AdapterView.OnItemClickListener
+{
     private static final String TAG = MainActivity.class.getSimpleName();
     //private static final String STATE_NAV_INDEX = "stateNavIndex";
 
@@ -75,12 +78,12 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
     private ArrayList<TaskList> mTaskLists;
     private ArrayAdapter<TaskList> mActionBarAdapter;
 
-    private static String mCurrListId = null;
+    private static TaskList mCurrList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.d(TAG,"onCreate " + (savedInstanceState == null ? "null" : "saveState"));
+        Log.d(TAG, "onCreate " + (savedInstanceState == null ? "null" : "saveState"));
         setContentView(R.layout.activity_main);
 
         mActionBar = getSupportActionBar();
@@ -88,6 +91,7 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
         mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
         mProgressBar.setVisibility(View.INVISIBLE);
         getListView().setEmptyView(findViewById(android.R.id.empty));
+        getListView().setOnItemClickListener(this);
         registerForContextMenu(getListView());
 
         findViewById(R.id.syncImage).setOnClickListener(new View.OnClickListener() {
@@ -102,16 +106,10 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
             public void onClick(View v) {
                 Database db = Database.getInstance(MainActivity.this);
                 db.log();
+                Prefs.logPrefs(MainActivity.this);
             }
         });
 
-
-        getListView().setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Task task = (Task) getListView().getItemAtPosition(position);
-                onOpenTask(task);
-            }
-        });
 
 
         updateLastSync();
@@ -160,6 +158,12 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
 
     }
 
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        Task task = (Task) getListView().getItemAtPosition(position);
+        onOpenTask(task);
+    }
+
     public ListView getListView() {
         return (ListView) findViewById(android.R.id.list);
     }
@@ -181,21 +185,20 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
             setInSync(true);
             Sync.syncTaskLists(this, new Sync.Callback() {
                 @Override
-                public void onAuthError(int result, Exception e) {
+                public void onAuthError(Exception e) {
                     setInSync(false);
 
-                    if(result == Sync.RESULT_NO_GOOGLE_ACCOUNT) {
-                        onChooseAccount(); //select or add google account
+                    if(e == null) {
+                        onChooseAccount();
                     }
                     else {
-                        DialogFragment dialog = AlertDialogFragment.newInstance("Error", "Auth Error");
+                        DialogFragment dialog = AlertDialogFragment.newInstance("Auth Error", e.getMessage());
                         dialog.show(getFragmentManager(), "dialog");
                     }
                 }
 
                 @Override
-                //TODO, remove data changed paraemter and just always refresh
-                public void onSyncFinish(int result, boolean bDataChanged, Exception e) {
+                public void onSyncFinish(int result, Exception e) {
                     setInSync(false);
 
                     if(result == Sync.RESULT_SUCCESS) {
@@ -210,8 +213,7 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
                         dialog.show(getFragmentManager(), "dialog");
                     }
 
-                    if(bDataChanged)
-                        refreshAll();
+                    refreshAll(); //refresh since data may have changed
                 }
 
             });
@@ -243,7 +245,14 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
         Intent intent = new Intent(this, TaskActivity.class);
         if(task != null)
             intent.putExtra(TaskActivity.EXTRA_TASK, task);
-        intent.putExtra(TaskActivity.EXTRA_DEFAULT_LIST, getDefaultList());
+
+        TaskList defaultList = null;
+        for(TaskList list : mTaskLists) {
+            if (list.bDefault)
+                defaultList = list;
+        }
+
+        intent.putExtra(TaskActivity.EXTRA_DEFAULT_LIST, defaultList);
         intent.putExtra(TaskActivity.EXTRA_TASKLIST, mTaskLists.get(mActionBar.getSelectedNavigationIndex()));
         startActivityForResult(intent, EDIT_TASK_REQUEST);
     }
@@ -297,7 +306,7 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
             onAddTaskList();
         }
         else if(id == R.id.action_rename) {
-            TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME,getCurrentList());
+            TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME,mCurrList);
             dialog.show(getFragmentManager(), "dialog");
         }
         else if(id == R.id.action_add_task) {
@@ -306,8 +315,59 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
         else if(id == R.id.action_account) {
             onChooseAccount();
         }
+        else if(id == R.id.action_logout) {
+            onLogout();
+        }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void onLogout() {
+        Database db = Database.getInstance(MainActivity.this);
+        db.clearSyncKeys();
+
+        //Delete all non-temp Id records, also remove records marked as deleted
+        TaskList unsyncedTaskList = null; //if needed we will move unsynced tasks to a new list
+        ArrayList<Task> tasks = db.tasks.getList(null);
+        for(Task task : tasks)
+        {
+            if(!task.hasTempId() || task.deleted)
+                db.tasks.delete(task);
+            else {
+                //Since we are also removing synced lists, check if we need to move this task to an unsynced list
+                TaskList list = new TaskList(task.listId,"");
+                if(!list.hasTempId()) {
+                    if(unsyncedTaskList == null) {
+                        //TODO, we should just move these to the default list and delete it after the first sync
+                        unsyncedTaskList = new TaskList(TaskList.generateId(),"Unsynced tasks");
+                        db.taskLists.add(unsyncedTaskList);
+                    }
+
+                    //Move this task to unsynced task list
+                    db.setTaskIds(task,task.id,unsyncedTaskList.id);
+                }
+            }
+        }
+
+        ArrayList<TaskList> lists = db.taskLists.getList();
+        for(TaskList list : lists)
+        {
+            if(!list.hasTempId())
+                db.taskLists.delete(list);
+        }
+
+        //Remove prefs related to sync/account
+        Prefs.remove(this,Prefs.KEY_LAST_SYNC);
+        Prefs.remove(this,Prefs.KEY_ACCOUNT_NAME);
+        Prefs.remove(this,Prefs.KEY_AUTHTOKEN);
+        Prefs.remove(this,Prefs.KEY_AUTHTOKEN_DATE);
+
+        refreshAll();
+        updateLastSync();
+
+        //Log data which should be empty except for un-synced records
+        db.log();
+        Prefs.logPrefs(MainActivity.this);
     }
 
     public void onChooseAccount()
@@ -340,14 +400,14 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
                 Log.d(TAG,"onDelete: " + task.title);
                 db = Database.getInstance(this);
                 task.setDeleted(true);
-                db.updateTask(task);
+                db.tasks.update(task);
                 refreshTasks();
                 return true;
             case R.id.undelete:
                 Log.d(TAG,"onUnDelete: " + task.title);
                 db = Database.getInstance(this);
                 task.setDeleted(false);
-                db.updateTask(task);
+                db.tasks.update(task);
                 refreshTasks();
                 return true;
 
@@ -356,7 +416,7 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
                 db = Database.getInstance(this);
                 task.title += "x";
                 task.setModified();
-                db.updateTask(task);
+                db.tasks.update(task);
                 refreshTasks();
                 return true;
 
@@ -367,6 +427,7 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
 
     public void refreshAll()
     {
+        //TODO, when lists are refreshed, why does it not load the tasks for that list afterward
         refreshLists();
         refreshTasks();
     }
@@ -382,7 +443,11 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
         else
             mTaskLists.clear();
 
-        mTaskLists.add(new TaskList(null, "All Tasks")); //null is placeholder for "all lists"
+        TaskList allTasks = new TaskList(null, "All Tasks"); //null is placeholder for "all lists"
+        if(mCurrList == null)
+            mCurrList = allTasks;
+
+        mTaskLists.add(allTasks);
         for(TaskList list : dbLists)
             mTaskLists.add(list);
         mTaskLists.add(new TaskList(NEW_LISTID, "<Add List>"));
@@ -396,11 +461,11 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
                     if(itemPosition == mActionBar.getNavigationItemCount() - 1) {
                         onAddTaskList();
                         //Prefered action is to prevent current selection, not select the old one...
-                        mActionBar.setSelectedNavigationItem( getListPosition(mCurrListId) );
+                        mActionBar.setSelectedNavigationItem( getListPosition(mCurrList) );
                     }
                     else {
                         Log.d(TAG,"navigation listener, refreshing tasks");
-                        mCurrListId = mTaskLists.get(itemPosition).id;
+                        mCurrList = mTaskLists.get(itemPosition);
                         refreshTasks();
                     }
 
@@ -414,21 +479,22 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
         else
             mActionBarAdapter.notifyDataSetChanged();
 
-        mActionBar.setSelectedNavigationItem(getListPosition(mCurrListId));
+        mActionBar.setSelectedNavigationItem(getListPosition(mCurrList));
     }
 
     public void refreshTasks()
     {
         Log.d(TAG,"refreshTasks");
         Database db = Database.getInstance(this);
-        ArrayList<Task> tasks = db.getTasks(mCurrListId);
+        ArrayList<Task> tasks = db.tasks.getList(mCurrList.id);
 
-        TaskListAdapter myAdapter = new TaskListAdapter(this,R.layout.row_list, tasks);
+        TaskListAdapter myAdapter = new TaskListAdapter(this, tasks);
         setListAdapter(myAdapter);
     }
 
-    private int getListPosition(String id)
+    private int getListPosition(TaskList list)
     {
+        String id = list.id;
         int index = 0;
         if(id != null) {
             for (int i = 1; i < mActionBarAdapter.getCount() - 1; i++) { //Skip first and last list
@@ -439,23 +505,6 @@ public class MainActivity extends ActionBarActivity implements TaskListDialogLis
         }
 
         return index;
-    }
-
-    //TODO, save curr/default as TaskList variables that are always valid, then we don't need these functions
-    public TaskList getCurrentList()
-    {
-        return mActionBarAdapter.getItem(mActionBar.getSelectedNavigationIndex() );
-    }
-
-    private TaskList getDefaultList() {
-        for(TaskList list : mTaskLists) {
-            if(list.id == null)
-                continue;
-            if(list.bDefault)
-                return list;
-        }
-
-        return null;
     }
 
 }
