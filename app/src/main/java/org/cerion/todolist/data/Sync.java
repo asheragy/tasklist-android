@@ -6,6 +6,7 @@ import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.content.Context;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -27,14 +28,9 @@ public class Sync
     private static final int SYNC_CHANGE_TASK = 4;
     private static final int SYNC_DELETE_TASK = 5;
 
-
     private static final String AUTH_TOKEN_TYPE = "Manage your tasks"; //human readable version
 
-    public static final int RESULT_UNKNOWN = -1;
-    public static final int RESULT_SUCCESS = 0;
-    public static final int RESULT_FAILED = 1;
-
-    //Instance variablesr
+    //Instance variables
     private SimpleDateFormat mDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
     private TasksAPI mAPI = null;
     private Database mDb = null;
@@ -45,7 +41,7 @@ public class Sync
     public interface Callback
     {
         void onAuthError(Exception e); //Unable to verify account or get sync token
-        void onSyncFinish(int result, Exception e);
+        void onSyncFinish(boolean bSuccess, Exception e);
     }
 
     public static void syncTaskLists(Context context, Callback callback)
@@ -61,49 +57,59 @@ public class Sync
         mSyncKeys = mDb.getSyncKeys();
     }
 
-    private int run() throws TasksAPI.TasksAPIException {
+    private boolean run() throws TasksAPI.TasksAPIException {
         ArrayList<TaskList> googleLists = mAPI.taskLists.getList();
         if(googleLists.size() == 0)
-            return RESULT_UNKNOWN;
-
+            return false;
 
         ArrayList<TaskList> dbLists = mDb.taskLists.getList();
 
         //Google->Local (Added or Updated)
-        for(TaskList curr : googleLists)
-        {
+        for(TaskList curr : googleLists) {
             TaskList dbList = TaskList.get(dbLists,curr.id);
-            if(dbList != null)
-            {
-                if(!curr.title.contentEquals(dbList.title))
-                {
+            //--- UPDATE
+            if(dbList != null) {
+                if(!curr.title.contentEquals(dbList.title)) {
                     //Name mismatch, update only if local list was not renamed
-                    if(!dbList.isRenamed())
-                    {
-                        googleToDb[SYNC_CHANGE_LIST]++;
+                    if(!dbList.isRenamed()) {
                         mDb.taskLists.update(curr);
+                        googleToDb[SYNC_CHANGE_LIST]++;
                     }
                 }
             }
-            else //Does not exist locally, add it
-            {
-                googleToDb[SYNC_ADD_LIST]++;
+            //--- MERGE default, first sync only
+            else if(curr.bDefault) {
+                dbList = TaskList.getDefault(dbLists);
+                if(dbList != null) {
+                    if(!dbList.isRenamed()) {
+                        dbList.title = curr.title;
+                        mDb.taskLists.update(dbList);
+                    }
+
+                    mDb.setTaskListId(dbList,curr.id); //assign ID
+                    dbList.id = curr.id;
+                }
+                else
+                    Log.e(TAG,"missing default list");
+            }
+            //--- ADD
+            else { //Does not exist locally, add it
                 mDb.taskLists.add(curr);
+                googleToDb[SYNC_ADD_LIST]++;
+
             }
         }
 
-        //Deleted
+        //--- DELETE
         //Verify database list still exists on web, otherwise it was deleted
-        for(TaskList curr : dbLists)
-        {
+        for(TaskList curr : dbLists) {
             if(curr.hasTempId()) //Temp ids don't exist on web since they have not been created yet
                 continue;
 
             TaskList googleList = TaskList.get(googleLists,curr.id);
-            if(googleList == null)
-            {
-                googleToDb[SYNC_DELETE_LIST]++;
+            if(googleList == null) {
                 mDb.taskLists.delete(curr);
+                googleToDb[SYNC_DELETE_LIST]++;
             }
 
         }
@@ -112,31 +118,30 @@ public class Sync
         if(googleToDb[SYNC_DELETE_LIST] > 0 || googleToDb[SYNC_ADD_LIST] > 0)
             dbLists = mDb.taskLists.getList();
 
-        //Local -> Google
-        for(TaskList dbList : dbLists)
-        {
-            if(dbList.hasTempId())
-            {
+        //Local ----> Google
+        for(TaskList dbList : dbLists) {
+            //--- ADD
+            if(dbList.hasTempId()) {
                 TaskList addedList = mAPI.taskLists.add(dbList);
-                if(addedList != null)
-                {
+                if(addedList != null) {
                     mDb.setTaskListId(dbList, addedList.id);
                     dbList.id = addedList.id;
                     googleLists.add(addedList);
+                    dbToGoogle[SYNC_ADD_LIST]++;
                 }
-
-                dbToGoogle[SYNC_ADD_LIST]++;
+                else {
+                    Log.e(TAG, "Failed to add list");
+                    return false;
+                }
             }
 
+            //--- UPDATE
             if(dbList.isRenamed())
             {
-
                 TaskList googleList = TaskList.get(googleLists,dbList.id);
 
-                if (googleList != null)
-                {
-                    if(mAPI.taskLists.update(dbList))
-                    {
+                if (googleList != null) {
+                    if(mAPI.taskLists.update(dbList)) {
                         //Save state in db to indicate rename was successful
                         dbList.clearRenamed();
                         mDb.taskLists.update(dbList);
@@ -145,31 +150,27 @@ public class Sync
                     else
                         Log.d(TAG,"Failed to rename list");
                 }
-                else //This shouldn't be possible, if list does not exist it should have deleted database list in earlier code
-                    Log.d(TAG,"Error: Failed to find list to update");
+                else {
+                    //This shouldn't be possible, if list does not exist it should have deleted database list in earlier code
+                    Log.e(TAG,"Error: Failed to find list to update");
+                    return false;
+                }
+
             }
 
+            //--- DELETE LATER, allow task lists to be deleted locally, remove entry from array if success so we don't loop below
         }
-
-
-        //Check for task changes
-        if(googleLists.size() != dbLists.size())//TODO, when adding/deleting list modify other array so both match at this point
-            Log.e(TAG,"ERROR: list sizes do not match");
 
         //Loop web lists since it has updated time set which we need for comparisons
         for(TaskList list : googleLists)
             syncTasks(list);
 
-        //Global last sync is only used in prefs and for UI purposes only
-        //Date lastSync = new Date();
-        //mDb.setSyncKey("lastSync", lastSync.toString());
-
-        mDb.print();
+        //mDb.print();
 
         Log.d(TAG, "Google to DB: Lists (" + googleToDb[0] + "," + googleToDb[1] + "," + googleToDb[2] + ") Tasks (" + googleToDb[3] + "," + googleToDb[4] + "," + googleToDb[5] + ")");
         Log.d(TAG, "DB to Google: Lists (" + dbToGoogle[0] + "," + dbToGoogle[1] + "," + dbToGoogle[2] + ") Tasks (" + dbToGoogle[3] + "," + dbToGoogle[4] + "," + dbToGoogle[5] + ")");
 
-        return RESULT_SUCCESS;
+        return true;
     }
 
 
@@ -309,9 +310,10 @@ public class Sync
 
     private static void getTokenAndSync(final Context context, final Callback callback)
     {
-        if(true) //Emulator, use manual code
+        Log.d(TAG, Build.FINGERPRINT + "\t" + Build.PRODUCT);
+        if(Build.PRODUCT.contains("vbox")) //Emulator, use manual code
         {
-            String token = "ya29.0gGfhOXfgZcyuQcJ3m-OXNLCyHJsAT62EKMUC3tydREL04J5JjMmDeEjCspH7ckppextU8g";
+            String token = "ya29.1wHtdJIw5UXd7_GkHe4k_CzrbbcfjkvF5n3WtK26Txu0FXAbcAL_7ij0N4lNFT4_uLPhbrA";
             SyncTask task = new SyncTask(context,token,callback);
             task.execute();
             return;
@@ -348,7 +350,7 @@ public class Sync
                         // If the user has authorized your application to use the tasks API a token is available.
                         String token = future.getResult().getString(AccountManager.KEY_AUTHTOKEN);
                         Prefs.savePref(context, Prefs.KEY_AUTHTOKEN, token);
-                        Prefs.savePrefDate(context,Prefs.KEY_AUTHTOKEN_DATE,new Date());
+                        Prefs.savePrefDate(context, Prefs.KEY_AUTHTOKEN_DATE,new Date());
 
                         Log.d(TAG,"Starting SyncTask");
                         SyncTask task = new SyncTask(context,token,callback);
@@ -373,7 +375,7 @@ public class Sync
         private Context mContext;
         private String mAuthToken;
         private Callback mCallback;
-        private int mResult = RESULT_UNKNOWN;
+        private boolean mResult = false;
         private int mChanges = 0;
         private Exception mError = null;
 
@@ -388,14 +390,11 @@ public class Sync
         protected Void doInBackground(Void... params) {
             Sync sync = new Sync(mContext,mAuthToken);
 
-            mResult = RESULT_UNKNOWN;
-
             try {
                 mResult = sync.run();
             } catch (TasksAPI.TasksAPIException e) {
                 mError = e;
-                if(e.mCode == 401)
-                    mResult = RESULT_FAILED;
+                mResult = false;
             }
 
             for(int i = 0; i < sync.dbToGoogle.length; i++) {
@@ -410,7 +409,7 @@ public class Sync
         protected void onPostExecute(Void aVoid)
         {
             Log.d(TAG,"Result=" + mResult + " Changes=" + mChanges);
-            if(mResult == RESULT_SUCCESS)
+            if(mResult)
                 Prefs.savePrefDate(mContext,Prefs.KEY_LAST_SYNC, new Date());
 
             mCallback.onSyncFinish(mResult,mError);

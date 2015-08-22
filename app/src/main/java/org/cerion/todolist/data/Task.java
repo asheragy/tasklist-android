@@ -3,19 +3,20 @@ package org.cerion.todolist.data;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 import java.util.Random;
 import java.util.TimeZone;
 
 public class Task implements Serializable {
-    public String id;
-    public String listId;
+    public final String id;
+    public final String listId;
     public String title = "";
     public Date updated = new Date(0);
     public String notes = "";
     public boolean completed;
     public Date due = new Date(0);
     public boolean deleted;
-    private static final SimpleDateFormat mDateFormat = new SimpleDateFormat("EEE, MMM d, yyyy");
+    private static final SimpleDateFormat mDateFormat = new SimpleDateFormat("EEE, MMM d, yyyy", Locale.US);
 
     private static String generateId() {
         Random rand = new Random();

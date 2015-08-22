@@ -50,7 +50,6 @@
             android:layout_height="wrap_content"
             android:text="DUE"
             android:textSize="20sp"
-            android:layout_alignParentRight="true"
             android:layout_gravity="center_vertical"
             android:id="@+id/due"/>
 
@@ -86,27 +85,6 @@
         android:id="@+id/notes"
         android:hint="Notes"
         android:minLines="5" />
-
-
-    <LinearLayout
-        android:id="@+id/edit_buttons"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content">
-
-        <Button
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:text="Cancel"
-            android:layout_weight="1"
-            android:id="@+id/cancelButton"/>
-
-        <Button
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:text="Save"
-            android:layout_weight="1"
-            android:id="@+id/saveButton"/>
-    </LinearLayout>
 
 
 

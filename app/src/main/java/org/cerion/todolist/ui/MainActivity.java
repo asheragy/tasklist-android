@@ -1,5 +1,6 @@
 package org.cerion.todolist.ui;
 
+import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.DialogFragment;
 import android.content.Context;
@@ -41,6 +42,7 @@ import java.util.Date;
 
 /* Checklist
 
+Add a new task when there are 0 task lists, should we always have a default?
 All fields both ways Tasks
 
 Task add delete update WEB
@@ -60,13 +62,10 @@ delete list on Web, all tasks should get deleted
 
 */
 
-//TODO, add account switching, need to remove all non-temp id tasks
 public class MainActivity extends ActionBarActivity
         implements TaskListDialogListener, AdapterView.OnItemClickListener
 {
     private static final String TAG = MainActivity.class.getSimpleName();
-    //private static final String STATE_NAV_INDEX = "stateNavIndex";
-
     private static final int EDIT_TASK_REQUEST = 0;
     private static final int PICK_ACCOUNT_REQUEST = 1;
 
@@ -100,7 +99,6 @@ public class MainActivity extends ActionBarActivity
                 onSync();
             }
         });
-
         findViewById(R.id.logdb).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -109,8 +107,6 @@ public class MainActivity extends ActionBarActivity
                 Prefs.logPrefs(MainActivity.this);
             }
         });
-
-
 
         updateLastSync();
         refreshLists();
@@ -158,23 +154,26 @@ public class MainActivity extends ActionBarActivity
 
     }
 
+    //----- List Activity functions
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         Task task = (Task) getListView().getItemAtPosition(position);
         onOpenTask(task);
     }
 
-    public ListView getListView() {
+    private ListView getListView() {
         return (ListView) findViewById(android.R.id.list);
     }
 
-    public Adapter getListAdapter() {
+    private Adapter getListAdapter() {
         return getListView().getAdapter();
     }
 
-    public void setListAdapter(ListAdapter adapter) {
+    private void setListAdapter(ListAdapter adapter) {
         getListView().setAdapter(adapter);
     }
+
+    //----- END List Activity functions
 
     public void onSync() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -198,10 +197,10 @@ public class MainActivity extends ActionBarActivity
                 }
 
                 @Override
-                public void onSyncFinish(int result, Exception e) {
+                public void onSyncFinish(boolean bSuccess, Exception e) {
                     setInSync(false);
 
-                    if(result == Sync.RESULT_SUCCESS) {
+                    if(bSuccess) {
                         updateLastSync(); //Update last sync time only if successful
                     }
                     else {
@@ -246,27 +245,28 @@ public class MainActivity extends ActionBarActivity
         if(task != null)
             intent.putExtra(TaskActivity.EXTRA_TASK, task);
 
-        TaskList defaultList = null;
-        for(TaskList list : mTaskLists) {
-            if (list.bDefault)
-                defaultList = list;
-        }
+        TaskList defaultList = TaskList.getDefault(mTaskLists);
 
         intent.putExtra(TaskActivity.EXTRA_DEFAULT_LIST, defaultList);
-        intent.putExtra(TaskActivity.EXTRA_TASKLIST, mTaskLists.get(mActionBar.getSelectedNavigationIndex()));
+        intent.putExtra(TaskActivity.EXTRA_TASKLIST, mCurrList);
         startActivityForResult(intent, EDIT_TASK_REQUEST);
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data)
-    {
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         Log.d(TAG, "onActivityResult: " + resultCode);
 
         if(resultCode == RESULT_OK) {
             if (requestCode == EDIT_TASK_REQUEST)
                 refreshTasks();
             else if (requestCode == PICK_ACCOUNT_REQUEST) {
+                String currentAccount = Prefs.getPref(this,Prefs.KEY_ACCOUNT_NAME);
                 String accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
+
+                //If current account is set and different than selected account, logout first
+                if(currentAccount.length() > 0 && !currentAccount.contentEquals(accountName))
+                    onLogout();
+
                 Prefs.savePref(this,Prefs.KEY_ACCOUNT_NAME,accountName);
             }
         }
@@ -323,11 +323,14 @@ public class MainActivity extends ActionBarActivity
     }
 
     private void onLogout() {
+        Log.d(TAG,"onLogout");
         Database db = Database.getInstance(MainActivity.this);
         db.clearSyncKeys();
 
+        //Move unsynced task to this default list
+        TaskList defaultList = TaskList.getDefault(mTaskLists);
+
         //Delete all non-temp Id records, also remove records marked as deleted
-        TaskList unsyncedTaskList = null; //if needed we will move unsynced tasks to a new list
         ArrayList<Task> tasks = db.tasks.getList(null);
         for(Task task : tasks)
         {
@@ -337,14 +340,8 @@ public class MainActivity extends ActionBarActivity
                 //Since we are also removing synced lists, check if we need to move this task to an unsynced list
                 TaskList list = new TaskList(task.listId,"");
                 if(!list.hasTempId()) {
-                    if(unsyncedTaskList == null) {
-                        //TODO, we should just move these to the default list and delete it after the first sync
-                        unsyncedTaskList = new TaskList(TaskList.generateId(),"Unsynced tasks");
-                        db.taskLists.add(unsyncedTaskList);
-                    }
-
-                    //Move this task to unsynced task list
-                    db.setTaskIds(task,task.id,unsyncedTaskList.id);
+                    //Move this task to default list
+                    db.setTaskIds(task,task.id,defaultList.id);
                 }
             }
         }
@@ -352,8 +349,13 @@ public class MainActivity extends ActionBarActivity
         ArrayList<TaskList> lists = db.taskLists.getList();
         for(TaskList list : lists)
         {
-            if(!list.hasTempId())
-                db.taskLists.delete(list);
+            if(!list.hasTempId()) //don't delete unsynced lists
+            {
+                if(list.bDefault) //Keep default but assign temp id
+                    db.setTaskListId(list,TaskList.generateId());
+                else
+                    db.taskLists.delete(list);
+            }
         }
 
         //Remove prefs related to sync/account
@@ -370,9 +372,19 @@ public class MainActivity extends ActionBarActivity
         Prefs.logPrefs(MainActivity.this);
     }
 
-    public void onChooseAccount()
-    {
-        Intent intent = AccountPicker.newChooseAccountIntent(null, null, new String[]{"com.google"}, false, null, null, null, null);
+    public void onChooseAccount() {
+        //Find current account
+        AccountManager accountManager = AccountManager.get(this);
+        Account[] accounts = accountManager.getAccountsByType("com.google");
+        String accountName = Prefs.getPref(this,Prefs.KEY_ACCOUNT_NAME);
+        Account account = null;
+        for(Account tmpAccount: accounts) {
+            if(tmpAccount.name.contentEquals(accountName))
+                account = tmpAccount;
+        }
+
+        //Display account picker
+        Intent intent = AccountPicker.newChooseAccountIntent(account, null, new String[]{"com.google"}, false, null, null, null, null);
         startActivityForResult(intent, PICK_ACCOUNT_REQUEST);
     }
 
@@ -396,6 +408,7 @@ public class MainActivity extends ActionBarActivity
 
         switch (item.getItemId())
         {
+            //TODO, change delete text depending on record type
             case R.id.delete:
                 Log.d(TAG,"onDelete: " + task.title);
                 db = Database.getInstance(this);
@@ -411,15 +424,7 @@ public class MainActivity extends ActionBarActivity
                 refreshTasks();
                 return true;
 
-            case R.id.modify:
-                Log.d(TAG,"onModify: " + task.title);
-                db = Database.getInstance(this);
-                task.title += "x";
-                task.setModified();
-                db.tasks.update(task);
-                refreshTasks();
-                return true;
-
+            //TODO, add complete and view
             default:
                 return super.onContextItemSelected(item);
         }
@@ -427,7 +432,6 @@ public class MainActivity extends ActionBarActivity
 
     public void refreshAll()
     {
-        //TODO, when lists are refreshed, why does it not load the tasks for that list afterward
         refreshLists();
         refreshTasks();
     }
@@ -437,6 +441,14 @@ public class MainActivity extends ActionBarActivity
         Log.d(TAG, "refreshLists");
         Database db = Database.getInstance(this);
         ArrayList<TaskList> dbLists = db.taskLists.getList();
+        if(dbLists.size() == 0)
+        {
+            Log.d(TAG,"No lists, adding default");
+            TaskList defaultList = new TaskList("Default");
+            defaultList.bDefault = true;
+            db.taskLists.add(defaultList);
+            dbLists = db.taskLists.getList(); //re-get list
+        }
 
         if (mTaskLists == null)
             mTaskLists = new ArrayList<>();

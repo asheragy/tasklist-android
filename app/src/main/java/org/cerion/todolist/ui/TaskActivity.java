@@ -6,6 +6,8 @@ import android.support.v7.app.ActionBarActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -32,7 +34,6 @@ public class TaskActivity extends ActionBarActivity implements DatePickerFragmen
     private TaskList mCurrentList;
     private boolean mNewTask = false;
 
-    private View mEditButtons;
     private TextView mTextTaskId;
     private TextView mTextUpdated;
     private EditText mTitle;
@@ -40,6 +41,8 @@ public class TaskActivity extends ActionBarActivity implements DatePickerFragmen
     private TextView mTextDue;
     private CheckBox mCheckComplete;
     private Button mRemoveDueDate;
+
+    private MenuItem mMenuSave;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -63,7 +66,6 @@ public class TaskActivity extends ActionBarActivity implements DatePickerFragmen
         mNotes = (TextView)findViewById(R.id.notes);
         mCheckComplete = (CheckBox)findViewById(R.id.completed);
         mTextDue = (TextView)findViewById(R.id.due);
-        mEditButtons = findViewById(R.id.edit_buttons);
         mRemoveDueDate = (Button)findViewById(R.id.removeDate);
 
         mTextTaskId.setVisibility(View.GONE);
@@ -71,21 +73,15 @@ public class TaskActivity extends ActionBarActivity implements DatePickerFragmen
 
 
         TextWatcher watcher = new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                Log.d("TAG","onTextChanged");
-            }
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { }
 
             @Override
             public void afterTextChanged(Editable s) {
                 if(s == mTitle.getEditableText() && !s.toString().contentEquals(mTask.title))
-                    setEditMode(true);
+                    showSaveButton(true);
                 else if(s == mNotes.getEditableText() && !s.toString().contentEquals(mTask.notes))
-                    setEditMode(true);
+                    showSaveButton(true);
             }
         };
 
@@ -102,7 +98,7 @@ public class TaskActivity extends ActionBarActivity implements DatePickerFragmen
         mCheckComplete.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                setEditMode(true);
+                showSaveButton(true);
             }
         });
 
@@ -111,21 +107,7 @@ public class TaskActivity extends ActionBarActivity implements DatePickerFragmen
             public void onClick(View v) {
                 mTask.due.setTime(0);
                 setDue();
-                setEditMode(true);
-            }
-        });
-
-        findViewById(R.id.saveButton).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                onFinish(true);
-            }
-        });
-
-        findViewById(R.id.cancelButton).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                onFinish(false);
+                showSaveButton(true);
             }
         });
 
@@ -138,34 +120,26 @@ public class TaskActivity extends ActionBarActivity implements DatePickerFragmen
         newFragment.show(getFragmentManager(), "datePicker");
     }
 
-    private void setEditMode(boolean bEdit)
+    private void showSaveButton(boolean bShow)
     {
-        if(bEdit)
-            mEditButtons.setVisibility(View.VISIBLE);
-        else
-            mEditButtons.setVisibility(View.GONE);
-
+        if(mMenuSave != null)
+            mMenuSave.setVisible(bShow);
     }
 
-    private void onFinish(boolean bSave)
+    private void saveAndFinish()
     {
-        if(bSave) {
-            mTask.setModified();
-            mTask.title = mTitle.getText().toString();
-            mTask.notes = mNotes.getText().toString();
-            mTask.completed = mCheckComplete.isChecked();
-            Database database = Database.getInstance(this);
+        mTask.setModified();
+        mTask.title = mTitle.getText().toString();
+        mTask.notes = mNotes.getText().toString();
+        mTask.completed = mCheckComplete.isChecked();
+        Database database = Database.getInstance(this);
 
-            if (mNewTask)
-                database.tasks.add(mTask);
-            else
-                database.tasks.update(mTask);
-
-            setResult(RESULT_OK);
-        }
+        if (mNewTask)
+            database.tasks.add(mTask);
         else
-            setResult(RESULT_CANCELED);
+            database.tasks.update(mTask);
 
+        setResult(RESULT_OK);
         finish();
     }
 
@@ -189,7 +163,7 @@ public class TaskActivity extends ActionBarActivity implements DatePickerFragmen
         if(mTask.deleted)
             findViewById(R.id.deleted).setVisibility(View.VISIBLE);
 
-        setEditMode(false);
+        showSaveButton(false);
     }
 
     private void setDue()
@@ -209,6 +183,24 @@ public class TaskActivity extends ActionBarActivity implements DatePickerFragmen
     public void onSelectDate(Date date) {
         mTask.due = date;
         setDue(); //refresh display
-        setEditMode(true);
+        showSaveButton(true);
+    }
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.task_edit, menu);
+        mMenuSave = menu.getItem(0);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        if(id == R.id.action_save)
+            saveAndFinish();
+
+        return super.onOptionsItemSelected(item);
     }
 }

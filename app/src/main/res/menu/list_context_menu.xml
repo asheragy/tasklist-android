@@ -5,9 +5,6 @@
 
     <item android:id="@+id/undelete" android:title="Un-Delete"/>
 
-    <item android:id="@+id/modify" android:title="Test Modify"/>
-
-
 
 
 </menu>

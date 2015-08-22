@@ -15,6 +15,11 @@ public class TaskList implements Serializable
     public boolean bDefault = false;
     private int renamed;
 
+    public TaskList(String title)
+    {
+        this(generateId(),title);
+    }
+
     public TaskList(String id, String title)
     {
         this.id = id;
@@ -73,6 +78,15 @@ public class TaskList implements Serializable
                 continue;
 
             if(list.id.contentEquals(sId))
+                return list;
+        }
+
+        return null;
+    }
+
+    public static TaskList getDefault(ArrayList<TaskList> lists) {
+        for(TaskList list : lists) {
+            if(list.bDefault)
                 return list;
         }
 
