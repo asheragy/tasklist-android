@@ -31,11 +31,11 @@ public class Sync
     private static final String AUTH_TOKEN_TYPE = "Manage your tasks"; //human readable version
 
     //Instance variables
-    private SimpleDateFormat mDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
+    private final SimpleDateFormat mDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
     private TasksAPI mAPI = null;
     private Database mDb = null;
-    private int[] googleToDb = { 0, 0, 0, 0, 0, 0 }; //Add Change Delete Lists / Tasks
-    private int[] dbToGoogle = { 0, 0, 0, 0, 0, 0 };
+    private final int[] googleToDb = { 0, 0, 0, 0, 0, 0 }; //Add Change Delete Lists / Tasks
+    private final int[] dbToGoogle = { 0, 0, 0, 0, 0, 0 };
     private Map<String,String> mSyncKeys = null;
 
     public interface Callback
@@ -313,7 +313,7 @@ public class Sync
         Log.d(TAG, Build.FINGERPRINT + "\t" + Build.PRODUCT);
         if(Build.PRODUCT.contains("vbox")) //Emulator, use manual code
         {
-            String token = "ya29.1wHtdJIw5UXd7_GkHe4k_CzrbbcfjkvF5n3WtK26Txu0FXAbcAL_7ij0N4lNFT4_uLPhbrA";
+            String token = "ya29.3gEk9agabuKWC8YQdcJB74LHnre44UNpeJBSUKR7cm6aTib0aX_hxEN8bxjDzNf1I1gaMu8";
             SyncTask task = new SyncTask(context,token,callback);
             task.execute();
             return;
@@ -372,9 +372,9 @@ public class Sync
 
     private static class SyncTask extends AsyncTask<Void, Void, Void>
     {
-        private Context mContext;
-        private String mAuthToken;
-        private Callback mCallback;
+        private final Context mContext;
+        private final String mAuthToken;
+        private final Callback mCallback;
         private boolean mResult = false;
         private int mChanges = 0;
         private Exception mError = null;

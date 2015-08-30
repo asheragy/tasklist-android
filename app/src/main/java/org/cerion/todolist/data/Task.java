@@ -42,6 +42,11 @@ public class Task implements Serializable {
         setModified();
     }
 
+    public void setCompleted(boolean complete) {
+        completed = complete;
+        setModified();
+    }
+
     public void setModified() {
         updated = new Date();
     }

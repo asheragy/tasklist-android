@@ -19,8 +19,8 @@ public class Database extends SQLiteOpenHelper
     private static final int DATABASE_VERSION = 6;
     private static final String DATABASE_NAME = "tasks.db";
 
-    public TaskLists taskLists;
-    public Tasks tasks;
+    public final TaskLists taskLists;
+    public final Tasks tasks;
 
     //Singleton class
     private static Database mInstance;
@@ -79,7 +79,7 @@ public class Database extends SQLiteOpenHelper
 
     public static class TaskLists
     {
-        private Database parent;
+        private final Database parent;
         public static final String TABLE_NAME = "tasklists";
         public static final String COLUMN_ID = "id";
         public static final String COLUMN_TITLE = "title";
@@ -168,7 +168,7 @@ public class Database extends SQLiteOpenHelper
 
     public static class Tasks
     {
-        private Database parent = null;
+        private final Database parent;
         public static final String TABLE_NAME = "tasks";
         public static final String COLUMN_ID = "id";
         public static final String COLUMN_LISTID = "listid";
@@ -419,50 +419,6 @@ public class Database extends SQLiteOpenHelper
         logListsTable();
         logTasksTable();
         logSyncTable();
-    }
-
-    public void print()
-    {
-        SQLiteDatabase db = this.getReadableDatabase();
-        Log.d(TAG,"--- Database ---");
-
-        /*
-        String[] projection = { TaskLists.COLUMN_ID, TaskLists.COLUMN_TITLE };
-        Cursor c = db.query(TaskLists.TABLE_NAME,projection,null,null,null,null, null);
-
-        if(c != null && c.moveToFirst())
-        {
-            do
-            {
-                String s = c.getString(c.getColumnIndexOrThrow(TaskLists.COLUMN_ID));
-                s += "\t" + c.getString(c.getColumnIndexOrThrow(TaskLists.COLUMN_TITLE));
-                Log.d(TAG, s);
-            }
-            while (c.moveToNext());
-        }
-        */
-
-        //Cursor c = db.query(Sync.TABLE_NAME,new String[]{ Sync.COLUMN_KEY, Sync.COLUMN_VALUE },null,null,null,null, null);
-        Cursor c = db.query(Tasks.TABLE_NAME,new String[]{ Tasks.COLUMN_ID, Tasks.COLUMN_TITLE },null,null,null,null, null);
-
-        if(c != null)
-        {
-            while(c.moveToNext())
-            {
-                String s0 = c.getString(0);
-                String s1 = c.getString(1);
-                s0 = String.format("%1$-" + 55 + "s", s0);
-                if(s1.length() == 0)
-                    s1 = "<Blank>";
-
-                String s = s0 + "\t" + s1;
-                //String s = c.getString(c.getColumnIndexOrThrow(Sync.COLUMN_KEY)) + "\t" + c.getString(c.getColumnIndexOrThrow(Sync.COLUMN_VALUE))
-                Log.d(TAG, s);
-            }
-            c.close();
-        }
-
-        Log.d(TAG,"----- END -----");
     }
 
 

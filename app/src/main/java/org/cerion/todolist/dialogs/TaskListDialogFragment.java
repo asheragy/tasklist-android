@@ -56,7 +56,7 @@ public class TaskListDialogFragment extends DialogFragment {
                     String name = edittext.getText().toString();
 
                     Database db = Database.getInstance(getActivity());
-                    TaskList update = new TaskList(TaskList.generateId(), name);
+                    TaskList update = new TaskList(name);
                     db.taskLists.add(update);
 
                     ((TaskListDialogListener) getActivity()).onFinishTaskListDialog();

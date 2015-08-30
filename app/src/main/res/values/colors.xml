@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-
     <item name="green" type="color">#8BC34A</item>
     <item name="dark_green" type="color">#689F38</item>
-
-
-    <item name="primary_text" type="color">#FFFFFF</item>
-    <item name="secondary_text" type="color">#CCFFFFFF</item>
 
 </resources>

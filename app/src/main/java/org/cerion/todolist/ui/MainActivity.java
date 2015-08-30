@@ -154,6 +154,38 @@ public class MainActivity extends ActionBarActivity
 
     }
 
+    /*
+    @Override
+    protected void onResume() {
+        Log.d(TAG,"onResume");
+        super.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        Log.d(TAG,"onPause");
+        super.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        Log.d(TAG,"onStop");
+        super.onStop();
+    }
+
+    @Override
+    protected void onRestart() {
+        Log.d(TAG,"onRestart");
+        super.onRestart();
+    }
+
+    @Override
+    protected void onDestroy() {
+        Log.d(TAG,"onDestroy");
+        super.onDestroy();
+    }
+    */
+
     //----- List Activity functions
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -175,7 +207,7 @@ public class MainActivity extends ActionBarActivity
 
     //----- END List Activity functions
 
-    public void onSync() {
+    private void onSync() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = cm.getActiveNetworkInfo();
         boolean isConnected = networkInfo != null && networkInfo.isConnected();
@@ -223,7 +255,7 @@ public class MainActivity extends ActionBarActivity
 
     }
 
-    public void updateLastSync() {
+    private void updateLastSync() {
         String sText = "Last Sync: ";
         Date lastSync = Prefs.getPrefDate(this, Prefs.KEY_LAST_SYNC);
         if (lastSync == null || lastSync.getTime() == 0)
@@ -234,13 +266,13 @@ public class MainActivity extends ActionBarActivity
         mStatus.setText(sText);
     }
 
-    public void setInSync(boolean bSyncing) {
+    private void setInSync(boolean bSyncing) {
         mProgressBar.setVisibility(bSyncing ? View.VISIBLE : View.INVISIBLE);
         getListView().setVisibility(bSyncing ? View.INVISIBLE : View.VISIBLE);
         findViewById(R.id.syncImage).setVisibility(bSyncing ? View.INVISIBLE : View.VISIBLE);
     }
 
-    public void onOpenTask(Task task) {
+    private void onOpenTask(Task task) {
         Intent intent = new Intent(this, TaskActivity.class);
         if(task != null)
             intent.putExtra(TaskActivity.EXTRA_TASK, task);
@@ -291,7 +323,7 @@ public class MainActivity extends ActionBarActivity
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+        getMenuInflater().inflate(R.menu.main, menu);
         return true;
     }
 
@@ -327,7 +359,7 @@ public class MainActivity extends ActionBarActivity
         Database db = Database.getInstance(MainActivity.this);
         db.clearSyncKeys();
 
-        //Move unsynced task to this default list
+        //Move un-synced task to this default list
         TaskList defaultList = TaskList.getDefault(mTaskLists);
 
         //Delete all non-temp Id records, also remove records marked as deleted
@@ -337,9 +369,9 @@ public class MainActivity extends ActionBarActivity
             if(!task.hasTempId() || task.deleted)
                 db.tasks.delete(task);
             else {
-                //Since we are also removing synced lists, check if we need to move this task to an unsynced list
+                //Since we are also removing synced lists, check if we need to move this task to an un-synced list
                 TaskList list = new TaskList(task.listId,"");
-                if(!list.hasTempId()) {
+                if(!list.hasTempId() && defaultList != null) {
                     //Move this task to default list
                     db.setTaskIds(task,task.id,defaultList.id);
                 }
@@ -349,7 +381,7 @@ public class MainActivity extends ActionBarActivity
         ArrayList<TaskList> lists = db.taskLists.getList();
         for(TaskList list : lists)
         {
-            if(!list.hasTempId()) //don't delete unsynced lists
+            if(!list.hasTempId()) //don't delete un-synced lists
             {
                 if(list.bDefault) //Keep default but assign temp id
                     db.setTaskListId(list,TaskList.generateId());
@@ -372,7 +404,7 @@ public class MainActivity extends ActionBarActivity
         Prefs.logPrefs(MainActivity.this);
     }
 
-    public void onChooseAccount() {
+    private void onChooseAccount() {
         //Find current account
         AccountManager accountManager = AccountManager.get(this);
         Account[] accounts = accountManager.getAccountsByType("com.google");
@@ -388,7 +420,7 @@ public class MainActivity extends ActionBarActivity
         startActivityForResult(intent, PICK_ACCOUNT_REQUEST);
     }
 
-    public void onAddTaskList() {
+    private void onAddTaskList() {
         TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_ADD,null);
         dialog.show(getFragmentManager(), "dialog");
     }
@@ -396,47 +428,50 @@ public class MainActivity extends ActionBarActivity
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
         if (v.getId()==android.R.id.list) {
             MenuInflater inflater = getMenuInflater();
-            inflater.inflate(R.menu.list_context_menu, menu);
+            inflater.inflate(R.menu.main_context, menu);
+
+            AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuInfo;
+            Task task = (Task) getListView().getItemAtPosition(info.position);
+
+            if(task.completed) {
+                MenuItem item = menu.findItem(R.id.complete);
+                item.setTitle("Un-Complete");
+            }
+            if(task.deleted){
+                MenuItem item = menu.findItem(R.id.delete);
+                item.setTitle("Un-Delete");
+            }
         }
     }
 
     public boolean onContextItemSelected(MenuItem item) {
         AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
-        Task task = (Task)getListAdapter().getItem(info.position);
+        int id = item.getItemId();
 
-        Database db;
+        if(id == R.id.complete || id == R.id.delete) {
+            Task task = (Task) getListAdapter().getItem(info.position);
+            Database db = Database.getInstance(this);
 
-        switch (item.getItemId())
-        {
-            //TODO, change delete text depending on record type
-            case R.id.delete:
-                Log.d(TAG,"onDelete: " + task.title);
-                db = Database.getInstance(this);
-                task.setDeleted(true);
-                db.tasks.update(task);
-                refreshTasks();
-                return true;
-            case R.id.undelete:
-                Log.d(TAG,"onUnDelete: " + task.title);
-                db = Database.getInstance(this);
-                task.setDeleted(false);
-                db.tasks.update(task);
-                refreshTasks();
-                return true;
+            if(id == R.id.complete)
+                task.setCompleted(!task.completed);
+            else if(id == R.id.delete)
+                task.setDeleted(!task.deleted);
 
-            //TODO, add complete and view
-            default:
-                return super.onContextItemSelected(item);
+            db.tasks.update(task);
+            refreshTasks();
+            return true;
         }
+
+        return super.onContextItemSelected(item);
     }
 
-    public void refreshAll()
+    private void refreshAll()
     {
         refreshLists();
         refreshTasks();
     }
 
-    public void refreshLists()
+    private void refreshLists()
     {
         Log.d(TAG, "refreshLists");
         Database db = Database.getInstance(this);
@@ -472,7 +507,7 @@ public class MainActivity extends ActionBarActivity
                     Log.d(TAG,"position = " + itemPosition + " index = " + mActionBar.getSelectedNavigationIndex() );
                     if(itemPosition == mActionBar.getNavigationItemCount() - 1) {
                         onAddTaskList();
-                        //Prefered action is to prevent current selection, not select the old one...
+                        //Preferred action is to prevent current selection, not select the old one...
                         mActionBar.setSelectedNavigationItem( getListPosition(mCurrList) );
                     }
                     else {
@@ -494,7 +529,7 @@ public class MainActivity extends ActionBarActivity
         mActionBar.setSelectedNavigationItem(getListPosition(mCurrList));
     }
 
-    public void refreshTasks()
+    private void refreshTasks()
     {
         Log.d(TAG,"refreshTasks");
         Database db = Database.getInstance(this);

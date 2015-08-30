@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -189,7 +188,7 @@ public class TaskActivity extends ActionBarActivity implements DatePickerFragmen
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.task_edit, menu);
+        getMenuInflater().inflate(R.menu.task, menu);
         mMenuSave = menu.getItem(0);
         return true;
     }

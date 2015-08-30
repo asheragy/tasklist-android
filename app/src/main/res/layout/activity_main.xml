@@ -6,7 +6,6 @@
     android:orientation="vertical"
     android:paddingBottom="@dimen/activity_vertical_margin"
     android:id="@+id/root"
-    android:background="#ffffff"
     tools:context=".MainActivity">
 
     <RelativeLayout
@@ -16,15 +15,19 @@
         <TextView
             android:id="@+id/status"
             tools:text="status"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_toLeftOf="@+id/syncImage"
+            android:layout_toStartOf="@+id/syncImage"/>
 
         <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/syncImage"
             android:src="@drawable/perm_group_sync_settings"
-            android:layout_alignParentRight="true" />
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:contentDescription="sync"/>
 
     </RelativeLayout>
 
@@ -38,12 +41,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Get Token"
+            style="?android:attr/buttonBarButtonStyle"
             android:id="@+id/auth"/>
 
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Log Database"
+            style="?android:attr/buttonBarButtonStyle"
             android:id="@+id/logdb" />
 
     </LinearLayout>
@@ -64,7 +69,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="No Tasks"
+            android:text="@string/no_tasks"
             android:textColor="@android:color/black"
             android:id="@android:id/empty"
             android:layout_centerVertical="true"

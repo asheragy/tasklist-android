@@ -30,18 +30,16 @@ public class TasksAPI
     private static final int PATCH  = 3;
     private static final int DELETE = 4;
 
-    private SimpleDateFormat mDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
-    private String mAuthKey;
+    private final SimpleDateFormat mDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+    private final String mAuthKey;
 
-    public TaskLists taskLists;
-    public Tasks tasks;
+    public final TaskLists taskLists;
+    public final Tasks tasks;
 
     //Error from tasks API, json encoded with error code and message
     public static class TasksAPIException extends Exception {
-        public int mCode;
         public TasksAPIException(String message, int code) {
             super("Error " + code + ": " + message);
-            mCode = code;
         }
     }
 
