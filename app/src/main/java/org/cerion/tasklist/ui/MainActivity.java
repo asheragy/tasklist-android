@@ -1,4 +1,4 @@
-package org.cerion.todolist.ui;
+package org.cerion.tasklist.ui;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -26,42 +26,22 @@ import android.support.v7.app.ActionBarActivity;
 
 import com.google.android.gms.common.AccountPicker;
 
-import org.cerion.todolist.data.Database;
-import org.cerion.todolist.data.Prefs;
-import org.cerion.todolist.R;
-import org.cerion.todolist.data.Sync;
-import org.cerion.todolist.data.Task;
-import org.cerion.todolist.data.TaskList;
-import org.cerion.todolist.dialogs.AlertDialogFragment;
-import org.cerion.todolist.dialogs.TaskListDialogFragment;
-import org.cerion.todolist.dialogs.TaskListDialogFragment.TaskListDialogListener;
+import org.cerion.tasklist.data.Database;
+import org.cerion.tasklist.data.Prefs;
+import org.cerion.tasklist.R;
+import org.cerion.tasklist.data.Sync;
+import org.cerion.tasklist.data.Task;
+import org.cerion.tasklist.data.TaskList;
+import org.cerion.tasklist.dialogs.AlertDialogFragment;
+import org.cerion.tasklist.dialogs.TaskListDialogFragment;
+import org.cerion.tasklist.dialogs.TaskListDialogFragment.TaskListDialogListener;
 
 
 import java.util.ArrayList;
 import java.util.Date;
 
-/* Checklist
-
-Add a new task when there are 0 task lists, should we always have a default?
-All fields both ways Tasks
-
-Task add delete update WEB
-Task add delete update Device
-List add delete update WEB
-List add delete update Device
-
-conflict delete/update both directions
-conflict delete both
-
-conflict both modified but 1 completed, both directions, completed should stick
-
-Add list on web with tasks (should be fine)
-Add list on db with tasks then sync (ids should all be correct)
-Add list on db with tasks then delete task and sync (no leftover deletions)
-delete list on Web, all tasks should get deleted
-
-*/
-
+//TODO, add list, should go to it directly
+//TODO, rename list on web, menu still shows old name when going to rename, same when renaming locally
 public class MainActivity extends ActionBarActivity
         implements TaskListDialogListener, AdapterView.OnItemClickListener
 {
@@ -86,6 +66,8 @@ public class MainActivity extends ActionBarActivity
         setContentView(R.layout.activity_main);
 
         mActionBar = getSupportActionBar();
+        mActionBar.setDisplayShowTitleEnabled(false); //Hide app name, task lists replace title on actionbar
+
         mStatus = (TextView) findViewById(R.id.status);
         mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
         mProgressBar.setVisibility(View.INVISIBLE);

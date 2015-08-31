@@ -1,4 +1,4 @@
-package org.cerion.todolist;
+package org.cerion.tasklist;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

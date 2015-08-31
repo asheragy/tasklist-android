@@ -1,4 +1,4 @@
-package org.cerion.todolist.dialogs;
+package org.cerion.tasklist.dialogs;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -8,8 +8,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.EditText;
 
-import org.cerion.todolist.data.Database;
-import org.cerion.todolist.data.TaskList;
+import org.cerion.tasklist.data.Database;
+import org.cerion.tasklist.data.TaskList;
 
 public class TaskListDialogFragment extends DialogFragment {
 

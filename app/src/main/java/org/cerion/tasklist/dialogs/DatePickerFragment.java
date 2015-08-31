@@ -1,4 +1,4 @@
-package org.cerion.todolist.dialogs;
+package org.cerion.tasklist.dialogs;
 
 
 import android.app.DatePickerDialog;

@@ -1,4 +1,4 @@
-package org.cerion.todolist.ui;
+package org.cerion.tasklist.ui;
 
 import android.app.Activity;
 import android.content.Context;
@@ -9,8 +9,8 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
-import org.cerion.todolist.R;
-import org.cerion.todolist.data.Task;
+import org.cerion.tasklist.R;
+import org.cerion.tasklist.data.Task;
 
 import java.util.List;
 

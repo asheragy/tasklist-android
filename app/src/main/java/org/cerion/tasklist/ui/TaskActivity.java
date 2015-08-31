@@ -1,4 +1,4 @@
-package org.cerion.todolist.ui;
+package org.cerion.tasklist.ui;
 
 import android.app.DialogFragment;
 import android.os.Bundle;
@@ -14,11 +14,11 @@ import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import org.cerion.todolist.data.Database;
-import org.cerion.todolist.R;
-import org.cerion.todolist.data.Task;
-import org.cerion.todolist.data.TaskList;
-import org.cerion.todolist.dialogs.DatePickerFragment;
+import org.cerion.tasklist.data.Database;
+import org.cerion.tasklist.R;
+import org.cerion.tasklist.data.Task;
+import org.cerion.tasklist.data.TaskList;
+import org.cerion.tasklist.dialogs.DatePickerFragment;
 
 import java.util.Date;
 

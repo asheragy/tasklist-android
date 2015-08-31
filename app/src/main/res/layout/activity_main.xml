@@ -26,8 +26,7 @@
             android:id="@+id/syncImage"
             android:src="@drawable/perm_group_sync_settings"
             android:layout_alignParentRight="true"
-            android:layout_alignParentEnd="true"
-            android:contentDescription="sync"/>
+            android:layout_alignParentEnd="true"/>
 
     </RelativeLayout>
 

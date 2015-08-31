@@ -1,4 +1,4 @@
-package org.cerion.todolist.data;
+package org.cerion.tasklist.data;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;

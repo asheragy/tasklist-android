@@ -1,4 +1,4 @@
-package org.cerion.todolist.data;
+package org.cerion.tasklist.data;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -313,7 +313,7 @@ public class Sync
         Log.d(TAG, Build.FINGERPRINT + "\t" + Build.PRODUCT);
         if(Build.PRODUCT.contains("vbox")) //Emulator, use manual code
         {
-            String token = "ya29.3gEk9agabuKWC8YQdcJB74LHnre44UNpeJBSUKR7cm6aTib0aX_hxEN8bxjDzNf1I1gaMu8";
+            String token = "ya29.4AEJhIH7Swyz4Gy-zISGVOhfmfZYl0CnFzD8cVTHhG6IowpcAYRznb8zt-i1r1V43uiDLEQ";
             SyncTask task = new SyncTask(context,token,callback);
             task.execute();
             return;

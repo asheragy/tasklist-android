@@ -1,6 +1,8 @@
 <resources>
-    <string name="app_name">todoList</string>
+    <string name="app_name">Tasks</string>
+
     <string name="title_activity_task">TaskActivity</string>
+
     <string name="field_title">Title</string>
     <string name="field_completed">Completed</string>
     <string name="field_notes">Notes</string>
@@ -8,4 +10,6 @@
     <string name="action_delete">Delete</string>
     <string name="action_logout">Logout</string>
     <string name="no_tasks">No Tasks</string>
+    <string name="action_save">Save</string>
+    <string name="select_account">Select Account</string>
 </resources>
