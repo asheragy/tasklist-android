@@ -313,7 +313,7 @@ public class Sync
         Log.d(TAG, Build.FINGERPRINT + "\t" + Build.PRODUCT);
         if(Build.PRODUCT.contains("vbox")) //Emulator, use manual code
         {
-            String token = "ya29.4AEJhIH7Swyz4Gy-zISGVOhfmfZYl0CnFzD8cVTHhG6IowpcAYRznb8zt-i1r1V43uiDLEQ";
+            String token = "ya29.4gG18bQqBP_gmMteRgL4GmP4VpObYjuvfNMvuPgpxO7OShpc1N9Y4lHx2k8TFHFYVF3D-P4";
             SyncTask task = new SyncTask(context,token,callback);
             task.execute();
             return;

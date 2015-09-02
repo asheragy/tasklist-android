@@ -8,7 +8,9 @@ import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBar;
+import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.Menu;
@@ -40,8 +42,6 @@ import org.cerion.tasklist.dialogs.TaskListDialogFragment.TaskListDialogListener
 import java.util.ArrayList;
 import java.util.Date;
 
-//TODO, add list, should go to it directly
-//TODO, rename list on web, menu still shows old name when going to rename, same when renaming locally
 public class MainActivity extends ActionBarActivity
         implements TaskListDialogListener, AdapterView.OnItemClickListener
 {
@@ -52,6 +52,7 @@ public class MainActivity extends ActionBarActivity
     private static final String NEW_LISTID = "new";
     private TextView mStatus;
     private ProgressBar mProgressBar;
+    private SwipeRefreshLayout mSwipeRefresh;
     //private GestureDetector mGestureDetector;
     private ActionBar mActionBar;
     private ArrayList<TaskList> mTaskLists;
@@ -74,6 +75,14 @@ public class MainActivity extends ActionBarActivity
         getListView().setEmptyView(findViewById(android.R.id.empty));
         getListView().setOnItemClickListener(this);
         registerForContextMenu(getListView());
+        mSwipeRefresh = (SwipeRefreshLayout)findViewById(R.id.swipeRefresh);
+
+        mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                onSync();
+            }
+        });
 
         findViewById(R.id.syncImage).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -90,7 +99,7 @@ public class MainActivity extends ActionBarActivity
             }
         });
 
-        updateLastSync();
+        setLastSync();
         refreshLists();
 
 
@@ -196,6 +205,7 @@ public class MainActivity extends ActionBarActivity
 
         if (isConnected) {
             setInSync(true);
+
             Sync.syncTaskLists(this, new Sync.Callback() {
                 @Override
                 public void onAuthError(Exception e) {
@@ -215,7 +225,7 @@ public class MainActivity extends ActionBarActivity
                     setInSync(false);
 
                     if(bSuccess) {
-                        updateLastSync(); //Update last sync time only if successful
+                        setLastSync(); //Update last sync time only if successful
                     }
                     else {
                         String message = "Sync Failed, unknown error";
@@ -233,17 +243,20 @@ public class MainActivity extends ActionBarActivity
         } else {
             DialogFragment dialog = AlertDialogFragment.newInstance("Error", "Internet not available");
             dialog.show(getFragmentManager(), "dialog");
+            if(mSwipeRefresh.isRefreshing())
+                mSwipeRefresh.setRefreshing(false);
         }
-
     }
 
-    private void updateLastSync() {
+    private void setLastSync() {
         String sText = "Last Sync: ";
         Date lastSync = Prefs.getPrefDate(this, Prefs.KEY_LAST_SYNC);
         if (lastSync == null || lastSync.getTime() == 0)
             sText += "Never";
-        else
-            sText += lastSync;
+        else {
+            long now = new Date().getTime();
+            sText += DateUtils.getRelativeTimeSpanString(lastSync.getTime(), now, DateUtils.SECOND_IN_MILLIS).toString();
+        }
 
         mStatus.setText(sText);
     }
@@ -252,6 +265,9 @@ public class MainActivity extends ActionBarActivity
         mProgressBar.setVisibility(bSyncing ? View.VISIBLE : View.INVISIBLE);
         getListView().setVisibility(bSyncing ? View.INVISIBLE : View.VISIBLE);
         findViewById(R.id.syncImage).setVisibility(bSyncing ? View.INVISIBLE : View.VISIBLE);
+
+        if(!bSyncing && mSwipeRefresh.isRefreshing())
+            mSwipeRefresh.setRefreshing(false);
     }
 
     private void onOpenTask(Task task) {
@@ -298,7 +314,8 @@ public class MainActivity extends ActionBarActivity
     */
 
     @Override
-    public void onFinishTaskListDialog() {
+    public void onFinishTaskListDialog(TaskList current) {
+        mCurrList = current; //This list was added or updated
         refreshLists();
     }
 
@@ -379,7 +396,7 @@ public class MainActivity extends ActionBarActivity
         Prefs.remove(this,Prefs.KEY_AUTHTOKEN_DATE);
 
         refreshAll();
-        updateLastSync();
+        setLastSync();
 
         //Log data which should be empty except for un-synced records
         db.log();
@@ -456,6 +473,7 @@ public class MainActivity extends ActionBarActivity
     private void refreshLists()
     {
         Log.d(TAG, "refreshLists");
+        setLastSync(); //Relative time so update it as much as possible
         Database db = Database.getInstance(this);
         ArrayList<TaskList> dbLists = db.taskLists.getList();
         if(dbLists.size() == 0)
@@ -479,6 +497,7 @@ public class MainActivity extends ActionBarActivity
         mTaskLists.add(allTasks);
         for(TaskList list : dbLists)
             mTaskLists.add(list);
+
         mTaskLists.add(new TaskList(NEW_LISTID, "<Add List>"));
 
         if(mActionBarAdapter == null) {
@@ -514,6 +533,7 @@ public class MainActivity extends ActionBarActivity
     private void refreshTasks()
     {
         Log.d(TAG,"refreshTasks");
+        setLastSync(); //Relative time so update it as much as possible
         Database db = Database.getInstance(this);
         ArrayList<Task> tasks = db.tasks.getList(mCurrList.id);
 

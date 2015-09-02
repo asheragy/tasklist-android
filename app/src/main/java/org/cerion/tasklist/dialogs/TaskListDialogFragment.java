@@ -22,7 +22,7 @@ public class TaskListDialogFragment extends DialogFragment {
     public static final int TYPE_RENAME = 1;
 
     public interface TaskListDialogListener {
-        void onFinishTaskListDialog();
+        void onFinishTaskListDialog(TaskList currList);
     }
 
     public static TaskListDialogFragment newInstance(int type, TaskList list) {
@@ -59,7 +59,7 @@ public class TaskListDialogFragment extends DialogFragment {
                     TaskList update = new TaskList(name);
                     db.taskLists.add(update);
 
-                    ((TaskListDialogListener) getActivity()).onFinishTaskListDialog();
+                    ((TaskListDialogListener) getActivity()).onFinishTaskListDialog(update);
                 }
             });
 
@@ -78,7 +78,7 @@ public class TaskListDialogFragment extends DialogFragment {
                     Database db = Database.getInstance(getActivity());
                     db.taskLists.update(update);
 
-                    ((TaskListDialogListener) getActivity()).onFinishTaskListDialog();
+                    ((TaskListDialogListener) getActivity()).onFinishTaskListDialog(update);
                 }
             });
         }
