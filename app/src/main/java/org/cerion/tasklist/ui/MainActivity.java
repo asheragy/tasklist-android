@@ -66,6 +66,8 @@ public class MainActivity extends ActionBarActivity
         Log.d(TAG, "onCreate " + (savedInstanceState == null ? "null" : "saveState"));
         setContentView(R.layout.activity_main);
 
+        //findViewById(R.id.layoutDebug).setVisibility(View.GONE);
+
         mActionBar = getSupportActionBar();
         mActionBar.setDisplayShowTitleEnabled(false); //Hide app name, task lists replace title on actionbar
 
@@ -145,13 +147,21 @@ public class MainActivity extends ActionBarActivity
 
     }
 
-    /*
+    @Override
+    public void onBackPressed()
+    {
+        //moveTaskToBack(true);
+        finish();
+    }
+
     @Override
     protected void onResume() {
-        Log.d(TAG,"onResume");
+        //Log.d(TAG,"onResume");
+        setLastSync();
         super.onResume();
     }
 
+    /*
     @Override
     protected void onPause() {
         Log.d(TAG,"onPause");
@@ -383,7 +393,7 @@ public class MainActivity extends ActionBarActivity
             if(!list.hasTempId()) //don't delete un-synced lists
             {
                 if(list.bDefault) //Keep default but assign temp id
-                    db.setTaskListId(list,TaskList.generateId());
+                    db.taskLists.setId(list,TaskList.generateId());
                 else
                     db.taskLists.delete(list);
             }
@@ -495,8 +505,9 @@ public class MainActivity extends ActionBarActivity
             mCurrList = allTasks;
 
         mTaskLists.add(allTasks);
-        for(TaskList list : dbLists)
-            mTaskLists.add(list);
+        //for(TaskList list : dbLists)
+         //   mTaskLists.add(list);
+        mTaskLists.addAll(dbLists);
 
         mTaskLists.add(new TaskList(NEW_LISTID, "<Add List>"));
 
@@ -537,8 +548,14 @@ public class MainActivity extends ActionBarActivity
         Database db = Database.getInstance(this);
         ArrayList<Task> tasks = db.tasks.getList(mCurrList.id);
 
-        TaskListAdapter myAdapter = new TaskListAdapter(this, tasks);
-        setListAdapter(myAdapter);
+        if(getListAdapter() == null) {
+            TaskListAdapter myAdapter = new TaskListAdapter(this, tasks);
+            setListAdapter(myAdapter);
+        }
+        else {
+            ((TaskListAdapter)getListAdapter()).refresh(tasks);
+        }
+
     }
 
     private int getListPosition(TaskList list)

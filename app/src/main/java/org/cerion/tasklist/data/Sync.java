@@ -36,6 +36,8 @@ public class Sync
     private Database mDb = null;
     private final int[] googleToDb = { 0, 0, 0, 0, 0, 0 }; //Add Change Delete Lists / Tasks
     private final int[] dbToGoogle = { 0, 0, 0, 0, 0, 0 };
+
+    @Deprecated
     private Map<String,String> mSyncKeys = null;
 
     public interface Callback
@@ -86,7 +88,7 @@ public class Sync
                         mDb.taskLists.update(dbList);
                     }
 
-                    mDb.setTaskListId(dbList,curr.id); //assign ID
+                    mDb.taskLists.setId(dbList,curr.id); //assign ID
                     dbList.id = curr.id;
                 }
                 else
@@ -124,7 +126,7 @@ public class Sync
             if(dbList.hasTempId()) {
                 TaskList addedList = mAPI.taskLists.add(dbList);
                 if(addedList != null) {
-                    mDb.setTaskListId(dbList, addedList.id);
+                    mDb.taskLists.setId(dbList, addedList.id);
                     dbList.id = addedList.id;
                     googleLists.add(addedList);
                     dbToGoogle[SYNC_ADD_LIST]++;
@@ -185,8 +187,15 @@ public class Sync
         Log.d(TAG, "syncTasks() " + listId + "\t" + lastUpdatedSaved + "\t" + list.updated);
 
         try {
-            if (lastUpdatedSaved != null)
+            if (lastUpdatedSaved != null) {
                 dtLastUpdated = mDateFormat.parse(lastUpdatedSaved);
+
+                //TODO, should be able to use this value instead of sync key one
+                Date dt = list.updated;
+                if(dtLastUpdated.getTime() != dt.getTime())
+                    Log.e(TAG,"ERROR time mismatch");
+
+            }
         } catch (ParseException e) {
             Log.e(TAG,"exception",e);
         }
@@ -304,8 +313,10 @@ public class Sync
             }
         }
 
-        if(updated != null)
+        if(updated != null) {
             mDb.setSyncKey("updated_" + listId, mDateFormat.format(updated));
+            mDb.taskLists.setLastUpdated(list,updated); //TODO, only update if changed, need to check dbList for this...
+        }
     }
 
     private static void getTokenAndSync(final Context context, final Callback callback)
@@ -313,18 +324,18 @@ public class Sync
         Log.d(TAG, Build.FINGERPRINT + "\t" + Build.PRODUCT);
         if(Build.PRODUCT.contains("vbox")) //Emulator, use manual code
         {
-            String token = "ya29.4gG18bQqBP_gmMteRgL4GmP4VpObYjuvfNMvuPgpxO7OShpc1N9Y4lHx2k8TFHFYVF3D-P4";
+            String token = "ya29.-QHQam_AjueWufU5fKGfdhYXkfiVsfr16luhixXjrh-CtYsej3Y5kw3ftm3qUE5WmvptUFU";
             SyncTask task = new SyncTask(context,token,callback);
             task.execute();
             return;
         }
 
+        String token = Prefs.getPref(context, Prefs.KEY_AUTHTOKEN);
         Date dtLastToken = Prefs.getPrefDate(context, Prefs.KEY_AUTHTOKEN_DATE);
         long dtDiff = (System.currentTimeMillis() - dtLastToken.getTime()) / 1000;
-        if(dtDiff < 3500) //Token is a little less than 1 hour old
+        if(token.length() > 0 && dtDiff < 3500) //Token is a little less than 1 hour old
         {
             Log.d(TAG,"Using existing token, remaining minutes: " + (3600 - dtDiff) / 60);
-            String token = Prefs.getPref(context, Prefs.KEY_AUTHTOKEN);
             SyncTask task = new SyncTask(context,token,callback);
             task.execute();
             return;

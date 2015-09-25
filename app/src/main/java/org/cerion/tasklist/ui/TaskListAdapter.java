@@ -17,12 +17,19 @@ import java.util.List;
 class TaskListAdapter extends ArrayAdapter<Task> {
     private static final int RESOURCE_ID = R.layout.row_list;
     private final Context mContext;
-    private final List<Task> mTasks;
+    private List<Task> mTasks;
 
     public TaskListAdapter(Context context, List<Task> objects) {
         super(context, RESOURCE_ID, objects);
         mContext = context;
         mTasks = objects;
+    }
+
+    public void refresh(List<Task> tasks) {
+        mTasks.clear();
+        mTasks.addAll(tasks);
+        //mTasks = tasks;
+        notifyDataSetChanged();
     }
 
     private static class ViewHolder {

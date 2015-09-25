@@ -7,16 +7,19 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 
 
 public class Database extends SQLiteOpenHelper
 {
     private static final String TAG = "Database";
-    private static final int DATABASE_VERSION = 6;
+    private static final int DATABASE_VERSION = 1;
     private static final String DATABASE_NAME = "tasks.db";
 
     public final TaskLists taskLists;
@@ -38,10 +41,35 @@ public class Database extends SQLiteOpenHelper
         return mInstance;
     }
 
+    @Override
+    public void onCreate(SQLiteDatabase db)
+    {
+        db.execSQL("PRAGMA foreign_keys=ON;");
+        db.execSQL(Sync.SQL_CREATE);
+        db.execSQL(TaskLists.SQL_CREATE);
+        db.execSQL(Tasks.SQL_CREATE);
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
+    {
+        Log.d(TAG, "onUpgrade");
+        db.execSQL("DROP TABLE IF EXISTS " + Sync.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + Tasks.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + TaskLists.TABLE_NAME);
+        onCreate(db);
+    }
+
+    private SQLiteDatabase open()
+    {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.execSQL("PRAGMA foreign_keys = ON;");
+        return db;
+    }
 
     private void insert(String sTable, ContentValues values)
     {
-        SQLiteDatabase db = this.getWritableDatabase();
+        SQLiteDatabase db = open();
 
         long result = db.insert(sTable, null, values);
         if(result < 0)
@@ -50,8 +78,13 @@ public class Database extends SQLiteOpenHelper
 
     private void update(String sTable, ContentValues values, String sWhere)
     {
-        SQLiteDatabase db = this.getWritableDatabase();
+        SQLiteDatabase db = open();
+        update(db,sTable,values,sWhere);
+        db.close();
+    }
 
+    private void update(SQLiteDatabase db, String sTable, ContentValues values, String sWhere)
+    {
         long result = db.update(sTable, values, sWhere, null);
         if(result < 0)
             Log.e(TAG, "update: " + values.toString() + " where: " + sWhere);
@@ -61,7 +94,13 @@ public class Database extends SQLiteOpenHelper
 
     private void delete(String sTable, String sWhere)
     {
-        SQLiteDatabase db = this.getWritableDatabase();
+        SQLiteDatabase db = open();
+        delete(db,sTable,sWhere);
+        db.close();
+    }
+
+    private void delete(SQLiteDatabase db, String sTable, String sWhere)
+    {
         long result = db.delete(sTable, sWhere, null);
         if(result < 0)
             Log.e(TAG, "delete: " + sWhere);
@@ -69,6 +108,8 @@ public class Database extends SQLiteOpenHelper
             Log.d(TAG, "deleted " + result + " rows");
     }
 
+    //TODO, remove this table and store sync times in TaskList table
+    @Deprecated
     private static abstract class Sync
     {
         public static final String TABLE_NAME = "sync";
@@ -85,6 +126,7 @@ public class Database extends SQLiteOpenHelper
         public static final String COLUMN_TITLE = "title";
         public static final String COLUMN_RENAMED = "isRenamed";
         public static final String COLUMN_DEFAULT = "isDefault";
+        public static final String COLUMN_UPDATED = "updated";
 
         TaskLists(Database db)
         {
@@ -96,6 +138,7 @@ public class Database extends SQLiteOpenHelper
                 + COLUMN_TITLE + " TEXT NOT NULL, "
                 + COLUMN_RENAMED   + " INTEGER DEFAULT 0, "
                 + COLUMN_DEFAULT   + " INTEGER DEFAULT 0, "
+                + COLUMN_UPDATED   + " INTEGER DEFAULT 0, "
                 + "PRIMARY KEY (id))";
 
         private static TaskList get(Cursor c)
@@ -107,6 +150,7 @@ public class Database extends SQLiteOpenHelper
 
             TaskList result = new TaskList(id,title, (renamed == 1) );
             result.bDefault = (def == 1);
+            result.updated = new Date( c.getLong(c.getColumnIndexOrThrow(COLUMN_UPDATED)) );
             return result;
         }
 
@@ -127,6 +171,7 @@ public class Database extends SQLiteOpenHelper
                 c.close();
             }
 
+            db.close();
             return result;
         }
 
@@ -155,13 +200,37 @@ public class Database extends SQLiteOpenHelper
 
         public void delete(TaskList taskList)
         {
-            Log.d(TAG, "deleteTaskList: " + taskList.title);
-            String where = COLUMN_ID + "='" + taskList.id + "'";
-            parent.delete(TABLE_NAME, where);
+            SQLiteDatabase db = parent.open();
+            db.beginTransaction();
 
-            //Also delete tasks linked to this list
-            where = Tasks.COLUMN_LISTID + "='" + taskList.id + "'";
-            parent.delete(Tasks.TABLE_NAME, where);
+            Log.d(TAG, "deleteTaskList: " + taskList.title);
+            //First delete tasks to not violate foreign key constraints
+            parent.delete(db, Tasks.TABLE_NAME, String.format("%s='%s'", Tasks.COLUMN_LISTID, taskList.id) );
+            parent.delete(db, TABLE_NAME, String.format("%s='%s'", COLUMN_ID, taskList.id) );
+
+            db.setTransactionSuccessful();
+            db.endTransaction();
+            db.close();
+        }
+
+        //This is only set after tasks have successfully synced, so it needs to be updated on its own
+        //TODO, remove last parameter with refactor
+        public void setLastUpdated(TaskList taskList, Date updated)
+        {
+            String where = COLUMN_ID + "='" + taskList.id + "'";
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_UPDATED, updated.getTime());
+
+            parent.update(TABLE_NAME, values, where);
+        }
+
+        public void setId(TaskList taskList, String sNewId)
+        {
+            String where = String.format("%s='%s'", COLUMN_ID, taskList.id);
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_ID, sNewId);
+            parent.update(TABLE_NAME, values, where);
+            //Foreign key ON UPDATE CASCADE will update associated tasks
         }
 
     }
@@ -188,7 +257,9 @@ public class Database extends SQLiteOpenHelper
                 + COLUMN_DUE   + " INTEGER NOT NULL, "
                 + COLUMN_COMPLETE   + " INTEGER DEFAULT 0, "
                 + COLUMN_DELETED   + " INTEGER DEFAULT 0, "
-                + "PRIMARY KEY (id,listid))";
+                + "PRIMARY KEY (id,listid), "
+                + "FOREIGN KEY (" + COLUMN_LISTID + ") REFERENCES " + TaskLists.TABLE_NAME + "(" + TaskLists.COLUMN_ID + ") ON UPDATE CASCADE"
+                + ")";
 
         Tasks(Database db)
         {
@@ -277,24 +348,6 @@ public class Database extends SQLiteOpenHelper
         }
     }
 
-    @Override
-    public void onCreate(SQLiteDatabase db)
-    {
-        db.execSQL(Sync.SQL_CREATE);
-        db.execSQL(Tasks.SQL_CREATE);
-        db.execSQL(TaskLists.SQL_CREATE);
-    }
-
-    @Override
-    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
-    {
-        Log.d(TAG, "onUpgrade");
-        db.execSQL("DROP TABLE IF EXISTS " + Sync.TABLE_NAME);
-        db.execSQL("DROP TABLE IF EXISTS " + Tasks.TABLE_NAME);
-        db.execSQL("DROP TABLE IF EXISTS " + TaskLists.TABLE_NAME);
-        onCreate(db);
-    }
-
     public void setTaskIds(Task task, String sNewId, String sNewListId)
     {
         String where = String.format("%s='%s' AND %s='%s'", Tasks.COLUMN_ID, task.id, Tasks.COLUMN_LISTID, task.listId);
@@ -307,20 +360,7 @@ public class Database extends SQLiteOpenHelper
 
     }
 
-    public void setTaskListId(TaskList taskList, String sNewId)
-    {
-        String where = TaskLists.COLUMN_ID + "='" + taskList.id + "'";
-        ContentValues values = new ContentValues();
-        values.put(TaskLists.COLUMN_ID, sNewId);
-        update(TaskLists.TABLE_NAME, values, where);
-
-        //Update tasks with this list Id
-        where = String.format("%s='%s'", Tasks.COLUMN_LISTID, taskList.id);
-        values = new ContentValues();
-        values.put(Tasks.COLUMN_LISTID, sNewId);
-        update(Tasks.TABLE_NAME,values,where);
-    }
-
+    @Deprecated
     public void setSyncKey(String key, String value)
     {
         SQLiteDatabase db = getWritableDatabase();
@@ -346,6 +386,7 @@ public class Database extends SQLiteOpenHelper
             db.update(Sync.TABLE_NAME,values,sWhere,null);
     }
 
+    @Deprecated
     public Map<String,String> getSyncKeys()
     {
         SQLiteDatabase db = getReadableDatabase();
@@ -367,6 +408,7 @@ public class Database extends SQLiteOpenHelper
         return result;
     }
 
+    @Deprecated
     public void clearSyncKeys()
     {
         delete(Sync.TABLE_NAME,null);
@@ -374,12 +416,19 @@ public class Database extends SQLiteOpenHelper
 
     private void logListsTable()
     {
+        SimpleDateFormat mDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
+        mDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+
         Log.d(TAG,"--- Table: " + TaskLists.TABLE_NAME);
         ArrayList<TaskList> lists = this.taskLists.getList();
         for(TaskList list : lists)
         {
+            String time = "null";
+            if(list.updated.getTime() > 0)
+                time = mDateFormat.format(list.updated);
+
             String id = String.format("%1$-" + 43 + "s", list.id);
-            Log.d(TAG,id + " " + list.title);
+            Log.d(TAG,time + "   " + id + " " + list.title);
         }
     }
 

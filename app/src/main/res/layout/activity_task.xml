@@ -1,22 +1,14 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                xmlns:tools="http://schemas.android.com/tools"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:paddingLeft="@dimen/activity_horizontal_margin"
-                android:paddingRight="@dimen/activity_horizontal_margin"
-                android:paddingTop="@dimen/activity_vertical_margin"
-                android:paddingBottom="@dimen/activity_vertical_margin"
-                android:orientation="vertical"
-                android:focusable="true" android:focusableInTouchMode="true"
-                tools:context="org.cerion.andy.todolist.TaskActivity">
-
-    <TextView
-        tools:text="ID"
-        android:id="@+id/taskid"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:singleLine="true"
-        android:visibility="visible" />
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:orientation="vertical"
+    android:focusable="true" android:focusableInTouchMode="true"
+    tools:context="org.cerion.andy.todolist.TaskActivity">
 
     <TextView
         tools:text="MODIFIED"
@@ -70,13 +62,6 @@
         android:layout_height="wrap_content"
         android:text="@string/field_completed"
         android:id="@+id/completed"/>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        tools:text="DELETED"
-        android:visibility="gone"
-        android:id="@+id/deleted"/>
 
     <EditText
         android:layout_width="match_parent"

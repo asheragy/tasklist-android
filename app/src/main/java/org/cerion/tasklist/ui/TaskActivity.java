@@ -33,7 +33,6 @@ public class TaskActivity extends ActionBarActivity implements DatePickerFragmen
     private TaskList mCurrentList;
     private boolean mNewTask = false;
 
-    private TextView mTextTaskId;
     private TextView mTextUpdated;
     private EditText mTitle;
     private TextView mNotes;
@@ -59,7 +58,6 @@ public class TaskActivity extends ActionBarActivity implements DatePickerFragmen
             mTask = new Task( mCurrentList.id == null ? defaultList.id : mCurrentList.id );
         }
 
-        mTextTaskId = (TextView)findViewById(R.id.taskid);
         mTextUpdated = (TextView)findViewById(R.id.modified);
         mTitle = (EditText)findViewById(R.id.title);
         mNotes = (TextView)findViewById(R.id.notes);
@@ -67,9 +65,7 @@ public class TaskActivity extends ActionBarActivity implements DatePickerFragmen
         mTextDue = (TextView)findViewById(R.id.due);
         mRemoveDueDate = (Button)findViewById(R.id.removeDate);
 
-        mTextTaskId.setVisibility(View.GONE);
         //mTextUpdated.setVisibility(View.GONE);
-
 
         TextWatcher watcher = new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
@@ -144,23 +140,14 @@ public class TaskActivity extends ActionBarActivity implements DatePickerFragmen
 
     private void loadTask(Task task)
     {
-        TaskList parent = mCurrentList;//TaskList.get(MainActivity.mTaskLists,task.listId);
-        setTitle(parent.title);
+        setTitle(mCurrentList.title);
 
-        mTextTaskId.setText(task.id);
         mTitle.setText(task.title);
-
+        mNotes.setText(task.notes);
         if(task.updated != null)
             mTextUpdated.setText(task.updated.toString());
-
-        mNotes.setText(task.notes);
-
         mCheckComplete.setChecked(mTask.completed);
-
         setDue();
-
-        if(mTask.deleted)
-            findViewById(R.id.deleted).setVisibility(View.VISIBLE);
 
         showSaveButton(false);
     }
