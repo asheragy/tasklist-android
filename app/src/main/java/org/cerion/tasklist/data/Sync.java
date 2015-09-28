@@ -10,13 +10,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Locale;
-import java.util.Map;
-import java.util.TimeZone;
 
 public class Sync
 {
@@ -31,14 +26,10 @@ public class Sync
     private static final String AUTH_TOKEN_TYPE = "Manage your tasks"; //human readable version
 
     //Instance variables
-    private final SimpleDateFormat mDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
     private TasksAPI mAPI = null;
     private Database mDb = null;
     private final int[] googleToDb = { 0, 0, 0, 0, 0, 0 }; //Add Change Delete Lists / Tasks
     private final int[] dbToGoogle = { 0, 0, 0, 0, 0, 0 };
-
-    @Deprecated
-    private Map<String,String> mSyncKeys = null;
 
     public interface Callback
     {
@@ -55,8 +46,6 @@ public class Sync
     {
         mDb = Database.getInstance(context);
         mAPI = new TasksAPI(sAuthKey);
-        mDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-        mSyncKeys = mDb.getSyncKeys();
     }
 
     private boolean run() throws TasksAPI.TasksAPIException {
@@ -163,9 +152,13 @@ public class Sync
             //--- DELETE LATER, allow task lists to be deleted locally, remove entry from array if success so we don't loop below
         }
 
-        //Loop web lists since it has updated time set which we need for comparisons
-        for(TaskList list : googleLists)
-            syncTasks(list);
+        for(TaskList list : googleLists) {
+            TaskList dbList = TaskList.get(dbLists, list.id);
+            if(dbList != null)
+                syncTasks(list, dbList.getUpdated());
+            else
+                Log.e(TAG,"Unable to find database list"); //TODO throw exception
+        }
 
         //mDb.print();
 
@@ -175,49 +168,34 @@ public class Sync
         return true;
     }
 
+    private void syncTasks(TaskList list, Date savedUpdatedNEW) throws TasksAPI.TasksAPIException {
 
-    private void syncTasks(TaskList list) throws TasksAPI.TasksAPIException {
-        Date dtLastUpdated = null;
-        ArrayList<Task> dbTasks;
+        if(list.getUpdated().getTime() == 0) {
+            Log.e(TAG,"invalid updated time"); //TODO, need new exception for this class
+            return;
+        }
+
+        Date webUpdated = list.getUpdated();
+        //Date dtLastUpdated = null;
         String listId = list.id;
 
-        String key = "updated_" + listId;
-        String lastUpdatedSaved = mSyncKeys.get(key);
-
-        Log.d(TAG, "syncTasks() " + listId + "\t" + lastUpdatedSaved + "\t" + list.updated);
-
-        try {
-            if (lastUpdatedSaved != null) {
-                dtLastUpdated = mDateFormat.parse(lastUpdatedSaved);
-
-                //TODO, should be able to use this value instead of sync key one
-                Date dt = list.updated;
-                if(dtLastUpdated.getTime() != dt.getTime())
-                    Log.e(TAG,"ERROR time mismatch");
-
-            }
-        } catch (ParseException e) {
-            Log.e(TAG,"exception",e);
-        }
+        Log.d(TAG, "syncTasks() " + listId + "\t" + savedUpdatedNEW + "\t" + webUpdated);
 
         ArrayList<Task> webTasks = null;
-        if (dtLastUpdated == null)
-        {
+        if (savedUpdatedNEW.getTime() == 0) {
             Log.d(TAG, "New list, getting all");
             webTasks = mAPI.tasks.getList(listId, null);
-
-        } else if (list.updated.after(dtLastUpdated)) {
+        } else if (webUpdated.after(savedUpdatedNEW)) {
             //The default list can get its modified time updated without having any new tasks, we'll get 0 tasks here sometimes but not much we can do about it
             Log.d(TAG, "Getting updated Tasks");
-            Log.d(TAG, "Web   = " + list.updated);
-            Log.d(TAG, "Saved = " + dtLastUpdated);
-            dtLastUpdated.setTime(dtLastUpdated.getTime() + 1000); //Increase by 1 second to avoid getting previous updated record which already synced
-            webTasks = mAPI.tasks.getList(listId, dtLastUpdated);
-        }
-        //else
-        //    Log.d(TAG, "No changes");
+            Log.d(TAG, "Web   = " + webUpdated);
+            Log.d(TAG, "Saved = " + savedUpdatedNEW);
 
-        dbTasks = mDb.tasks.getList(listId);
+            //Increase by 1 second to avoid getting previous updated record which already synced
+            webTasks = mAPI.tasks.getList(listId, new Date(savedUpdatedNEW.getTime() + 1000)  );
+        }
+
+        ArrayList<Task> dbTasks = mDb.tasks.getList(listId);
         if (webTasks != null) {
             for (Task task : webTasks) {
                 Task dbTask = getTask(dbTasks, task.id);
@@ -259,7 +237,7 @@ public class Sync
         {
             //Log.d(TAG,"Title = " + task.title + "\t" + task.updated);
             boolean bModified = false;
-            if(dtLastUpdated == null || task.updated.after(dtLastUpdated))
+            if(savedUpdatedNEW.getTime() == 0 || task.updated.after(savedUpdatedNEW))
                 bModified = true;
 
             if(task.deleted)
@@ -304,19 +282,19 @@ public class Sync
 
         }
 
-        Date updated = list.updated;
+        //If this function updated the list, need to retrieve it again to get new updated time
         if (bListUpdated) {
             TaskList updatedList = mAPI.taskLists.get(list.id);
             if (updatedList != null) {
-                Log.d(TAG, "New Updated = " + updatedList.updated);
-                updated = updatedList.updated; //Updated modified time
+                Log.d(TAG, "New Updated = " + updatedList.getUpdated());
+                webUpdated = updatedList.getUpdated(); //Updated modified time
             }
         }
 
-        if(updated != null) {
-            mDb.setSyncKey("updated_" + listId, mDateFormat.format(updated));
-            mDb.taskLists.setLastUpdated(list,updated); //TODO, only update if changed, need to check dbList for this...
+        if(webUpdated.getTime() > savedUpdatedNEW.getTime()) {
+            mDb.taskLists.setLastUpdated(list, webUpdated);
         }
+
     }
 
     private static void getTokenAndSync(final Context context, final Callback callback)
@@ -324,7 +302,7 @@ public class Sync
         Log.d(TAG, Build.FINGERPRINT + "\t" + Build.PRODUCT);
         if(Build.PRODUCT.contains("vbox")) //Emulator, use manual code
         {
-            String token = "ya29.-QHQam_AjueWufU5fKGfdhYXkfiVsfr16luhixXjrh-CtYsej3Y5kw3ftm3qUE5WmvptUFU";
+            String token = "ya29._AE1TRB2jdYkcClXxQwyUEdX_mxBwLDV7pOwLJzXoPtRkrCWQko5q-dPJoe0Ju4YYwwLWSc";
             SyncTask task = new SyncTask(context,token,callback);
             task.execute();
             return;

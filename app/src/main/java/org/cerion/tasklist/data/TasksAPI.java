@@ -160,7 +160,7 @@ public class TasksAPI
             try {
                 Date dt = parent.mDateFormat.parse(updated);
                 result = new TaskList(id, title);
-                result.updated = dt;
+                result.setUpdated(dt);
             }
             catch (ParseException e) {
                 Log.e(TAG, "exception", e);

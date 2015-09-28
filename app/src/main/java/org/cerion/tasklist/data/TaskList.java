@@ -11,7 +11,7 @@ public class TaskList implements Serializable
 {
     public String id;
     public String title;
-    public Date updated;
+    private Date updated;
     public boolean bDefault = false;
     private int renamed;
 
@@ -91,6 +91,19 @@ public class TaskList implements Serializable
         }
 
         return null;
+    }
+
+    public Date getUpdated()
+    {
+        if(updated == null)
+            return new Date(0);
+
+        return updated;
+    }
+
+    public void setUpdated(Date updated)
+    {
+        this.updated = updated;
     }
 
 

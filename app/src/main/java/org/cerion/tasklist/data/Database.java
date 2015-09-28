@@ -10,9 +10,7 @@ import android.util.Log;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 import java.util.TimeZone;
 
 
@@ -45,7 +43,6 @@ public class Database extends SQLiteOpenHelper
     public void onCreate(SQLiteDatabase db)
     {
         db.execSQL("PRAGMA foreign_keys=ON;");
-        db.execSQL(Sync.SQL_CREATE);
         db.execSQL(TaskLists.SQL_CREATE);
         db.execSQL(Tasks.SQL_CREATE);
     }
@@ -54,7 +51,6 @@ public class Database extends SQLiteOpenHelper
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
     {
         Log.d(TAG, "onUpgrade");
-        db.execSQL("DROP TABLE IF EXISTS " + Sync.TABLE_NAME);
         db.execSQL("DROP TABLE IF EXISTS " + Tasks.TABLE_NAME);
         db.execSQL("DROP TABLE IF EXISTS " + TaskLists.TABLE_NAME);
         onCreate(db);
@@ -108,16 +104,6 @@ public class Database extends SQLiteOpenHelper
             Log.d(TAG, "deleted " + result + " rows");
     }
 
-    //TODO, remove this table and store sync times in TaskList table
-    @Deprecated
-    private static abstract class Sync
-    {
-        public static final String TABLE_NAME = "sync";
-        public static final String COLUMN_KEY = "key";
-        public static final String COLUMN_VALUE = "value";
-        public static final String SQL_CREATE = "create table " + TABLE_NAME + "(key TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY (key))";
-    }
-
     public static class TaskLists
     {
         private final Database parent;
@@ -150,7 +136,7 @@ public class Database extends SQLiteOpenHelper
 
             TaskList result = new TaskList(id,title, (renamed == 1) );
             result.bDefault = (def == 1);
-            result.updated = new Date( c.getLong(c.getColumnIndexOrThrow(COLUMN_UPDATED)) );
+            result.setUpdated ( new Date( c.getLong(c.getColumnIndexOrThrow(COLUMN_UPDATED)) ));
             return result;
         }
 
@@ -214,7 +200,6 @@ public class Database extends SQLiteOpenHelper
         }
 
         //This is only set after tasks have successfully synced, so it needs to be updated on its own
-        //TODO, remove last parameter with refactor
         public void setLastUpdated(TaskList taskList, Date updated)
         {
             String where = COLUMN_ID + "='" + taskList.id + "'";
@@ -360,60 +345,6 @@ public class Database extends SQLiteOpenHelper
 
     }
 
-    @Deprecated
-    public void setSyncKey(String key, String value)
-    {
-        SQLiteDatabase db = getWritableDatabase();
-
-        //Workaround for insert or update
-        String sWhere = Sync.COLUMN_KEY + "='" + key + "'";
-        Cursor c = db.query(Sync.TABLE_NAME,null,sWhere,null,null,null, null);
-        boolean bInsert = true;
-        if(c != null) //key exists so update instead of insert
-        {
-            if(c.moveToFirst())
-                bInsert = false;
-            c.close();
-        }
-
-        ContentValues values = new ContentValues();
-        values.put(Sync.COLUMN_KEY, key);
-        values.put(Sync.COLUMN_VALUE, value);
-
-        if(bInsert)
-            db.insert(Sync.TABLE_NAME,null,values);
-        else
-            db.update(Sync.TABLE_NAME,values,sWhere,null);
-    }
-
-    @Deprecated
-    public Map<String,String> getSyncKeys()
-    {
-        SQLiteDatabase db = getReadableDatabase();
-
-        HashMap<String,String> result = new HashMap<>();
-        Cursor c = db.query(Sync.TABLE_NAME, new String[]{Sync.COLUMN_KEY, Sync.COLUMN_VALUE}, null, null, null, null, null);
-        if(c != null)
-        {
-            while(c.moveToNext())
-            {
-                String key = c.getString(c.getColumnIndexOrThrow(Sync.COLUMN_KEY));
-                String value = c.getString(c.getColumnIndexOrThrow(Sync.COLUMN_VALUE));
-                result.put(key, value);
-            }
-
-            c.close();
-        }
-
-        return result;
-    }
-
-    @Deprecated
-    public void clearSyncKeys()
-    {
-        delete(Sync.TABLE_NAME,null);
-    }
-
     private void logListsTable()
     {
         SimpleDateFormat mDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
@@ -423,9 +354,9 @@ public class Database extends SQLiteOpenHelper
         ArrayList<TaskList> lists = this.taskLists.getList();
         for(TaskList list : lists)
         {
-            String time = "null";
-            if(list.updated.getTime() > 0)
-                time = mDateFormat.format(list.updated);
+            String time = "0";
+            if(list.getUpdated().getTime() > 0)
+                time = mDateFormat.format(list.getUpdated());
 
             String id = String.format("%1$-" + 43 + "s", list.id);
             Log.d(TAG,time + "   " + id + " " + list.title);
@@ -444,30 +375,10 @@ public class Database extends SQLiteOpenHelper
         }
     }
 
-    private void logSyncTable()
-    {
-        SQLiteDatabase db = this.getReadableDatabase();
-        Log.d(TAG,"--- Table: " + Sync.TABLE_NAME);
-        Cursor c = db.query(Sync.TABLE_NAME,new String[]{ Sync.COLUMN_KEY, Sync.COLUMN_VALUE },null,null,null,null, null);
-
-        if(c != null)
-        {
-            while(c.moveToNext())
-            {
-                String s0 = c.getString(0);
-                String s1 = c.getString(1);
-                String s = String.format("%1$-" + 55 + "s", s0) + "\t" + s1;
-                Log.d(TAG, s);
-            }
-            c.close();
-        }
-    }
-
     public void log()
     {
         logListsTable();
         logTasksTable();
-        logSyncTable();
     }
 
 

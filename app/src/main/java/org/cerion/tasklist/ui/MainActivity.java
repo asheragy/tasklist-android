@@ -366,7 +366,6 @@ public class MainActivity extends ActionBarActivity
     private void onLogout() {
         Log.d(TAG,"onLogout");
         Database db = Database.getInstance(MainActivity.this);
-        db.clearSyncKeys();
 
         //Move un-synced task to this default list
         TaskList defaultList = TaskList.getDefault(mTaskLists);
@@ -392,8 +391,10 @@ public class MainActivity extends ActionBarActivity
         {
             if(!list.hasTempId()) //don't delete un-synced lists
             {
-                if(list.bDefault) //Keep default but assign temp id
-                    db.taskLists.setId(list,TaskList.generateId());
+                if(list.bDefault) { //Keep default but assign temp id
+                    db.taskLists.setLastUpdated(list, new Date(0));
+                    db.taskLists.setId(list, TaskList.generateId());
+                }
                 else
                     db.taskLists.delete(list);
             }
