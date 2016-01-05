@@ -49,7 +49,6 @@ public class MainActivity extends ActionBarActivity
     private static final int EDIT_TASK_REQUEST = 0;
     private static final int PICK_ACCOUNT_REQUEST = 1;
 
-    private static final String NEW_LISTID = "new";
     private TextView mStatus;
     private ProgressBar mProgressBar;
     private SwipeRefreshLayout mSwipeRefresh;
@@ -337,6 +336,13 @@ public class MainActivity extends ActionBarActivity
     }
 
     @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        menu.findItem(R.id.action_rename).setVisible( mCurrList.id != null); //Hide rename if "All Tasks" list
+
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
@@ -510,24 +516,14 @@ public class MainActivity extends ActionBarActivity
          //   mTaskLists.add(list);
         mTaskLists.addAll(dbLists);
 
-        mTaskLists.add(new TaskList(NEW_LISTID, "<Add List>"));
-
         if(mActionBarAdapter == null) {
             mActionBarAdapter = new ArrayAdapter<>(mActionBar.getThemedContext(), android.R.layout.simple_spinner_dropdown_item, mTaskLists);
             ActionBar.OnNavigationListener navigationListener = new ActionBar.OnNavigationListener() {
                 @Override
                 public boolean onNavigationItemSelected(int itemPosition, long itemId) {
-                    Log.d(TAG,"position = " + itemPosition + " index = " + mActionBar.getSelectedNavigationIndex() );
-                    if(itemPosition == mActionBar.getNavigationItemCount() - 1) {
-                        onAddTaskList();
-                        //Preferred action is to prevent current selection, not select the old one...
-                        mActionBar.setSelectedNavigationItem( getListPosition(mCurrList) );
-                    }
-                    else {
-                        Log.d(TAG,"navigation listener, refreshing tasks");
-                        mCurrList = mTaskLists.get(itemPosition);
-                        refreshTasks();
-                    }
+                    Log.d(TAG,"onNavigationItemSelected: " + itemPosition + " index = " + mActionBar.getSelectedNavigationIndex() );
+                    mCurrList = mTaskLists.get(itemPosition);
+                    refreshTasks();
 
                     return false;
                 }
