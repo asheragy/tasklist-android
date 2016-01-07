@@ -215,15 +215,17 @@ public class MainActivity extends ActionBarActivity
         if (isConnected) {
             setInSync(true);
 
-            Sync.syncTaskLists(this, new Sync.Callback() {
+            Sync.runSync(this, this, new Sync.Callback() {
                 @Override
                 public void onAuthError(Exception e) {
                     setInSync(false);
 
-                    if(e == null) {
+                    if (e == null) {
                         onChooseAccount();
-                    }
-                    else {
+                    } else if(e instanceof android.accounts.OperationCanceledException) {
+                        Log.d(TAG,"User denied auth prompt");
+                        //For some reason showing an AlertDialog here causes a crash
+                    } else {
                         DialogFragment dialog = AlertDialogFragment.newInstance("Auth Error", e.getMessage());
                         dialog.show(getFragmentManager(), "dialog");
                     }
@@ -233,10 +235,9 @@ public class MainActivity extends ActionBarActivity
                 public void onSyncFinish(boolean bSuccess, Exception e) {
                     setInSync(false);
 
-                    if(bSuccess) {
+                    if (bSuccess) {
                         setLastSync(); //Update last sync time only if successful
-                    }
-                    else {
+                    } else {
                         String message = "Sync Failed, unknown error";
                         if (e != null)
                             message = e.getMessage();

@@ -4,14 +4,18 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
+import android.app.Activity;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Date;
+
+//TODO, create new package for sync, SyncEngine, Token, SyncTask
 
 public class Sync
 {
@@ -24,6 +28,9 @@ public class Sync
     private static final int SYNC_DELETE_TASK = 5;
 
     private static final String AUTH_TOKEN_TYPE = "Manage your tasks"; //human readable version
+    //private static final String AUTH_TOKEN_TYPE = "https://www.googleapis.com/auth/tasks";
+
+
 
     //Instance variables
     private TasksAPI mAPI = null;
@@ -37,9 +44,88 @@ public class Sync
         void onSyncFinish(boolean bSuccess, Exception e);
     }
 
-    public static void syncTaskLists(Context context, Callback callback)
+    /**
+     * Get token and run sync process in background
+     * @param context Context
+     * @param activity Use for permissions prompt if starting from activity
+     * @param callback Listener for when sync completes
+     */
+    public static void runSync(Context context, @Nullable Activity activity, Callback callback)
     {
-        getTokenAndSync(context,callback);
+        //When using emulator bypass usual auth methods so it doesn't need a google play account
+        Log.d(TAG, Build.FINGERPRINT + "\t" + Build.PRODUCT);
+        if(Build.PRODUCT.contains("vbox"))
+        {
+            String token = "ya29._AE1TRB2jdYkcClXxQwyUEdX_mxBwLDV7pOwLJzXoPtRkrCWQko5q-dPJoe0Ju4YYwwLWSc";
+            SyncTask task = new SyncTask(context,token,callback);
+            task.execute();
+            return;
+        }
+
+        //If we have a valid key use it instead of getting a new one
+        String token = Prefs.getPref(context, Prefs.KEY_AUTHTOKEN);
+        Date dtLastToken = Prefs.getPrefDate(context, Prefs.KEY_AUTHTOKEN_DATE);
+        long dtDiff = (System.currentTimeMillis() - dtLastToken.getTime()) / 1000;
+        if(token.length() > 0 && dtDiff < 3500) //Token is a little less than 1 hour old
+        {
+            Log.d(TAG,"Using existing token, remaining minutes: " + (3600 - dtDiff) / 60);
+            SyncTask task = new SyncTask(context,token,callback);
+            task.execute();
+            return;
+        }
+
+        //Get new token then run sync
+        getTokenAndSync(context,activity,callback);
+    }
+
+    private static void getTokenAndSync(final Context context, @Nullable Activity activity, final Callback callback)
+    {
+        Log.d(TAG,"Getting Token");
+        AccountManager accountManager = AccountManager.get(context);
+        Account[] accounts = accountManager.getAccountsByType("com.google");
+        String accountName = Prefs.getPref(context, Prefs.KEY_ACCOUNT_NAME);
+        Account account = null;
+
+        for(Account tmpAccount: accounts) {
+            if(tmpAccount.name.contentEquals(accountName))
+                account = tmpAccount;
+        }
+
+
+        if(account != null) {
+
+            //What to run after getting a key
+            AccountManagerCallback<Bundle> accountManagerCallback = new AccountManagerCallback<Bundle>() {
+                @Override
+                public void run(AccountManagerFuture<Bundle> future) {
+                    try {
+                        // If the user has authorized your application to use the tasks API a token is available.
+                        Bundle bundle = future.getResult();
+                        String token = bundle.getString(AccountManager.KEY_AUTHTOKEN);
+                        Prefs.savePref(context, Prefs.KEY_AUTHTOKEN, token);
+                        Prefs.savePrefDate(context, Prefs.KEY_AUTHTOKEN_DATE,new Date());
+
+                        Log.d(TAG,"Starting SyncTask");
+                        SyncTask task = new SyncTask(context,token,callback);
+                        task.execute();
+                    }
+                    catch (Exception e) {
+                        callback.onAuthError(e);
+                    }
+                }
+            };
+
+            //If these fail it will need to prompt for permissions
+            if(activity != null) //Show permissions dialog (requires activity to start from)
+                accountManager.getAuthToken(account, AUTH_TOKEN_TYPE, null, activity, accountManagerCallback, null);
+            else //Show permissions as notification (when no activity is available)
+                accountManager.getAuthToken(account, AUTH_TOKEN_TYPE, null, true, accountManagerCallback, null);
+
+        }
+        else
+            callback.onAuthError(null);
+
+        Log.d(TAG, "Getting Token END");
     }
 
     private Sync(Context context, String sAuthKey)
@@ -297,67 +383,6 @@ public class Sync
 
     }
 
-    private static void getTokenAndSync(final Context context, final Callback callback)
-    {
-        Log.d(TAG, Build.FINGERPRINT + "\t" + Build.PRODUCT);
-        if(Build.PRODUCT.contains("vbox")) //Emulator, use manual code
-        {
-            String token = "ya29._AE1TRB2jdYkcClXxQwyUEdX_mxBwLDV7pOwLJzXoPtRkrCWQko5q-dPJoe0Ju4YYwwLWSc";
-            SyncTask task = new SyncTask(context,token,callback);
-            task.execute();
-            return;
-        }
-
-        String token = Prefs.getPref(context, Prefs.KEY_AUTHTOKEN);
-        Date dtLastToken = Prefs.getPrefDate(context, Prefs.KEY_AUTHTOKEN_DATE);
-        long dtDiff = (System.currentTimeMillis() - dtLastToken.getTime()) / 1000;
-        if(token.length() > 0 && dtDiff < 3500) //Token is a little less than 1 hour old
-        {
-            Log.d(TAG,"Using existing token, remaining minutes: " + (3600 - dtDiff) / 60);
-            SyncTask task = new SyncTask(context,token,callback);
-            task.execute();
-            return;
-        }
-
-        Log.d(TAG,"Getting Token");
-        AccountManager accountManager = AccountManager.get(context);
-        Account[] accounts = accountManager.getAccountsByType("com.google");
-        String accountName = Prefs.getPref(context,Prefs.KEY_ACCOUNT_NAME);
-        Account account = null;
-
-        for(Account tmpAccount: accounts) {
-            if(tmpAccount.name.contentEquals(accountName))
-                account = tmpAccount;
-        }
-
-        if(account != null) {
-            accountManager.getAuthToken(account, AUTH_TOKEN_TYPE, null, true, new AccountManagerCallback<Bundle>()
-            {
-                public void run(AccountManagerFuture<Bundle> future)
-                {
-                    try {
-                        // If the user has authorized your application to use the tasks API a token is available.
-                        String token = future.getResult().getString(AccountManager.KEY_AUTHTOKEN);
-                        Prefs.savePref(context, Prefs.KEY_AUTHTOKEN, token);
-                        Prefs.savePrefDate(context, Prefs.KEY_AUTHTOKEN_DATE,new Date());
-
-                        Log.d(TAG,"Starting SyncTask");
-                        SyncTask task = new SyncTask(context,token,callback);
-                        task.execute();
-
-                    }
-                    catch (Exception e) {
-                        callback.onAuthError(e);
-                    }
-                }
-            }, null);
-        }
-        else
-            callback.onAuthError(null);
-
-
-        Log.d(TAG, "Getting Token END");
-    }
 
     private static class SyncTask extends AsyncTask<Void, Void, Void>
     {
