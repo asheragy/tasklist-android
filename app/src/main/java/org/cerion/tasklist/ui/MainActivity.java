@@ -31,12 +31,13 @@ import com.google.android.gms.common.AccountPicker;
 import org.cerion.tasklist.data.Database;
 import org.cerion.tasklist.data.Prefs;
 import org.cerion.tasklist.R;
-import org.cerion.tasklist.data.Sync;
 import org.cerion.tasklist.data.Task;
 import org.cerion.tasklist.data.TaskList;
 import org.cerion.tasklist.dialogs.AlertDialogFragment;
 import org.cerion.tasklist.dialogs.TaskListDialogFragment;
 import org.cerion.tasklist.dialogs.TaskListDialogFragment.TaskListDialogListener;
+import org.cerion.tasklist.sync.OnSyncCompleteListener;
+import org.cerion.tasklist.sync.Sync;
 
 
 import java.util.ArrayList;
@@ -65,7 +66,7 @@ public class MainActivity extends ActionBarActivity
         Log.d(TAG, "onCreate " + (savedInstanceState == null ? "null" : "saveState"));
         setContentView(R.layout.activity_main);
 
-        //findViewById(R.id.layoutDebug).setVisibility(View.GONE);
+        findViewById(R.id.layoutDebug).setVisibility(View.GONE);
 
         mActionBar = getSupportActionBar();
         mActionBar.setDisplayShowTitleEnabled(false); //Hide app name, task lists replace title on actionbar
@@ -85,12 +86,15 @@ public class MainActivity extends ActionBarActivity
             }
         });
 
+        /*
         findViewById(R.id.syncImage).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onSync();
             }
         });
+        */
+
         findViewById(R.id.logdb).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -215,15 +219,15 @@ public class MainActivity extends ActionBarActivity
         if (isConnected) {
             setInSync(true);
 
-            Sync.runSync(this, this, new Sync.Callback() {
+            Sync.run(this, this, new OnSyncCompleteListener() {
                 @Override
                 public void onAuthError(Exception e) {
                     setInSync(false);
 
                     if (e == null) {
                         onChooseAccount();
-                    } else if(e instanceof android.accounts.OperationCanceledException) {
-                        Log.d(TAG,"User denied auth prompt");
+                    } else if (e instanceof android.accounts.OperationCanceledException) {
+                        Log.d(TAG, "User denied auth prompt");
                         //For some reason showing an AlertDialog here causes a crash
                     } else {
                         DialogFragment dialog = AlertDialogFragment.newInstance("Auth Error", e.getMessage());
@@ -272,9 +276,10 @@ public class MainActivity extends ActionBarActivity
     }
 
     private void setInSync(boolean bSyncing) {
-        mProgressBar.setVisibility(bSyncing ? View.VISIBLE : View.INVISIBLE);
+        //Stop using progress bar for now, swipe refresh has its own update
+        //mProgressBar.setVisibility(bSyncing ? View.VISIBLE : View.INVISIBLE);
         getListView().setVisibility(bSyncing ? View.INVISIBLE : View.VISIBLE);
-        findViewById(R.id.syncImage).setVisibility(bSyncing ? View.INVISIBLE : View.VISIBLE);
+        //findViewById(R.id.syncImage).setVisibility(bSyncing ? View.INVISIBLE : View.VISIBLE);
 
         if(!bSyncing && mSwipeRefresh.isRefreshing())
             mSwipeRefresh.setRefreshing(false);
