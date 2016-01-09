@@ -26,8 +26,8 @@ class Auth {
 
         //When using emulator bypass usual auth methods so it doesn't need a google play account
         Log.d(TAG, Build.FINGERPRINT + "\t" + Build.PRODUCT);
-        if(Build.PRODUCT.contains("vbox")) {
-            return "ya29._AE1TRB2jdYkcClXxQwyUEdX_mxBwLDV7pOwLJzXoPtRkrCWQko5q-dPJoe0Ju4YYwwLWSc";
+        if(Build.FINGERPRINT.contains("vbox") || Build.PRODUCT.contentEquals("Genymotion")) {
+            return "ya29.ZAJDI9hiP1QTGutoj9eGs4-SKkkg-wh_ZFGsxRUy7Gz5SV4XB5hu6tvGZVfPAnqqq8BbqYo";
         }
 
         //If we have a valid key use it instead of getting a new one

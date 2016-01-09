@@ -60,4 +60,11 @@ public class Task implements Serializable {
         return mDateFormat.format(due);
     }
 
+    public boolean isBlank() {
+        if(title.length() == 0 && notes.length() == 0 && due.getTime() == 0)
+            return true;
+
+        return false;
+    }
+
 }

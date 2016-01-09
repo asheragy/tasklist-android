@@ -309,7 +309,22 @@ public class Database extends SQLiteOpenHelper
             parent.update(TABLE_NAME, values, where);
         }
 
-        public ArrayList<Task> getList(String listId)
+        /**
+         * Get all tasks from list
+         * @param listId ID of list
+         * @return
+         */
+        public ArrayList<Task> getList(String listId) {
+            return getList(listId,true);
+        }
+
+        /**
+         * Get all tasks from list
+         * @param listId ID of list
+         * @param bIncludeBlanks option to exclude blank records which can easily get added on the web
+         * @return
+         */
+        public ArrayList<Task> getList(String listId, boolean bIncludeBlanks)
         {
             SQLiteDatabase db = parent.getReadableDatabase();
             String sWhere = null;
@@ -327,6 +342,13 @@ public class Database extends SQLiteOpenHelper
                     result.add(task);
                 }
                 c.close();
+            }
+
+            if(!bIncludeBlanks) {
+                for (Task task : result) {
+                    if(task.isBlank())
+                        result.remove(task);
+                }
             }
 
             return result;

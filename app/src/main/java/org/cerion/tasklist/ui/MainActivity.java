@@ -549,7 +549,7 @@ public class MainActivity extends ActionBarActivity
         Log.d(TAG,"refreshTasks");
         setLastSync(); //Relative time so update it as much as possible
         Database db = Database.getInstance(this);
-        ArrayList<Task> tasks = db.tasks.getList(mCurrList.id);
+        ArrayList<Task> tasks = db.tasks.getList(mCurrList.id,true); //Get list with blank records excluded
 
         if(getListAdapter() == null) {
             TaskListAdapter myAdapter = new TaskListAdapter(this, tasks);
