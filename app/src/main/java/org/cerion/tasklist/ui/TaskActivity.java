@@ -55,7 +55,7 @@ public class TaskActivity extends ActionBarActivity implements DatePickerFragmen
         if(mTask == null) {
             mNewTask = true;
             //If current list is "All Tasks" then add new to default list
-            mTask = new Task( mCurrentList.id == null ? defaultList.id : mCurrentList.id );
+            mTask = new Task( mCurrentList.isAllTasks() ? defaultList.id : mCurrentList.id );
         }
 
         mTextUpdated = (TextView)findViewById(R.id.modified);

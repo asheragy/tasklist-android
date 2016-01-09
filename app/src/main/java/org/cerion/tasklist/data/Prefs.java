@@ -15,6 +15,7 @@ public class Prefs
     public static final String KEY_AUTHTOKEN_DATE = "authTokenDate";
     public static final String KEY_LAST_SYNC = "lastSync";
     public static final String KEY_ACCOUNT_NAME = "accountName";
+    public static final String KEY_LAST_SELECTED_LIST_ID = "lastListId";
 
     public static void savePref(Context context, String key, String value)
     {

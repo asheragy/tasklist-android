@@ -58,6 +58,7 @@ public class MainActivity extends ActionBarActivity
     private ArrayList<TaskList> mTaskLists;
     private ArrayAdapter<TaskList> mActionBarAdapter;
 
+
     private static TaskList mCurrList;
 
     @Override
@@ -164,13 +165,14 @@ public class MainActivity extends ActionBarActivity
         super.onResume();
     }
 
-    /*
     @Override
     protected void onPause() {
-        Log.d(TAG,"onPause");
+        //Log.d(TAG,"onPause");
+        Prefs.savePref(this,Prefs.KEY_LAST_SELECTED_LIST_ID,mCurrList.id);
         super.onPause();
     }
 
+    /*
     @Override
     protected void onStop() {
         Log.d(TAG,"onStop");
@@ -343,7 +345,7 @@ public class MainActivity extends ActionBarActivity
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        menu.findItem(R.id.action_rename).setVisible( mCurrList.id != null); //Hide rename if "All Tasks" list
+        menu.findItem(R.id.action_rename).setVisible( !mCurrList.isAllTasks() ); //Hide rename if "All Tasks" list
 
         return super.onPrepareOptionsMenu(menu);
     }
@@ -513,13 +515,15 @@ public class MainActivity extends ActionBarActivity
         else
             mTaskLists.clear();
 
-        TaskList allTasks = new TaskList(null, "All Tasks"); //null is placeholder for "all lists"
+        //If the current list is not set, try to restore last saved
         if(mCurrList == null)
-            mCurrList = allTasks;
+            mCurrList = TaskList.get(dbLists,Prefs.getPref(this,Prefs.KEY_LAST_SELECTED_LIST_ID));
 
-        mTaskLists.add(allTasks);
-        //for(TaskList list : dbLists)
-         //   mTaskLists.add(list);
+        //If nothing valid is saved default to "all tasks" list
+        if(mCurrList == null)
+            mCurrList = TaskList.ALL_TASKS;
+
+        mTaskLists.add(TaskList.ALL_TASKS);
         mTaskLists.addAll(dbLists);
 
         if(mActionBarAdapter == null) {
@@ -566,13 +570,14 @@ public class MainActivity extends ActionBarActivity
         String id = list.id;
         int index = 0;
         if(id != null) {
-            for (int i = 1; i < mActionBarAdapter.getCount() - 1; i++) { //Skip first and last list
+            for (int i = 1; i < mActionBarAdapter.getCount(); i++) { //Skip first since its default
                 TaskList curr = mActionBarAdapter.getItem(i);
                 if (curr.id.contentEquals(id))
                     index = i;
             }
         }
 
+        Log.d(TAG,"listPosition = " + index);
         return index;
     }
 

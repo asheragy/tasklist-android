@@ -15,6 +15,15 @@ public class TaskList implements Serializable
     public boolean bDefault = false;
     private int renamed;
 
+    /**
+     * Special list to represent a list containing tasks from all available lists
+     */
+    public static final TaskList ALL_TASKS = new TaskList(null, "All Tasks"); //null is placeholder for "all lists"
+
+    public boolean isAllTasks() {
+        return (id == null);
+    }
+
     public TaskList(String title)
     {
         this(generateId(),title);
