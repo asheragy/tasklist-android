@@ -16,6 +16,7 @@ import android.widget.TextView;
 
 import org.cerion.tasklist.data.Database;
 import org.cerion.tasklist.R;
+import org.cerion.tasklist.data.Prefs;
 import org.cerion.tasklist.data.Task;
 import org.cerion.tasklist.data.TaskList;
 import org.cerion.tasklist.dialogs.DatePickerFragment;
@@ -43,8 +44,9 @@ public class TaskActivity extends ActionBarActivity implements DatePickerFragmen
     private MenuItem mMenuSave;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState)
-    {
+    protected void onCreate(Bundle savedInstanceState) {
+        if(Prefs.USE_DARK_THEME)
+            this.setTheme(R.style.AppTheme_Dark);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_task);
 

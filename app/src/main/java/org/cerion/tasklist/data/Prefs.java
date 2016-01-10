@@ -17,6 +17,8 @@ public class Prefs
     public static final String KEY_ACCOUNT_NAME = "accountName";
     public static final String KEY_LAST_SELECTED_LIST_ID = "lastListId";
 
+    public static final boolean USE_DARK_THEME = true; //temp
+
     public static void savePref(Context context, String key, String value)
     {
         Log.d(TAG,"save " + key + " " + value);

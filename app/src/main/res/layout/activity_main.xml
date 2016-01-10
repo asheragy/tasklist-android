@@ -1,18 +1,18 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin"
-    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingTop="@dimen/activity_horizontal_margin"
+    android:paddingBottom="@dimen/activity_horizontal_margin"
     android:orientation="vertical"
-
     android:id="@+id/root"
     tools:context=".MainActivity">
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/activity_horizontal_margin"
+        android:layout_marginLeft="@dimen/activity_vertical_margin"
+        android:layout_marginRight="@dimen/activity_vertical_margin">
 
         <TextView
             android:id="@+id/status"
@@ -58,7 +58,6 @@
 
 
     <RelativeLayout
-        android:background="@color/light_gray"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -70,8 +69,10 @@
             <ListView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:dividerHeight="2dp"
-                android:divider="#e7e7e7"
+                android:dividerHeight="@dimen/activity_vertical_margin"
+                android:divider="@null"
+                android:listSelector="@android:color/transparent"
+                android:cacheColorHint="@android:color/transparent"
                 android:id="@android:id/list"/>
 
         </android.support.v4.widget.SwipeRefreshLayout>

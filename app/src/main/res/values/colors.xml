@@ -1,8 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <item name="yellow" type="color">#f6c73f</item>
     <item name="green" type="color">#8BC34A</item>
     <item name="dark_green" type="color">#689F38</item>
 
-    <item name="light_gray" type="color">#f7f7f7</item>
+    <item name="background_off_black" type="color">#0f0f0f</item>
+    <item name="background_off_white" type="color">#f7f7f7</item>
+
+    <item name="background_shadow_dark" type="color">#333333</item>
+    <item name="background_shadow_light" type="color">#CABBBBBB</item>
+
+
 </resources>

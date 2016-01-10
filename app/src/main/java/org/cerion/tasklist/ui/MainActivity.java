@@ -2,6 +2,7 @@ package org.cerion.tasklist.ui;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
+import android.accounts.OperationCanceledException;
 import android.app.DialogFragment;
 import android.content.Context;
 import android.content.Intent;
@@ -10,6 +11,7 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatActivity;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -24,9 +26,12 @@ import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.support.v7.app.ActionBarActivity;
+import android.widget.Toast;
 
 import com.google.android.gms.common.AccountPicker;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.common.GooglePlayServicesUtil;
 
 import org.cerion.tasklist.data.Database;
 import org.cerion.tasklist.data.Prefs;
@@ -43,9 +48,8 @@ import org.cerion.tasklist.sync.Sync;
 import java.util.ArrayList;
 import java.util.Date;
 
-public class MainActivity extends ActionBarActivity
-        implements TaskListDialogListener, AdapterView.OnItemClickListener
-{
+public class MainActivity extends AppCompatActivity
+        implements TaskListDialogListener, AdapterView.OnItemClickListener {
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final int EDIT_TASK_REQUEST = 0;
     private static final int PICK_ACCOUNT_REQUEST = 1;
@@ -63,8 +67,11 @@ public class MainActivity extends ActionBarActivity
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate " + (savedInstanceState == null ? "null" : "saveState"));
+        if (Prefs.USE_DARK_THEME)
+            this.setTheme(R.style.AppTheme_Dark);
+
+        super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         findViewById(R.id.layoutDebug).setVisibility(View.GONE);
@@ -78,7 +85,7 @@ public class MainActivity extends ActionBarActivity
         getListView().setEmptyView(findViewById(android.R.id.empty));
         getListView().setOnItemClickListener(this);
         registerForContextMenu(getListView());
-        mSwipeRefresh = (SwipeRefreshLayout)findViewById(R.id.swipeRefresh);
+        mSwipeRefresh = (SwipeRefreshLayout) findViewById(R.id.swipeRefresh);
 
         mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
@@ -147,13 +154,10 @@ public class MainActivity extends ActionBarActivity
         });
         */
 
-
-
     }
 
     @Override
-    public void onBackPressed()
-    {
+    public void onBackPressed() {
         //moveTaskToBack(true);
         finish();
     }
@@ -168,7 +172,7 @@ public class MainActivity extends ActionBarActivity
     @Override
     protected void onPause() {
         //Log.d(TAG,"onPause");
-        Prefs.savePref(this,Prefs.KEY_LAST_SELECTED_LIST_ID,mCurrList.id);
+        Prefs.savePref(this, Prefs.KEY_LAST_SELECTED_LIST_ID, mCurrList.id);
         super.onPause();
     }
 
@@ -228,7 +232,7 @@ public class MainActivity extends ActionBarActivity
 
                     if (e == null) {
                         onChooseAccount();
-                    } else if (e instanceof android.accounts.OperationCanceledException) {
+                    } else if (e instanceof OperationCanceledException) {
                         Log.d(TAG, "User denied auth prompt");
                         //For some reason showing an AlertDialog here causes a crash
                     } else {
@@ -259,7 +263,7 @@ public class MainActivity extends ActionBarActivity
         } else {
             DialogFragment dialog = AlertDialogFragment.newInstance("Error", "Internet not available");
             dialog.show(getFragmentManager(), "dialog");
-            if(mSwipeRefresh.isRefreshing())
+            if (mSwipeRefresh.isRefreshing())
                 mSwipeRefresh.setRefreshing(false);
         }
     }
@@ -283,13 +287,13 @@ public class MainActivity extends ActionBarActivity
         getListView().setVisibility(bSyncing ? View.INVISIBLE : View.VISIBLE);
         //findViewById(R.id.syncImage).setVisibility(bSyncing ? View.INVISIBLE : View.VISIBLE);
 
-        if(!bSyncing && mSwipeRefresh.isRefreshing())
+        if (!bSyncing && mSwipeRefresh.isRefreshing())
             mSwipeRefresh.setRefreshing(false);
     }
 
     private void onOpenTask(Task task) {
         Intent intent = new Intent(this, TaskActivity.class);
-        if(task != null)
+        if (task != null)
             intent.putExtra(TaskActivity.EXTRA_TASK, task);
 
         TaskList defaultList = TaskList.getDefault(mTaskLists);
@@ -303,18 +307,18 @@ public class MainActivity extends ActionBarActivity
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         Log.d(TAG, "onActivityResult: " + resultCode);
 
-        if(resultCode == RESULT_OK) {
+        if (resultCode == RESULT_OK) {
             if (requestCode == EDIT_TASK_REQUEST)
                 refreshTasks();
             else if (requestCode == PICK_ACCOUNT_REQUEST) {
-                String currentAccount = Prefs.getPref(this,Prefs.KEY_ACCOUNT_NAME);
+                String currentAccount = Prefs.getPref(this, Prefs.KEY_ACCOUNT_NAME);
                 String accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
 
                 //If current account is set and different than selected account, logout first
-                if(currentAccount.length() > 0 && !currentAccount.contentEquals(accountName))
+                if (currentAccount.length() > 0 && !currentAccount.contentEquals(accountName))
                     onLogout();
 
-                Prefs.savePref(this,Prefs.KEY_ACCOUNT_NAME,accountName);
+                Prefs.savePref(this, Prefs.KEY_ACCOUNT_NAME, accountName);
             }
         }
     }
@@ -345,7 +349,7 @@ public class MainActivity extends ActionBarActivity
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        menu.findItem(R.id.action_rename).setVisible( !mCurrList.isAllTasks() ); //Hide rename if "All Tasks" list
+        menu.findItem(R.id.action_rename).setVisible(!mCurrList.isAllTasks()); //Hide rename if "All Tasks" list
 
         return super.onPrepareOptionsMenu(menu);
     }
@@ -357,20 +361,16 @@ public class MainActivity extends ActionBarActivity
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        if(id == R.id.action_add) {
+        if (id == R.id.action_add) {
             onAddTaskList();
-        }
-        else if(id == R.id.action_rename) {
-            TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME,mCurrList);
+        } else if (id == R.id.action_rename) {
+            TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME, mCurrList);
             dialog.show(getFragmentManager(), "dialog");
-        }
-        else if(id == R.id.action_add_task) {
+        } else if (id == R.id.action_add_task) {
             onOpenTask(null);
-        }
-        else if(id == R.id.action_account) {
+        } else if (id == R.id.action_account) {
             onChooseAccount();
-        }
-        else if(id == R.id.action_logout) {
+        } else if (id == R.id.action_logout) {
             onLogout();
         }
 
@@ -378,7 +378,7 @@ public class MainActivity extends ActionBarActivity
     }
 
     private void onLogout() {
-        Log.d(TAG,"onLogout");
+        Log.d(TAG, "onLogout");
         Database db = Database.getInstance(MainActivity.this);
 
         //Move un-synced task to this default list
@@ -386,39 +386,36 @@ public class MainActivity extends ActionBarActivity
 
         //Delete all non-temp Id records, also remove records marked as deleted
         ArrayList<Task> tasks = db.tasks.getList(null);
-        for(Task task : tasks)
-        {
-            if(!task.hasTempId() || task.deleted)
+        for (Task task : tasks) {
+            if (!task.hasTempId() || task.deleted)
                 db.tasks.delete(task);
             else {
                 //Since we are also removing synced lists, check if we need to move this task to an un-synced list
-                TaskList list = new TaskList(task.listId,"");
-                if(!list.hasTempId() && defaultList != null) {
+                TaskList list = new TaskList(task.listId, "");
+                if (!list.hasTempId() && defaultList != null) {
                     //Move this task to default list
-                    db.setTaskIds(task,task.id,defaultList.id);
+                    db.setTaskIds(task, task.id, defaultList.id);
                 }
             }
         }
 
         ArrayList<TaskList> lists = db.taskLists.getList();
-        for(TaskList list : lists)
-        {
-            if(!list.hasTempId()) //don't delete un-synced lists
+        for (TaskList list : lists) {
+            if (!list.hasTempId()) //don't delete un-synced lists
             {
-                if(list.bDefault) { //Keep default but assign temp id
+                if (list.bDefault) { //Keep default but assign temp id
                     db.taskLists.setLastUpdated(list, new Date(0));
                     db.taskLists.setId(list, TaskList.generateId());
-                }
-                else
+                } else
                     db.taskLists.delete(list);
             }
         }
 
         //Remove prefs related to sync/account
-        Prefs.remove(this,Prefs.KEY_LAST_SYNC);
-        Prefs.remove(this,Prefs.KEY_ACCOUNT_NAME);
-        Prefs.remove(this,Prefs.KEY_AUTHTOKEN);
-        Prefs.remove(this,Prefs.KEY_AUTHTOKEN_DATE);
+        Prefs.remove(this, Prefs.KEY_LAST_SYNC);
+        Prefs.remove(this, Prefs.KEY_ACCOUNT_NAME);
+        Prefs.remove(this, Prefs.KEY_AUTHTOKEN);
+        Prefs.remove(this, Prefs.KEY_AUTHTOKEN_DATE);
 
         refreshAll();
         setLastSync();
@@ -432,36 +429,40 @@ public class MainActivity extends ActionBarActivity
         //Find current account
         AccountManager accountManager = AccountManager.get(this);
         Account[] accounts = accountManager.getAccountsByType("com.google");
-        String accountName = Prefs.getPref(this,Prefs.KEY_ACCOUNT_NAME);
+        String accountName = Prefs.getPref(this, Prefs.KEY_ACCOUNT_NAME);
         Account account = null;
-        for(Account tmpAccount: accounts) {
-            if(tmpAccount.name.contentEquals(accountName))
+        for (Account tmpAccount : accounts) {
+            if (tmpAccount.name.contentEquals(accountName))
                 account = tmpAccount;
         }
 
         //Display account picker
-        Intent intent = AccountPicker.newChooseAccountIntent(account, null, new String[]{"com.google"}, false, null, null, null, null);
-        startActivityForResult(intent, PICK_ACCOUNT_REQUEST);
+        try {
+            Intent intent = AccountPicker.newChooseAccountIntent(account, null, new String[]{"com.google"}, false, null, null, null, null);
+            startActivityForResult(intent, PICK_ACCOUNT_REQUEST);
+        } catch(Exception e) {
+            Toast.makeText(this, "Google play services not available", Toast.LENGTH_LONG).show();
+        }
     }
 
     private void onAddTaskList() {
-        TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_ADD,null);
+        TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_ADD, null);
         dialog.show(getFragmentManager(), "dialog");
     }
 
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-        if (v.getId()==android.R.id.list) {
+        if (v.getId() == android.R.id.list) {
             MenuInflater inflater = getMenuInflater();
             inflater.inflate(R.menu.main_context, menu);
 
             AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuInfo;
             Task task = (Task) getListView().getItemAtPosition(info.position);
 
-            if(task.completed) {
+            if (task.completed) {
                 MenuItem item = menu.findItem(R.id.complete);
                 item.setTitle("Un-Complete");
             }
-            if(task.deleted){
+            if (task.deleted) {
                 MenuItem item = menu.findItem(R.id.delete);
                 item.setTitle("Un-Delete");
             }
@@ -472,13 +473,13 @@ public class MainActivity extends ActionBarActivity
         AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
         int id = item.getItemId();
 
-        if(id == R.id.complete || id == R.id.delete) {
+        if (id == R.id.complete || id == R.id.delete) {
             Task task = (Task) getListAdapter().getItem(info.position);
             Database db = Database.getInstance(this);
 
-            if(id == R.id.complete)
+            if (id == R.id.complete)
                 task.setCompleted(!task.completed);
-            else if(id == R.id.delete)
+            else
                 task.setDeleted(!task.deleted);
 
             db.tasks.update(task);
@@ -489,21 +490,18 @@ public class MainActivity extends ActionBarActivity
         return super.onContextItemSelected(item);
     }
 
-    private void refreshAll()
-    {
+    private void refreshAll() {
         refreshLists();
         refreshTasks();
     }
 
-    private void refreshLists()
-    {
+    private void refreshLists() {
         Log.d(TAG, "refreshLists");
         setLastSync(); //Relative time so update it as much as possible
         Database db = Database.getInstance(this);
         ArrayList<TaskList> dbLists = db.taskLists.getList();
-        if(dbLists.size() == 0)
-        {
-            Log.d(TAG,"No lists, adding default");
+        if (dbLists.size() == 0) {
+            Log.d(TAG, "No lists, adding default");
             TaskList defaultList = new TaskList("Default");
             defaultList.bDefault = true;
             db.taskLists.add(defaultList);
@@ -516,22 +514,22 @@ public class MainActivity extends ActionBarActivity
             mTaskLists.clear();
 
         //If the current list is not set, try to restore last saved
-        if(mCurrList == null)
-            mCurrList = TaskList.get(dbLists,Prefs.getPref(this,Prefs.KEY_LAST_SELECTED_LIST_ID));
+        if (mCurrList == null)
+            mCurrList = TaskList.get(dbLists, Prefs.getPref(this, Prefs.KEY_LAST_SELECTED_LIST_ID));
 
         //If nothing valid is saved default to "all tasks" list
-        if(mCurrList == null)
+        if (mCurrList == null)
             mCurrList = TaskList.ALL_TASKS;
 
         mTaskLists.add(TaskList.ALL_TASKS);
         mTaskLists.addAll(dbLists);
 
-        if(mActionBarAdapter == null) {
+        if (mActionBarAdapter == null) {
             mActionBarAdapter = new ArrayAdapter<>(mActionBar.getThemedContext(), android.R.layout.simple_spinner_dropdown_item, mTaskLists);
             ActionBar.OnNavigationListener navigationListener = new ActionBar.OnNavigationListener() {
                 @Override
                 public boolean onNavigationItemSelected(int itemPosition, long itemId) {
-                    Log.d(TAG,"onNavigationItemSelected: " + itemPosition + " index = " + mActionBar.getSelectedNavigationIndex() );
+                    Log.d(TAG, "onNavigationItemSelected: " + itemPosition + " index = " + mActionBar.getSelectedNavigationIndex());
                     mCurrList = mTaskLists.get(itemPosition);
                     refreshTasks();
 
@@ -541,35 +539,31 @@ public class MainActivity extends ActionBarActivity
 
             mActionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
             mActionBar.setListNavigationCallbacks(mActionBarAdapter, navigationListener);
-        }
-        else
+        } else
             mActionBarAdapter.notifyDataSetChanged();
 
         mActionBar.setSelectedNavigationItem(getListPosition(mCurrList));
     }
 
-    private void refreshTasks()
-    {
-        Log.d(TAG,"refreshTasks");
+    private void refreshTasks() {
+        Log.d(TAG, "refreshTasks");
         setLastSync(); //Relative time so update it as much as possible
         Database db = Database.getInstance(this);
-        ArrayList<Task> tasks = db.tasks.getList(mCurrList.id,true); //Get list with blank records excluded
+        ArrayList<Task> tasks = db.tasks.getList(mCurrList.id, true); //Get list with blank records excluded
 
-        if(getListAdapter() == null) {
+        if (getListAdapter() == null) {
             TaskListAdapter myAdapter = new TaskListAdapter(this, tasks);
             setListAdapter(myAdapter);
-        }
-        else {
-            ((TaskListAdapter)getListAdapter()).refresh(tasks);
+        } else {
+            ((TaskListAdapter) getListAdapter()).refresh(tasks);
         }
 
     }
 
-    private int getListPosition(TaskList list)
-    {
+    private int getListPosition(TaskList list) {
         String id = list.id;
         int index = 0;
-        if(id != null) {
+        if (id != null) {
             for (int i = 1; i < mActionBarAdapter.getCount(); i++) { //Skip first since its default
                 TaskList curr = mActionBarAdapter.getItem(i);
                 if (curr.id.contentEquals(id))
@@ -577,7 +571,7 @@ public class MainActivity extends ActionBarActivity
             }
         }
 
-        Log.d(TAG,"listPosition = " + index);
+        Log.d(TAG, "listPosition = " + index);
         return index;
     }
 
