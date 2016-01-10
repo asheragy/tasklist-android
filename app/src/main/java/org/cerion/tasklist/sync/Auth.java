@@ -22,7 +22,7 @@ class Auth {
     //private static final String AUTH_TOKEN_TYPE = "https://www.googleapis.com/auth/tasks";
 
 
-    protected static String getSavedToken(Context context) {
+    static String getSavedToken(Context context) {
 
         //When using emulator bypass usual auth methods so it doesn't need a google play account
         Log.d(TAG, Build.FINGERPRINT + "\t" + Build.PRODUCT);
@@ -43,7 +43,7 @@ class Auth {
         return null;
     }
 
-    protected static void getTokenAndSync(final Context context, @Nullable Activity activity, final OnSyncCompleteListener callback)
+    static void getTokenAndSync(final Context context, @Nullable Activity activity, final OnSyncCompleteListener callback)
     {
         Log.d(TAG, "Getting Token");
         AccountManager accountManager = AccountManager.get(context);

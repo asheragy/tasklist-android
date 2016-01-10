@@ -28,8 +28,8 @@ public class Sync {
     //Instance variables
     private TasksAPI mAPI = null;
     private Database mDb = null;
-    protected final int[] googleToDb = { 0, 0, 0, 0, 0, 0 }; //Add Change Delete Lists / Tasks
-    protected final int[] dbToGoogle = { 0, 0, 0, 0, 0, 0 };
+    final int[] googleToDb = { 0, 0, 0, 0, 0, 0 }; //Add Change Delete Lists / Tasks
+    final int[] dbToGoogle = { 0, 0, 0, 0, 0, 0 };
 
 
     /**
@@ -51,13 +51,13 @@ public class Sync {
         }
     }
 
-    protected Sync(Context context, String sAuthKey)
+    Sync(Context context, String sAuthKey)
     {
         mDb = Database.getInstance(context);
         mAPI = new TasksAPI(sAuthKey);
     }
 
-    protected boolean run() throws TasksAPI.TasksAPIException {
+    boolean run() throws TasksAPI.TasksAPIException {
         ArrayList<TaskList> googleLists = mAPI.taskLists.getList();
         if(googleLists.size() == 0)
             return false;

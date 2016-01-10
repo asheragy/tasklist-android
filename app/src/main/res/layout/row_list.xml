@@ -23,10 +23,8 @@
             tools:text="Title"
             android:textColor="?android:attr/textColorPrimary"
             android:id="@+id/title"
-            android:layout_alignParentLeft="true"
             android:layout_alignParentStart="true"
             android:singleLine="true"
-            android:layout_toLeftOf="@+id/dueDate"
             android:layout_toStartOf="@+id/dueDate"/>
 
 
@@ -37,7 +35,6 @@
             tools:text="Wed, Jul 22, 2015"
             android:id="@+id/dueDate"
             android:textColor="?android:attr/textColorPrimary"
-            android:layout_alignParentRight="true"
             android:layout_alignParentEnd="true" />
 
 
@@ -48,7 +45,6 @@
             tools:text="Note"
             android:id="@+id/notes"
             android:layout_below="@+id/title"
-            android:layout_alignParentLeft="true"
             android:layout_alignParentStart="true"
             android:singleLine="true"
             android:textColor="?android:attr/textColorSecondary" />

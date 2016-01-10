@@ -19,7 +19,6 @@
             tools:text="status"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_toLeftOf="@+id/syncImage"
             android:layout_toStartOf="@+id/syncImage"/>
 
         <ImageView
@@ -27,7 +26,6 @@
             android:layout_height="wrap_content"
             android:id="@+id/syncImage"
             android:src="@drawable/perm_group_sync_settings"
-            android:layout_alignParentRight="true"
             android:layout_alignParentEnd="true"
             android:visibility="gone" />
 
@@ -90,7 +88,8 @@
             android:layout_height="wrap_content"
             android:id="@+id/progressBar"
             android:layout_centerVertical="true"
-            android:layout_centerHorizontal="true" />
+            android:layout_centerHorizontal="true"
+            android:visibility="gone" />
 
     </RelativeLayout>
 

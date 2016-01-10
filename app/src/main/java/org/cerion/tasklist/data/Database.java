@@ -88,7 +88,7 @@ public class Database extends SQLiteOpenHelper
             Log.d(TAG, "updated " + result + " rows");
     }
 
-    private void delete(String sTable, String sWhere)
+    private void delete(@SuppressWarnings("SameParameterValue") String sTable, String sWhere)
     {
         SQLiteDatabase db = open();
         delete(db,sTable,sWhere);
@@ -312,7 +312,7 @@ public class Database extends SQLiteOpenHelper
         /**
          * Get all tasks from list
          * @param listId ID of list
-         * @return
+         * @return list of tasks
          */
         public ArrayList<Task> getList(String listId) {
             return getList(listId,true);
@@ -322,7 +322,7 @@ public class Database extends SQLiteOpenHelper
          * Get all tasks from list
          * @param listId ID of list
          * @param bIncludeBlanks option to exclude blank records which can easily get added on the web
-         * @return
+         * @return list of tasks
          */
         public ArrayList<Task> getList(String listId, boolean bIncludeBlanks)
         {
@@ -339,16 +339,10 @@ public class Database extends SQLiteOpenHelper
                 while (c.moveToNext())
                 {
                     Task task = Tasks.get(c);
-                    result.add(task);
+                    if(bIncludeBlanks || !task.isBlank())
+                        result.add(task);
                 }
                 c.close();
-            }
-
-            if(!bIncludeBlanks) {
-                for (Task task : result) {
-                    if(task.isBlank())
-                        result.remove(task);
-                }
             }
 
             return result;

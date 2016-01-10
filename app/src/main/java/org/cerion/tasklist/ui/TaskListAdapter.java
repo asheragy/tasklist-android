@@ -17,7 +17,7 @@ import java.util.List;
 class TaskListAdapter extends ArrayAdapter<Task> {
     private static final int RESOURCE_ID = R.layout.row_list;
     private final Context mContext;
-    private List<Task> mTasks;
+    private final List<Task> mTasks;
 
     public TaskListAdapter(Context context, List<Task> objects) {
         super(context, RESOURCE_ID, objects);

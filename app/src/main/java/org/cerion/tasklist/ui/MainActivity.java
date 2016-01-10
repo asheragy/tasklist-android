@@ -24,14 +24,10 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListAdapter;
 import android.widget.ListView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.AccountPicker;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.common.GooglePlayServicesUtil;
 
 import org.cerion.tasklist.data.Database;
 import org.cerion.tasklist.data.Prefs;
@@ -55,7 +51,7 @@ public class MainActivity extends AppCompatActivity
     private static final int PICK_ACCOUNT_REQUEST = 1;
 
     private TextView mStatus;
-    private ProgressBar mProgressBar;
+    //private ProgressBar mProgressBar;
     private SwipeRefreshLayout mSwipeRefresh;
     //private GestureDetector mGestureDetector;
     private ActionBar mActionBar;
@@ -77,11 +73,12 @@ public class MainActivity extends AppCompatActivity
         findViewById(R.id.layoutDebug).setVisibility(View.GONE);
 
         mActionBar = getSupportActionBar();
-        mActionBar.setDisplayShowTitleEnabled(false); //Hide app name, task lists replace title on actionbar
+        if(mActionBar != null)
+            mActionBar.setDisplayShowTitleEnabled(false); //Hide app name, task lists replace title on actionbar
 
         mStatus = (TextView) findViewById(R.id.status);
-        mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
-        mProgressBar.setVisibility(View.INVISIBLE);
+        //mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
+        //mProgressBar.setVisibility(View.INVISIBLE);
         getListView().setEmptyView(findViewById(android.R.id.empty));
         getListView().setOnItemClickListener(this);
         registerForContextMenu(getListView());
@@ -495,6 +492,7 @@ public class MainActivity extends AppCompatActivity
         refreshTasks();
     }
 
+    @SuppressWarnings("deprecation")
     private void refreshLists() {
         Log.d(TAG, "refreshLists");
         setLastSync(); //Relative time so update it as much as possible
@@ -549,7 +547,7 @@ public class MainActivity extends AppCompatActivity
         Log.d(TAG, "refreshTasks");
         setLastSync(); //Relative time so update it as much as possible
         Database db = Database.getInstance(this);
-        ArrayList<Task> tasks = db.tasks.getList(mCurrList.id, true); //Get list with blank records excluded
+        ArrayList<Task> tasks = db.tasks.getList(mCurrList.id, false); //Get list with blank records excluded
 
         if (getListAdapter() == null) {
             TaskListAdapter myAdapter = new TaskListAdapter(this, tasks);

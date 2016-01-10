@@ -2,7 +2,7 @@ package org.cerion.tasklist.ui;
 
 import android.app.DialogFragment;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.Menu;
@@ -24,7 +24,7 @@ import org.cerion.tasklist.dialogs.DatePickerFragment;
 import java.util.Date;
 
 
-public class TaskActivity extends ActionBarActivity implements DatePickerFragment.DatePickerListener
+public class TaskActivity extends AppCompatActivity implements DatePickerFragment.DatePickerListener
 {
     public static final String EXTRA_TASK = "task";
     public static final String EXTRA_TASKLIST = "taskList";

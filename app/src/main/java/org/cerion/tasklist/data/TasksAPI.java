@@ -25,8 +25,6 @@ public class TasksAPI
     //private static final String API_KEY = "AIzaSyAHgDGorXJ1I0WqzpWE6Pm2o894T-j4pdQ";
     private static final String API_KEY = "346378052412-b0lrj3jgnucf299u3qf23c4sh4agdgsk.apps.googleusercontent.com";
 
-    private String mApiKey = API_KEY;
-
     private static final boolean mLogFullResults = true;
     private static final int GET    = 0;
     private static final int PUT    = 1;
@@ -67,7 +65,7 @@ public class TasksAPI
         private static final String FIELD_UPDATED = "updated";
 
         public TaskList get(String id) throws TasksAPIException {
-            String sURL = "https://www.googleapis.com/tasks/v1/users/@me/lists/" + id + "?key=" + parent.mApiKey;
+            String sURL = "https://www.googleapis.com/tasks/v1/users/@me/lists/" + id + "?key=" + API_KEY;
             JSONObject json = parent.getJSON(sURL);
 
             if(json != null) {
@@ -83,7 +81,7 @@ public class TasksAPI
         }
 
         public ArrayList<TaskList> getList() throws TasksAPIException {
-            String sURL = "https://www.googleapis.com/tasks/v1/users/@me/lists?key=" + parent.mApiKey;
+            String sURL = "https://www.googleapis.com/tasks/v1/users/@me/lists?key=" + API_KEY;
             JSONObject json = parent.getJSON(sURL);
             ArrayList<TaskList> result = new ArrayList<>();
 
@@ -115,7 +113,7 @@ public class TasksAPI
         }
 
         public boolean update(TaskList list) throws TasksAPIException {
-            String sURL = "https://www.googleapis.com/tasks/v1/users/@me/lists/" + list.id + "?key=" + parent.mApiKey;
+            String sURL = "https://www.googleapis.com/tasks/v1/users/@me/lists/" + list.id + "?key=" + API_KEY;
             JSONObject json = new JSONObject();
             boolean bResult = false;
 
@@ -137,7 +135,7 @@ public class TasksAPI
         }
 
         public TaskList add(TaskList list) throws TasksAPIException {
-            String sURL = "https://www.googleapis.com/tasks/v1/users/@me/lists?key=" + parent.mApiKey;
+            String sURL = "https://www.googleapis.com/tasks/v1/users/@me/lists?key=" + API_KEY;
             JSONObject json = new JSONObject();
             TaskList result = null;
 
@@ -192,7 +190,7 @@ public class TasksAPI
 
         public boolean delete(Task task)
         {
-            String sURL = "https://www.googleapis.com/tasks/v1/lists/" + task.listId + "/tasks/" + task.id + "?key=" + parent.mApiKey;
+            String sURL = "https://www.googleapis.com/tasks/v1/lists/" + task.listId + "/tasks/" + task.id + "?key=" + API_KEY;
             String result = parent.getInetData(sURL,null,DELETE);
 
             return (result.length() == 0); //Successful delete does not return anything
@@ -203,7 +201,7 @@ public class TasksAPI
             if(task.listId != null && task.listId.length() > 0)
                 listId = task.listId;
 
-            String sURL = "https://www.googleapis.com/tasks/v1/lists/" + listId + "/tasks" + "?key=" + parent.mApiKey;
+            String sURL = "https://www.googleapis.com/tasks/v1/lists/" + listId + "/tasks" + "?key=" + API_KEY;
             JSONObject json = new JSONObject();
 
             try
@@ -240,7 +238,7 @@ public class TasksAPI
 
 
         public boolean update(Task task) throws TasksAPIException {
-            String sURL = "https://www.googleapis.com/tasks/v1/lists/" + task.listId + "/tasks/" + task.id + "?key=" + parent.mApiKey;
+            String sURL = "https://www.googleapis.com/tasks/v1/lists/" + task.listId + "/tasks/" + task.id + "?key=" + API_KEY;
             JSONObject json = new JSONObject();
             boolean bResult = false;
 
@@ -300,7 +298,7 @@ public class TasksAPI
         }
 
         public ArrayList<Task> getList(String listId, Date dtUpdatedMin) throws TasksAPIException {
-            String sURL = "https://www.googleapis.com/tasks/v1/lists/" + listId + "/tasks?key=" + parent.mApiKey;
+            String sURL = "https://www.googleapis.com/tasks/v1/lists/" + listId + "/tasks?key=" + API_KEY;
             if(dtUpdatedMin != null)
             {
                 sURL += "&updatedMin=" + parent.mDateFormat.format(dtUpdatedMin);
