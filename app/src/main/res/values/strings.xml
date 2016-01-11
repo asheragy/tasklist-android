@@ -12,4 +12,6 @@
     <string name="no_tasks">No Tasks</string>
     <string name="action_save">Save</string>
     <string name="select_account">Select Account</string>
+    <string name="no_due_date">No Due Date</string>
+
 </resources>

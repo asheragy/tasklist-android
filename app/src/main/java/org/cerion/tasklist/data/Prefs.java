@@ -16,8 +16,7 @@ public class Prefs
     public static final String KEY_LAST_SYNC = "lastSync";
     public static final String KEY_ACCOUNT_NAME = "accountName";
     public static final String KEY_LAST_SELECTED_LIST_ID = "lastListId";
-
-    public static final boolean USE_DARK_THEME = false; //temp
+    public static final boolean USE_DARK_THEME = false; //Until setting is added
 
     public static void savePref(Context context, String key, String value)
     {

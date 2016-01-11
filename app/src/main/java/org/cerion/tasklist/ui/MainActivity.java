@@ -68,7 +68,7 @@ public class MainActivity extends AppCompatActivity
             this.setTheme(R.style.AppTheme_Dark);
 
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.main_activity);
 
         findViewById(R.id.layoutDebug).setVisibility(View.GONE);
 

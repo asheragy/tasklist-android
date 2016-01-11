@@ -15,7 +15,7 @@ import org.cerion.tasklist.data.Task;
 import java.util.List;
 
 class TaskListAdapter extends ArrayAdapter<Task> {
-    private static final int RESOURCE_ID = R.layout.row_list;
+    private static final int RESOURCE_ID = R.layout.task_list_item;
     private final Context mContext;
     private final List<Task> mTasks;
 

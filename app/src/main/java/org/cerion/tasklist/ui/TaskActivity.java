@@ -48,7 +48,7 @@ public class TaskActivity extends AppCompatActivity implements DatePickerFragmen
         if(Prefs.USE_DARK_THEME)
             this.setTheme(R.style.AppTheme_Dark);
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_task);
+        setContentView(R.layout.task_activity);
 
         mTask = (Task)getIntent().getSerializableExtra(EXTRA_TASK);
         mCurrentList = (TaskList)getIntent().getSerializableExtra(EXTRA_TASKLIST);
@@ -161,7 +161,7 @@ public class TaskActivity extends AppCompatActivity implements DatePickerFragmen
             mRemoveDueDate.setVisibility(View.VISIBLE);
         }
         else {
-            mTextDue.setText("No Due Date");
+            mTextDue.setText(getString(R.string.no_due_date));
             mRemoveDueDate.setVisibility(View.GONE);
         }
     }
