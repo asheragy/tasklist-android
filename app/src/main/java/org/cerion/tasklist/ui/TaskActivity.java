@@ -45,7 +45,7 @@ public class TaskActivity extends AppCompatActivity implements DatePickerFragmen
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        if(Prefs.USE_DARK_THEME)
+        if (Prefs.getBool(this,Prefs.KEY_DARK_THEME))
             this.setTheme(R.style.AppTheme_Dark);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.task_activity);

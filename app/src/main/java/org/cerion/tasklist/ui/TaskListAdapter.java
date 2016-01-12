@@ -21,8 +21,8 @@ class TaskListAdapter extends ArrayAdapter<Task> {
     private static final int RESOURCE_ID = R.layout.task_list_item;
     private final Context mContext;
     private final List<Task> mTasks;
-    private int mPrimaryColor;
-    private int mSecondaryColor;
+    private final int mPrimaryColor;
+    private final int mSecondaryColor;
 
     public TaskListAdapter(Context context, List<Task> objects) {
         super(context, RESOURCE_ID, objects);

@@ -64,8 +64,8 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate " + (savedInstanceState == null ? "null" : "saveState"));
-        if (Prefs.USE_DARK_THEME)
-            this.setTheme(R.style.AppTheme_Dark);
+        if (Prefs.getBool(this,Prefs.KEY_DARK_THEME))
+            setTheme(R.style.AppTheme_Dark);
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_activity);
@@ -272,7 +272,10 @@ public class MainActivity extends AppCompatActivity
             sText += "Never";
         else {
             long now = new Date().getTime();
-            sText += DateUtils.getRelativeTimeSpanString(lastSync.getTime(), now, DateUtils.SECOND_IN_MILLIS).toString();
+            if(now - lastSync.getTime() < 60 * 1000)
+                sText += "Less than 1 minute ago";
+            else
+                sText += DateUtils.getRelativeTimeSpanString(lastSync.getTime(), now, DateUtils.SECOND_IN_MILLIS).toString();
         }
 
         mStatus.setText(sText);
@@ -369,9 +372,23 @@ public class MainActivity extends AppCompatActivity
             onChooseAccount();
         } else if (id == R.id.action_logout) {
             onLogout();
+        } else if (id == R.id.action_theme) {
+            onChangeTheme();
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void onChangeTheme() {
+        //Toggle theme
+        Prefs.set(this,Prefs.KEY_DARK_THEME,!Prefs.getBool(this,Prefs.KEY_DARK_THEME));
+
+        //Restart activity
+        finish();
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
     }
 
     private void onLogout() {
