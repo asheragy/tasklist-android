@@ -2,7 +2,10 @@ package org.cerion.tasklist.ui;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.res.Resources;
 import android.graphics.Paint;
+import android.support.v4.content.ContextCompat;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,11 +21,21 @@ class TaskListAdapter extends ArrayAdapter<Task> {
     private static final int RESOURCE_ID = R.layout.task_list_item;
     private final Context mContext;
     private final List<Task> mTasks;
+    private int mPrimaryColor;
+    private int mSecondaryColor;
 
     public TaskListAdapter(Context context, List<Task> objects) {
         super(context, RESOURCE_ID, objects);
         mContext = context;
         mTasks = objects;
+
+        //Programmatically set color based on completion, need to know current theme
+        TypedValue typedValue = new TypedValue();
+        Resources.Theme theme = context.getTheme();
+        theme.resolveAttribute(android.R.attr.textColorPrimary, typedValue, true);
+        mPrimaryColor = ContextCompat.getColor(context, typedValue.resourceId);
+        theme.resolveAttribute(android.R.attr.textColorSecondary, typedValue, true);
+        mSecondaryColor = ContextCompat.getColor(context, typedValue.resourceId);
     }
 
     public void refresh(List<Task> tasks) {
@@ -63,10 +76,14 @@ class TaskListAdapter extends ArrayAdapter<Task> {
         viewHolder.title.setText(sTitle);
         viewHolder.notes.setText(task.notes);
 
-        if(task.completed)
+        if(task.completed) {
+            viewHolder.title.setTextColor(mSecondaryColor);
             viewHolder.title.setPaintFlags(viewHolder.title.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
-        else
+        }
+        else {
+            viewHolder.title.setTextColor(mPrimaryColor);
             viewHolder.title.setPaintFlags(viewHolder.title.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
+        }
 
         if(task.due != null && task.due.getTime() != 0)
             viewHolder.due.setText(task.getDue());
