@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -91,14 +92,12 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
-        /*
-        findViewById(R.id.syncImage).setOnClickListener(new View.OnClickListener() {
-            @Override
+        FloatingActionButton fab = (FloatingActionButton)  findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                onSync();
+                onOpenTask(null);
             }
         });
-        */
 
         findViewById(R.id.logdb).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -285,7 +284,6 @@ public class MainActivity extends AppCompatActivity
         //Stop using progress bar for now, swipe refresh has its own update
         //mProgressBar.setVisibility(bSyncing ? View.VISIBLE : View.INVISIBLE);
         getListView().setVisibility(bSyncing ? View.INVISIBLE : View.VISIBLE);
-        //findViewById(R.id.syncImage).setVisibility(bSyncing ? View.INVISIBLE : View.VISIBLE);
 
         if (!bSyncing && mSwipeRefresh.isRefreshing())
             mSwipeRefresh.setRefreshing(false);
@@ -366,8 +364,6 @@ public class MainActivity extends AppCompatActivity
         } else if (id == R.id.action_rename) {
             TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME, mCurrList);
             dialog.show(getFragmentManager(), "dialog");
-        } else if (id == R.id.action_add_task) {
-            onOpenTask(null);
         } else if (id == R.id.action_account) {
             onChooseAccount();
         } else if (id == R.id.action_logout) {
