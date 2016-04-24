@@ -6,12 +6,16 @@
     <string name="field_title">Title</string>
     <string name="field_completed">Completed</string>
     <string name="field_notes">Notes</string>
+    <string name="select_account">Select Account</string>
+    <string name="no_due_date">No Due Date</string>
+
+
     <string name="action_complete">Complete</string>
     <string name="action_delete">Delete</string>
     <string name="action_logout">Logout</string>
-    <string name="no_tasks">No Tasks</string>
     <string name="action_save">Save</string>
-    <string name="select_account">Select Account</string>
-    <string name="no_due_date">No Due Date</string>
+    <string name="action_add_list">Add List</string>
+    <string name="action_rename_list">Rename List</string>
+    <string name="action_change_theme">Change Theme</string>
 
 </resources>

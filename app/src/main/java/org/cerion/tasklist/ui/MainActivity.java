@@ -20,7 +20,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -67,7 +66,9 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_activity);
 
-        findViewById(R.id.layoutDebug).setVisibility(View.GONE);
+        View debug = findViewById(R.id.layoutDebug);
+        if(debug != null)
+            debug.setVisibility(View.GONE);
 
         mActionBar = getSupportActionBar();
         if(mActionBar != null)
@@ -116,7 +117,6 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
 
     @Override
     public void onBackPressed() {
-        //moveTaskToBack(true);
         finish();
     }
 
@@ -222,8 +222,6 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
     }
 
     private void setInSync(boolean bSyncing) {
-
-        //TODO, delay sync and see if app is usable
         if (!bSyncing && mSwipeRefresh.isRefreshing())
             mSwipeRefresh.setRefreshing(false);
     }
@@ -248,7 +246,6 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
         }
     }
 
-    //TODO, see if TaskListAdapter can always have the default list
     public void onOpenTask(Task task) {
         Intent intent = new Intent(this, TaskActivity.class);
         if (task != null)
@@ -470,10 +467,7 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
     private void refreshTasks() {
         Log.d(TAG, "refreshTasks");
         setLastSync(); //Relative time so update it as much as possible
-        Database db = Database.getInstance(this);
-        List<Task> tasks = db.tasks.getList(mCurrList.id, false); //Get list with blank records excluded
-
-        mTaskListAdapter.refresh(tasks);
+        mTaskListAdapter.refresh(mCurrList);
     }
 
     private int getListPosition(TaskList list) {

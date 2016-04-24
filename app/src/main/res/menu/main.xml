@@ -2,11 +2,11 @@
     xmlns:tools="http://schemas.android.com/tools" tools:context=".MainActivity">
 
     <item android:id="@+id/action_add"
-        android:title="Add List"
+        android:title="@string/action_add_list"
         android:orderInCategory="100"/>
 
     <item android:id="@+id/action_rename"
-        android:title="Rename List"
+        android:title="@string/action_rename_list"
         android:orderInCategory="100"/>
 
     <item android:id="@+id/action_account"
@@ -14,7 +14,7 @@
         android:orderInCategory="100"/>
 
     <item android:id="@+id/action_theme"
-        android:title="Change Theme"
+        android:title="@string/action_change_theme"
         android:orderInCategory="100"/>
 
     <item android:id="@+id/action_logout"

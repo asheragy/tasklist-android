@@ -14,7 +14,9 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import org.cerion.tasklist.R;
+import org.cerion.tasklist.data.Database;
 import org.cerion.tasklist.data.Task;
+import org.cerion.tasklist.data.TaskList;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +46,13 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
         mSecondaryColor = ContextCompat.getColor(mActivity, typedValue.resourceId);
     }
 
-    public void refresh(List<Task> tasks) {
+    public void refresh(TaskList list) {
+        Database db = Database.getInstance(mActivity);
+        List<Task> tasks = db.tasks.getList(list.id, false); //Get list with blank records excluded
+        refresh(tasks);
+    }
+
+    private void refresh(List<Task> tasks) {
         mTasks.clear();
         mTasks.addAll(tasks);
         //mTasks = tasks;
@@ -99,9 +107,9 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
 
 
     protected class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnCreateContextMenuListener {
-        TextView title;
-        TextView due;
-        TextView notes;
+        final TextView title;
+        final TextView due;
+        final TextView notes;
 
         public ViewHolder(View view) {
             super(view);
