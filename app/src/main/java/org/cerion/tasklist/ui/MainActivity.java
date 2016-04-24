@@ -13,18 +13,15 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.text.format.DateUtils;
 import android.util.Log;
-import android.view.ContextMenu;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Adapter;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.ListAdapter;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -44,21 +41,20 @@ import org.cerion.tasklist.sync.Sync;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
-public class MainActivity extends AppCompatActivity
-        implements TaskListDialogListener, AdapterView.OnItemClickListener {
+public class MainActivity extends AppCompatActivity implements TaskListDialogListener {
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final int EDIT_TASK_REQUEST = 0;
     private static final int PICK_ACCOUNT_REQUEST = 1;
 
     private TextView mStatus;
-    //private ProgressBar mProgressBar;
     private SwipeRefreshLayout mSwipeRefresh;
-    //private GestureDetector mGestureDetector;
     private ActionBar mActionBar;
     private ArrayList<TaskList> mTaskLists;
     private ArrayAdapter<TaskList> mActionBarAdapter;
 
+    private final TaskListAdapter mTaskListAdapter = new TaskListAdapter(this);
 
     private static TaskList mCurrList;
 
@@ -78,11 +74,13 @@ public class MainActivity extends AppCompatActivity
             mActionBar.setDisplayShowTitleEnabled(false); //Hide app name, task lists replace title on actionbar
 
         mStatus = (TextView) findViewById(R.id.status);
-        //mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
-        //mProgressBar.setVisibility(View.INVISIBLE);
-        getListView().setEmptyView(findViewById(android.R.id.empty));
-        getListView().setOnItemClickListener(this);
-        registerForContextMenu(getListView());
+
+        RecyclerView rv = (RecyclerView) findViewById(android.R.id.list);
+        if(rv != null) {
+            rv.setLayoutManager(new LinearLayoutManager(this));
+            rv.setAdapter(mTaskListAdapter);
+        }
+
         mSwipeRefresh = (SwipeRefreshLayout) findViewById(R.id.swipeRefresh);
 
         mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
@@ -93,63 +91,27 @@ public class MainActivity extends AppCompatActivity
         });
 
         FloatingActionButton fab = (FloatingActionButton)  findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                onOpenTask(null);
-            }
-        });
+        if(fab != null)
+            fab.setOnClickListener(new View.OnClickListener() {
+                public void onClick(View v) {
+                    onOpenTask(null);
+                }
+            });
 
-        findViewById(R.id.logdb).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Database db = Database.getInstance(MainActivity.this);
-                db.log();
-                Prefs.logPrefs(MainActivity.this);
-            }
-        });
+
+        View logdb = findViewById(R.id.logdb);
+        if(logdb != null)
+            logdb.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Database db = Database.getInstance(MainActivity.this);
+                    db.log();
+                    Prefs.logPrefs(MainActivity.this);
+                }
+            });
 
         setLastSync();
         refreshLists();
-
-
-        /* Not using for now, maybe switch to tab list or navigation drawer
-        LinearLayout layout = (LinearLayout) findViewById(R.id.root);
-        mGestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
-            public static final int MAJOR_MOVE = 50; to do change at runtime using DisplayMetrics() class
-
-            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-                //Log.d(TAG,"onFling");
-                int dx = (int) (e2.getX() - e1.getX());
-                if (Math.abs(dx) > MAJOR_MOVE && Math.abs(velocityX) > Math.abs(velocityY)) {
-                    int index = mActionBar.getSelectedNavigationIndex();
-
-                    if (velocityX > 0) {
-                        Log.d(TAG, "onPrevious");
-                        index--;
-                    } else {
-                        Log.d(TAG, "onNext");
-                        index++;
-                    }
-
-                    index = (index + mActionBar.getNavigationItemCount()) % mActionBar.getNavigationItemCount();
-                    mActionBar.setSelectedNavigationItem(index);
-
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-        });
-
-        layout.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(final View view, final MotionEvent event) {
-                mGestureDetector.onTouchEvent(event);
-                return true;
-            }
-        });
-        */
-
     }
 
     @Override
@@ -191,27 +153,6 @@ public class MainActivity extends AppCompatActivity
         super.onDestroy();
     }
     */
-
-    //----- List Activity functions
-    @Override
-    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        Task task = (Task) getListView().getItemAtPosition(position);
-        onOpenTask(task);
-    }
-
-    private ListView getListView() {
-        return (ListView) findViewById(android.R.id.list);
-    }
-
-    private Adapter getListAdapter() {
-        return getListView().getAdapter();
-    }
-
-    private void setListAdapter(ListAdapter adapter) {
-        getListView().setAdapter(adapter);
-    }
-
-    //----- END List Activity functions
 
     private void onSync() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -281,24 +222,10 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void setInSync(boolean bSyncing) {
-        //Stop using progress bar for now, swipe refresh has its own update
-        //mProgressBar.setVisibility(bSyncing ? View.VISIBLE : View.INVISIBLE);
-        getListView().setVisibility(bSyncing ? View.INVISIBLE : View.VISIBLE);
 
+        //TODO, delay sync and see if app is usable
         if (!bSyncing && mSwipeRefresh.isRefreshing())
             mSwipeRefresh.setRefreshing(false);
-    }
-
-    private void onOpenTask(Task task) {
-        Intent intent = new Intent(this, TaskActivity.class);
-        if (task != null)
-            intent.putExtra(TaskActivity.EXTRA_TASK, task);
-
-        TaskList defaultList = TaskList.getDefault(mTaskLists);
-
-        intent.putExtra(TaskActivity.EXTRA_DEFAULT_LIST, defaultList);
-        intent.putExtra(TaskActivity.EXTRA_TASKLIST, mCurrList);
-        startActivityForResult(intent, EDIT_TASK_REQUEST);
     }
 
     @Override
@@ -321,16 +248,18 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    /*
-    @Override
-    public boolean onTouchEvent(MotionEvent event)
-    {
-        boolean bResult = super.onTouchEvent(event);
-        if (!bResult && mGestureDetector != null)
-            bResult = mGestureDetector.onTouchEvent(event);
-        return bResult;
+    //TODO, see if TaskListAdapter can always have the default list
+    public void onOpenTask(Task task) {
+        Intent intent = new Intent(this, TaskActivity.class);
+        if (task != null)
+            intent.putExtra(TaskActivity.EXTRA_TASK, task);
+
+        TaskList defaultList = TaskList.getDefault(mTaskLists);
+
+        intent.putExtra(TaskActivity.EXTRA_DEFAULT_LIST, defaultList);
+        intent.putExtra(TaskActivity.EXTRA_TASKLIST, mCurrList);
+        startActivityForResult(intent, EDIT_TASK_REQUEST);
     }
-    */
 
     @Override
     public void onFinishTaskListDialog(TaskList current) {
@@ -395,7 +324,7 @@ public class MainActivity extends AppCompatActivity
         TaskList defaultList = TaskList.getDefault(mTaskLists);
 
         //Delete all non-temp Id records, also remove records marked as deleted
-        ArrayList<Task> tasks = db.tasks.getList(null);
+        List<Task> tasks = db.tasks.getList(null);
         for (Task task : tasks) {
             if (!task.hasTempId() || task.deleted)
                 db.tasks.delete(task);
@@ -460,31 +389,13 @@ public class MainActivity extends AppCompatActivity
         dialog.show(getFragmentManager(), "dialog");
     }
 
-    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-        if (v.getId() == android.R.id.list) {
-            MenuInflater inflater = getMenuInflater();
-            inflater.inflate(R.menu.main_context, menu);
-
-            AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuInfo;
-            Task task = (Task) getListView().getItemAtPosition(info.position);
-
-            if (task.completed) {
-                MenuItem item = menu.findItem(R.id.complete);
-                item.setTitle("Un-Complete");
-            }
-            if (task.deleted) {
-                MenuItem item = menu.findItem(R.id.delete);
-                item.setTitle("Un-Delete");
-            }
-        }
-    }
 
     public boolean onContextItemSelected(MenuItem item) {
-        AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
+
         int id = item.getItemId();
 
         if (id == R.id.complete || id == R.id.delete) {
-            Task task = (Task) getListAdapter().getItem(info.position);
+            Task task = mTaskListAdapter.getItem(mTaskListAdapter.getPosition());
             Database db = Database.getInstance(this);
 
             if (id == R.id.complete)
@@ -560,15 +471,9 @@ public class MainActivity extends AppCompatActivity
         Log.d(TAG, "refreshTasks");
         setLastSync(); //Relative time so update it as much as possible
         Database db = Database.getInstance(this);
-        ArrayList<Task> tasks = db.tasks.getList(mCurrList.id, false); //Get list with blank records excluded
+        List<Task> tasks = db.tasks.getList(mCurrList.id, false); //Get list with blank records excluded
 
-        if (getListAdapter() == null) {
-            TaskListAdapter myAdapter = new TaskListAdapter(this, tasks);
-            setListAdapter(myAdapter);
-        } else {
-            ((TaskListAdapter) getListAdapter()).refresh(tasks);
-        }
-
+        mTaskListAdapter.refresh(tasks);
     }
 
     private int getListPosition(TaskList list) {

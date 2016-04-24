@@ -13,6 +13,7 @@ import org.cerion.tasklist.data.TasksAPI;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class Sync {
 
@@ -204,7 +205,7 @@ public class Sync {
             webTasks = mAPI.tasks.getList(listId, new Date(savedUpdatedNEW.getTime() + 1000)  );
         }
 
-        ArrayList<Task> dbTasks = mDb.tasks.getList(listId);
+        List<Task> dbTasks = mDb.tasks.getList(listId);
         if (webTasks != null) {
             for (Task task : webTasks) {
                 Task dbTask = getTask(dbTasks, task.id);
@@ -307,7 +308,7 @@ public class Sync {
     }
 
 
-    private static Task getTask(ArrayList<Task> tasks, String sId)
+    private static Task getTask(List<Task> tasks, String sId)
     {
         for(Task task : tasks)
         {

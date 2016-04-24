@@ -10,6 +10,7 @@ import android.util.Log;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
@@ -314,7 +315,7 @@ public class Database extends SQLiteOpenHelper
          * @param listId ID of list
          * @return list of tasks
          */
-        public ArrayList<Task> getList(String listId) {
+        public List<Task> getList(String listId) {
             return getList(listId,true);
         }
 
@@ -324,14 +325,15 @@ public class Database extends SQLiteOpenHelper
          * @param bIncludeBlanks option to exclude blank records which can easily get added on the web
          * @return list of tasks
          */
-        public ArrayList<Task> getList(String listId, boolean bIncludeBlanks)
+        public List<Task> getList(String listId, boolean bIncludeBlanks)
         {
             SQLiteDatabase db = parent.getReadableDatabase();
             String sWhere = null;
             if(listId != null)
                 sWhere = COLUMN_LISTID + "='" + listId + "'";
+            String orderBy = COLUMN_COMPLETE + " ASC, " + COLUMN_TITLE + " ASC";
 
-            Cursor c = db.query(TABLE_NAME, null, sWhere, null, null, null, null);
+            Cursor c = db.query(TABLE_NAME, null, sWhere, null, null, null, orderBy);
             ArrayList<Task> result = new ArrayList<>();
 
             if(c != null)
@@ -382,7 +384,7 @@ public class Database extends SQLiteOpenHelper
     private void logTasksTable()
     {
         Log.d(TAG,"--- Table: " + Tasks.TABLE_NAME);
-        ArrayList<Task> tasks = this.tasks.getList(null);
+        List<Task> tasks = this.tasks.getList(null);
         for(Task task : tasks)
         {
             String listid = String.format("%1$-" + 43 + "s", task.listId);
