@@ -248,13 +248,17 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
 
     public void onOpenTask(Task task) {
         Intent intent = new Intent(this, TaskActivity.class);
+
+        //Send with task or tasklist parameter if new
         if (task != null)
             intent.putExtra(TaskActivity.EXTRA_TASK, task);
+        else {
+            TaskList list = mCurrList;
+            if(list.isAllTasks())
+                list = TaskList.getDefault(mTaskLists);
+            intent.putExtra(TaskActivity.EXTRA_TASKLIST, list);
+        }
 
-        TaskList defaultList = TaskList.getDefault(mTaskLists);
-
-        intent.putExtra(TaskActivity.EXTRA_DEFAULT_LIST, defaultList);
-        intent.putExtra(TaskActivity.EXTRA_TASKLIST, mCurrList);
         startActivityForResult(intent, EDIT_TASK_REQUEST);
     }
 
@@ -285,20 +289,27 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        if (id == R.id.action_add) {
-            onAddTaskList();
-        } else if (id == R.id.action_rename) {
-            TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME, mCurrList);
-            dialog.show(getFragmentManager(), "dialog");
-        } else if (id == R.id.action_account) {
-            onChooseAccount();
-        } else if (id == R.id.action_logout) {
-            onLogout();
-        } else if (id == R.id.action_theme) {
-            onChangeTheme();
+        switch(id) {
+            case R.id.action_add: onAddTaskList(); break;
+            case R.id.action_account: onChooseAccount(); break;
+            case R.id.action_logout: onLogout(); break;
+            case R.id.action_theme: onChangeTheme(); break;
+            case R.id.action_clear_completed: onClearCompleted(); break;
+            case R.id.action_rename:
+                TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME, mCurrList);
+                dialog.show(getFragmentManager(), "dialog");
+                break;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void onClearCompleted() {
+        Log.d(TAG,"onClearCompleted");
+        Database db = Database.getInstance(this);
+        db.tasks.clearCompleted(mCurrList);
+
+        refreshTasks();
     }
 
     private void onChangeTheme() {

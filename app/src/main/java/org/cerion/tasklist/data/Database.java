@@ -349,6 +349,21 @@ public class Database extends SQLiteOpenHelper
 
             return result;
         }
+
+        public void clearCompleted(TaskList list) {
+            SQLiteDatabase db = parent.getWritableDatabase();
+
+            String sWhere = COLUMN_COMPLETE + "=1 AND " + COLUMN_DELETED + "=0";
+            if(!list.isAllTasks())
+                sWhere += " AND " + COLUMN_LISTID + "='" + list.id + "'";
+
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_DELETED,1);
+            values.put(COLUMN_UPDATED,System.currentTimeMillis());
+
+            parent.update(TABLE_NAME, values, sWhere);
+            db.close();
+        }
     }
 
     public void setTaskIds(Task task, String sNewId, String sNewListId)

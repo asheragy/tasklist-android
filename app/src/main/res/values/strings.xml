@@ -17,5 +17,6 @@
     <string name="action_add_list">Add List</string>
     <string name="action_rename_list">Rename List</string>
     <string name="action_change_theme">Change Theme</string>
+    <string name="action_clear_completed">Clear completed</string>
 
 </resources>
