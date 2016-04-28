@@ -64,7 +64,7 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
             setTheme(R.style.AppTheme_Dark);
 
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.main_activity);
+        setContentView(R.layout.activity_main);
 
         View debug = findViewById(R.id.layoutDebug);
         if(debug != null)

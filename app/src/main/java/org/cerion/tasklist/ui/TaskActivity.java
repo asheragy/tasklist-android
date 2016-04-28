@@ -20,7 +20,7 @@ public class TaskActivity extends AppCompatActivity
             this.setTheme(R.style.AppTheme_Dark);
         super.onCreate(savedInstanceState);
 
-        setContentView(R.layout.task_activity);
+        setContentView(R.layout.activity_task);
 
         TaskFragment fragment = (TaskFragment)getSupportFragmentManager().findFragmentById(R.id.fragment);
 

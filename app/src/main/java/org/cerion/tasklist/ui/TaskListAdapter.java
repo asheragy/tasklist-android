@@ -4,13 +4,19 @@ import android.content.res.Resources;
 import android.graphics.Paint;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import org.cerion.tasklist.R;
@@ -22,6 +28,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
+
+    private static final String TAG = TaskListAdapter.class.getSimpleName();
 
     private final List<Task> mTasks = new ArrayList<>();
     private int mPrimaryColor;
@@ -70,19 +78,24 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
         Task task = mTasks.get(position);
 
         String sTitle = task.title.length() > 0 ? task.title : "<Blank>";
-        if(task.deleted)
-            sTitle = "*DELETED* " + sTitle;
         holder.title.setText(sTitle);
         holder.notes.setText(task.notes);
+        holder.completed.setChecked(task.completed);
 
         if(task.completed) {
             holder.title.setTextColor(mSecondaryColor);
             holder.title.setPaintFlags(holder.title.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+
         }
         else {
-            holder.title.setTextColor(mPrimaryColor);
+            holder.title.setTextColor(task.deleted ? mSecondaryColor : mPrimaryColor);
             holder.title.setPaintFlags(holder.title.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
         }
+
+
+        //If deleted don't show completed checkbox
+        holder.completed.setVisibility(task.deleted ? View.GONE : View.VISIBLE);
+        holder.undelete.setVisibility(task.deleted ? View.VISIBLE : View.GONE);
 
         if(task.due != null && task.due.getTime() != 0)
             holder.due.setText(task.getDue());
@@ -106,21 +119,40 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
     }
 
 
-    protected class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnCreateContextMenuListener {
+    protected class ViewHolder extends RecyclerView.ViewHolder implements OnClickListener, View.OnCreateContextMenuListener, OnCheckedChangeListener {
         final TextView title;
         final TextView due;
         final TextView notes;
+        final CheckBox completed;
+        final ImageButton undelete;
 
         public ViewHolder(View view) {
             super(view);
             title = (TextView)view.findViewById(R.id.title);
             due = (TextView)view.findViewById(R.id.dueDate);
             notes = (TextView)view.findViewById(R.id.notes);
+            completed = (CheckBox)view.findViewById(R.id.completed);
+            undelete = (ImageButton)view.findViewById(R.id.undelete);
 
             view.setOnClickListener(this);
             view.setOnCreateContextMenuListener(this);
-
+            completed.setOnCheckedChangeListener(this);
+            undelete.setOnClickListener(mOnUnDeleteListener);
         }
+
+        private final OnClickListener mOnUnDeleteListener = new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Task task = mTasks.get(getLayoutPosition());
+
+                Log.d(TAG,"onUnDelete");
+                Database db = Database.getInstance(v.getContext());
+                task.setDeleted(false);
+                db.tasks.update(task);
+                notifyDataSetChanged();
+
+            }
+        };
 
         @Override
         public void onClick(View v) {
@@ -146,7 +178,19 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
             }
         }
 
+        @Override
+        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+            Task task = mTasks.get(getLayoutPosition());
+            if(task.completed != isChecked) { //checkbox was manually changed
 
+                //Update record in database and refresh list
+                Log.d(TAG,"Toggle completed checkbox");
+                Database db = Database.getInstance(buttonView.getContext());
+                task.setCompleted(isChecked);
+                db.tasks.update(task);
+                notifyDataSetChanged();
+            }
+        }
     }
 
 }

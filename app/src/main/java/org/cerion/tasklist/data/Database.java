@@ -331,7 +331,7 @@ public class Database extends SQLiteOpenHelper
             String sWhere = null;
             if(listId != null)
                 sWhere = COLUMN_LISTID + "='" + listId + "'";
-            String orderBy = COLUMN_COMPLETE + " ASC, " + COLUMN_TITLE + " ASC";
+            String orderBy = COLUMN_DELETED + " ASC, " + COLUMN_COMPLETE + " ASC, " + COLUMN_TITLE + " ASC";
 
             Cursor c = db.query(TABLE_NAME, null, sWhere, null, null, null, orderBy);
             ArrayList<Task> result = new ArrayList<>();
