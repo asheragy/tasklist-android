@@ -6,6 +6,7 @@ import android.accounts.OperationCanceledException;
 import android.app.DialogFragment;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
@@ -52,6 +53,7 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
     private ActionBar mActionBar;
     private ArrayList<TaskList> mTaskLists;
     private ArrayAdapter<TaskList> mActionBarAdapter;
+    private int mDefaultTextColor;
 
     private final TaskListAdapter mTaskListAdapter = new TaskListAdapter(this);
 
@@ -75,6 +77,7 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
             mActionBar.setDisplayShowTitleEnabled(false); //Hide app name, task lists replace title on actionbar
 
         mStatus = (TextView) findViewById(R.id.status);
+        mDefaultTextColor = mStatus != null ? mStatus.getTextColors().getDefaultColor() : 0;
 
         RecyclerView rv = (RecyclerView) findViewById(android.R.id.list);
         if(rv != null) {
@@ -216,6 +219,11 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
                 sText += "Less than 1 minute ago";
             else
                 sText += DateUtils.getRelativeTimeSpanString(lastSync.getTime(), now, DateUtils.SECOND_IN_MILLIS).toString();
+
+            if(now - lastSync.getTime() > (24 * 60 * 60 * 1000))
+                mStatus.setTextColor(Color.RED);
+            else
+                mStatus.setTextColor(mDefaultTextColor);
         }
 
         mStatus.setText(sText);
