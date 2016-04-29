@@ -43,6 +43,11 @@ class Auth {
         return null;
     }
 
+    static void clearSavedToken(Context context) {
+        Prefs.remove(context,Prefs.KEY_AUTHTOKEN);
+        Prefs.remove(context,Prefs.KEY_AUTHTOKEN_DATE);
+    }
+
     static void getTokenAndSync(final Context context, @Nullable Activity activity, final OnSyncCompleteListener callback)
     {
         Log.d(TAG, "Getting Token");
