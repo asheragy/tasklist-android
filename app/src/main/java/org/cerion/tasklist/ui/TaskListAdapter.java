@@ -35,6 +35,7 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
     private int mPrimaryColor;
     private int mSecondaryColor;
     private final MainActivity mActivity;
+    private TaskList mCurrList;
 
     public TaskListAdapter(MainActivity activity) {
         mActivity = activity;
@@ -55,16 +56,17 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
     }
 
     public void refresh(TaskList list) {
+        mCurrList = list;
         Database db = Database.getInstance(mActivity);
         List<Task> tasks = db.tasks.getList(list.id, false); //Get list with blank records excluded
-        refresh(tasks);
-    }
 
-    private void refresh(List<Task> tasks) {
         mTasks.clear();
         mTasks.addAll(tasks);
-        //mTasks = tasks;
         notifyDataSetChanged();
+    }
+
+    private void refresh() {
+        refresh(mCurrList);
     }
 
     @Override
@@ -149,7 +151,7 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
                 Database db = Database.getInstance(v.getContext());
                 task.setDeleted(false);
                 db.tasks.update(task);
-                notifyDataSetChanged();
+                refresh();
 
             }
         };
@@ -188,7 +190,7 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
                 Database db = Database.getInstance(buttonView.getContext());
                 task.setCompleted(isChecked);
                 db.tasks.update(task);
-                notifyDataSetChanged();
+                refresh();
             }
         }
     }
