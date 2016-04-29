@@ -73,7 +73,9 @@
             android:layout_height="wrap_content"
             android:id="@+id/notes"
             android:hint="@string/field_notes"
-            android:minLines="5" />
+            android:minLines="5"
+            android:linksClickable="true"
+            android:autoLink="all" />
 
 
     </LinearLayout>

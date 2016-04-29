@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.text.util.Linkify;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -55,7 +56,7 @@ public class TaskFragment extends Fragment implements DatePickerFragment.DatePic
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
-        View view = inflater.inflate(R.layout.task_fragment, container, false);
+        View view = inflater.inflate(R.layout.fragment_task, container, false);
 
 
         mTextUpdated = (TextView)view.findViewById(R.id.modified);
@@ -162,6 +163,8 @@ public class TaskFragment extends Fragment implements DatePickerFragment.DatePic
 
         mTitle.setText(task.title);
         mNotes.setText(task.notes);
+        Linkify.addLinks(mNotes,Linkify.ALL);
+
         if(task.updated != null)
             mTextUpdated.setText(task.updated.toString());
         mCheckComplete.setChecked(mTask.completed);
