@@ -21,7 +21,6 @@ class Auth {
     private static final String AUTH_TOKEN_TYPE = "Manage your tasks"; //human readable version
     //private static final String AUTH_TOKEN_TYPE = "https://www.googleapis.com/auth/tasks";
 
-
     static String getSavedToken(Context context) {
 
         //When using emulator bypass usual auth methods so it doesn't need a google play account
@@ -31,8 +30,9 @@ class Auth {
         }
 
         //If we have a valid key use it instead of getting a new one
-        String token = Prefs.getPref(context, Prefs.KEY_AUTHTOKEN);
-        Date dtLastToken = Prefs.getPrefDate(context, Prefs.KEY_AUTHTOKEN_DATE);
+        Prefs prefs = Prefs.getInstance(context);
+        String token = prefs.getString(Prefs.KEY_AUTHTOKEN);
+        Date dtLastToken = prefs.getDate(Prefs.KEY_AUTHTOKEN_DATE);
         long dtDiff = (System.currentTimeMillis() - dtLastToken.getTime()) / 1000;
         if(token.length() > 0 && dtDiff < 3500) {
             //Token is a little less than 1 hour old so its still good
@@ -44,8 +44,9 @@ class Auth {
     }
 
     static void clearSavedToken(Context context) {
-        Prefs.remove(context,Prefs.KEY_AUTHTOKEN);
-        Prefs.remove(context,Prefs.KEY_AUTHTOKEN_DATE);
+        Prefs.getInstance(context)
+                .remove(Prefs.KEY_AUTHTOKEN)
+                .remove(Prefs.KEY_AUTHTOKEN_DATE);
     }
 
     static void getTokenAndSync(final Context context, @Nullable Activity activity, final OnSyncCompleteListener callback)
@@ -53,7 +54,7 @@ class Auth {
         Log.d(TAG, "Getting Token");
         AccountManager accountManager = AccountManager.get(context);
         Account[] accounts = accountManager.getAccountsByType("com.google");
-        String accountName = Prefs.getPref(context, Prefs.KEY_ACCOUNT_NAME);
+        String accountName = Prefs.getInstance(context).getString(Prefs.KEY_ACCOUNT_NAME);
         Account account = null;
 
         for(Account tmpAccount: accounts) {
@@ -72,8 +73,10 @@ class Auth {
                         // If the user has authorized your application to use the tasks API a token is available.
                         Bundle bundle = future.getResult();
                         String token = bundle.getString(AccountManager.KEY_AUTHTOKEN);
-                        Prefs.savePref(context, Prefs.KEY_AUTHTOKEN, token);
-                        Prefs.savePrefDate(context, Prefs.KEY_AUTHTOKEN_DATE,new Date());
+
+                        Prefs.getInstance(context)
+                                .setString(Prefs.KEY_AUTHTOKEN, token)
+                                .setDate(Prefs.KEY_AUTHTOKEN_DATE,new Date());
 
                         Log.d(TAG,"Starting SyncTask");
                         SyncTask task = new SyncTask(context,token,callback);

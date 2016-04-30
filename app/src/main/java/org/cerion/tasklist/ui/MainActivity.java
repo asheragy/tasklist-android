@@ -54,6 +54,7 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
     private ArrayList<TaskList> mTaskLists;
     private ArrayAdapter<TaskList> mActionBarAdapter;
     private int mDefaultTextColor;
+    private Prefs mPrefs;
 
     private final TaskListAdapter mTaskListAdapter = new TaskListAdapter(this);
 
@@ -62,7 +63,8 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate " + (savedInstanceState == null ? "null" : "saveState"));
-        if (Prefs.getBool(this,Prefs.KEY_DARK_THEME))
+        mPrefs = Prefs.getInstance(this);
+        if (mPrefs.getBool(Prefs.KEY_DARK_THEME))
             setTheme(R.style.AppTheme_Dark);
 
         super.onCreate(savedInstanceState);
@@ -110,7 +112,7 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
                 public void onClick(View v) {
                     Database db = Database.getInstance(MainActivity.this);
                     db.log();
-                    Prefs.logPrefs(MainActivity.this);
+                    mPrefs.log();
                 }
             });
 
@@ -133,7 +135,7 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
     @Override
     protected void onPause() {
         //Log.d(TAG,"onPause");
-        Prefs.savePref(this, Prefs.KEY_LAST_SELECTED_LIST_ID, mCurrList.id);
+        mPrefs.setString(Prefs.KEY_LAST_SELECTED_LIST_ID, mCurrList.id);
         super.onPause();
     }
 
@@ -210,7 +212,7 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
 
     private void setLastSync() {
         String sText = "Last Sync: ";
-        Date lastSync = Prefs.getPrefDate(this, Prefs.KEY_LAST_SYNC);
+        Date lastSync = mPrefs.getDate(Prefs.KEY_LAST_SYNC);
         if (lastSync == null || lastSync.getTime() == 0)
             sText += "Never";
         else {
@@ -242,14 +244,14 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
             if (requestCode == EDIT_TASK_REQUEST)
                 refreshTasks();
             else if (requestCode == PICK_ACCOUNT_REQUEST) {
-                String currentAccount = Prefs.getPref(this, Prefs.KEY_ACCOUNT_NAME);
+                String currentAccount = mPrefs.getString(Prefs.KEY_ACCOUNT_NAME);
                 String accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
 
                 //If current account is set and different than selected account, logout first
                 if (currentAccount.length() > 0 && !currentAccount.contentEquals(accountName))
                     onLogout();
 
-                Prefs.savePref(this, Prefs.KEY_ACCOUNT_NAME, accountName);
+                mPrefs.setString(Prefs.KEY_ACCOUNT_NAME, accountName);
             }
         }
     }
@@ -322,7 +324,7 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
 
     private void onChangeTheme() {
         //Toggle theme
-        Prefs.set(this,Prefs.KEY_DARK_THEME,!Prefs.getBool(this,Prefs.KEY_DARK_THEME));
+        mPrefs.setBool(Prefs.KEY_DARK_THEME, !mPrefs.getBool(Prefs.KEY_DARK_THEME));
 
         //Restart activity
         finish();
@@ -367,24 +369,24 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
         }
 
         //Remove prefs related to sync/account
-        Prefs.remove(this, Prefs.KEY_LAST_SYNC);
-        Prefs.remove(this, Prefs.KEY_ACCOUNT_NAME);
-        Prefs.remove(this, Prefs.KEY_AUTHTOKEN);
-        Prefs.remove(this, Prefs.KEY_AUTHTOKEN_DATE);
+        mPrefs.remove(Prefs.KEY_LAST_SYNC);
+        mPrefs.remove(Prefs.KEY_ACCOUNT_NAME);
+        mPrefs.remove(Prefs.KEY_AUTHTOKEN);
+        mPrefs.remove(Prefs.KEY_AUTHTOKEN_DATE);
 
         refreshAll();
         setLastSync();
 
         //Log data which should be empty except for un-synced records
         db.log();
-        Prefs.logPrefs(MainActivity.this);
+        mPrefs.log();
     }
 
     private void onChooseAccount() {
         //Find current account
         AccountManager accountManager = AccountManager.get(this);
         Account[] accounts = accountManager.getAccountsByType("com.google");
-        String accountName = Prefs.getPref(this, Prefs.KEY_ACCOUNT_NAME);
+        String accountName = mPrefs.getString(Prefs.KEY_ACCOUNT_NAME);
         Account account = null;
         for (Account tmpAccount : accounts) {
             if (tmpAccount.name.contentEquals(accountName))
@@ -453,7 +455,7 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
 
         //If the current list is not set, try to restore last saved
         if (mCurrList == null)
-            mCurrList = TaskList.get(dbLists, Prefs.getPref(this, Prefs.KEY_LAST_SELECTED_LIST_ID));
+            mCurrList = TaskList.get(dbLists, mPrefs.getString(Prefs.KEY_LAST_SELECTED_LIST_ID));
 
         //If nothing valid is saved default to "all tasks" list
         if (mCurrList == null)

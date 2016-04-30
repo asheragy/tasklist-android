@@ -57,7 +57,7 @@ class SyncTask extends AsyncTask<Void, Void, Void> {
     {
         Log.d(TAG, "Result=" + mResult + " Changes=" + mChanges);
         if(mResult)
-            Prefs.savePrefDate(mContext, Prefs.KEY_LAST_SYNC, new Date());
+            Prefs.getInstance(mContext).setDate(Prefs.KEY_LAST_SYNC, new Date());
 
         mCallback.onSyncFinish(mResult,mError);
     }

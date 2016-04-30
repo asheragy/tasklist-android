@@ -12,79 +12,79 @@ public class Prefs
 {
     private static final String TAG = "prefs";
 
-    public static final String KEY_AUTHTOKEN = "authToken";
-    public static final String KEY_AUTHTOKEN_DATE = "authTokenDate";
     public static final String KEY_LAST_SYNC = "lastSync";
     public static final String KEY_ACCOUNT_NAME = "accountName";
     public static final String KEY_LAST_SELECTED_LIST_ID = "lastListId";
     public static final String KEY_DARK_THEME = "darkTheme";
+    public static final String KEY_AUTHTOKEN = "authToken";
+    public static final String KEY_AUTHTOKEN_DATE = "authTokenDate";
 
-    //TODO, refactor to singleton class
+    private final SharedPreferences mPrefs;
 
-    public static void savePref(Context context, String key, String value)
-    {
-        Log.d(TAG,"save " + key + " " + value);
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putString(key,value);
-        editor.apply();
+    private Prefs(Context context) {
+        mPrefs = PreferenceManager.getDefaultSharedPreferences(context);
     }
 
-    public static void set(Context context, String key, boolean value)
-    {
-        Log.d(TAG,"save " + key + " " + value);
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putBoolean(key, value);
-        editor.apply();
+    public static Prefs getInstance(Context context) {
+        return new Prefs(context);
     }
 
-    public static void remove(Context context, String key)
+    public Prefs setString(String key, String value)
     {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        SharedPreferences.Editor editor = prefs.edit();
+        Log.d(TAG,"save " + key + " " + value);
+        mPrefs.edit().putString(key,value).apply();
+
+        return this;
+    }
+
+    public Prefs setBool(String key, boolean value)
+    {
+        Log.d(TAG,"save " + key + " " + value);
+        mPrefs.edit().putBoolean(key, value).apply();
+
+        return this;
+    }
+
+    public Prefs setDate(String key, Date value)
+    {
+        Log.d(TAG,"save " + key + " " + value);
+        mPrefs.edit().putLong(key, value.getTime()).apply();
+
+        return this;
+    }
+
+    public Prefs remove(String key)
+    {
+        SharedPreferences.Editor editor = mPrefs.edit();
         editor.remove(key);
         editor.apply();
-    }
 
-    public static void savePrefDate(Context context, String key, Date value)
-    {
-        Log.d(TAG,"save " + key + " " + value);
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putLong(key, value.getTime());
-        editor.apply();
+        return this;
     }
 
 
-    public static String getPref(Context context, String key)
+    public String getString(String key)
     {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        return prefs.getString(key,"");
+        return mPrefs.getString(key,"");
     }
 
-    public static boolean getBool(Context context, String key)
+    public boolean getBool(String key)
     {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        return prefs.getBoolean(key,false);
+        return mPrefs.getBoolean(key,false);
     }
 
-    public static Date getPrefDate(Context context, String key)
+    public Date getDate(String key)
     {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        long lDate = prefs.getLong(key,0);
+        long lDate = mPrefs.getLong(key,0);
         Date date = new Date();
         date.setTime(lDate);
         return date;
     }
 
-
-
-    public static void logPrefs(Context context)
+    public void log()
     {
         Log.d(TAG,"--- Prefs ---");
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        Map<String,?> keys = prefs.getAll();
+        Map<String,?> keys = mPrefs.getAll();
 
         for(Map.Entry<String,?> entry : keys.entrySet()){
             Log.d("map values",entry.getKey() + ": " +

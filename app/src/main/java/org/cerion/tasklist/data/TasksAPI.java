@@ -41,7 +41,7 @@ public class TasksAPI
     //Error from tasks API, json encoded with error code and message
     public static class TasksAPIException extends Exception {
 
-        private int mErrorCode;
+        private final int mErrorCode;
         public int getErrorCode() {
             return mErrorCode;
         }

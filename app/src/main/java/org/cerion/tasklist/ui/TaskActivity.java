@@ -16,7 +16,7 @@ public class TaskActivity extends AppCompatActivity
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        if (Prefs.getBool(this,Prefs.KEY_DARK_THEME))
+        if (Prefs.getInstance(this).getBool(Prefs.KEY_DARK_THEME))
             this.setTheme(R.style.AppTheme_Dark);
         super.onCreate(savedInstanceState);
 
