@@ -7,9 +7,10 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import org.cerion.tasklist.data.Database;
+import org.cerion.tasklist.data.GoogleTasksAPI;
 import org.cerion.tasklist.data.Task;
 import org.cerion.tasklist.data.TaskList;
-import org.cerion.tasklist.data.TasksAPI;
+import org.cerion.tasklist.data.GoogleTasksSource;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -27,7 +28,7 @@ public class Sync {
 
 
     //Instance variables
-    private TasksAPI mAPI = null;
+    private GoogleTasksSource mAPI = null;
     private Database mDb = null;
     final int[] googleToDb = { 0, 0, 0, 0, 0, 0 }; //Add Change Delete Lists / Tasks
     final int[] dbToGoogle = { 0, 0, 0, 0, 0, 0 };
@@ -55,11 +56,11 @@ public class Sync {
     Sync(Context context, String sAuthKey)
     {
         mDb = Database.getInstance(context);
-        mAPI = new TasksAPI(sAuthKey);
+        mAPI = new GoogleTasksSource(sAuthKey);
     }
 
-    boolean run() throws TasksAPI.TasksAPIException {
-        ArrayList<TaskList> googleLists = mAPI.taskLists.getList();
+    boolean run() throws GoogleTasksAPI.APIException {
+        List<TaskList> googleLists = mAPI.taskLists.list();
         if(googleLists.size() == 0)
             return false;
 
@@ -123,7 +124,7 @@ public class Sync {
         for(TaskList dbList : dbLists) {
             //--- ADD
             if(dbList.hasTempId()) {
-                TaskList addedList = mAPI.taskLists.add(dbList);
+                TaskList addedList = mAPI.taskLists.insert(dbList);
                 if(addedList != null) {
                     mDb.taskLists.setId(dbList, addedList.id);
                     dbList.id = addedList.id;
@@ -178,7 +179,7 @@ public class Sync {
         return true;
     }
 
-    private void syncTasks(TaskList list, Date savedUpdatedNEW) throws TasksAPI.TasksAPIException {
+    private void syncTasks(TaskList list, Date savedUpdatedNEW) throws GoogleTasksAPI.APIException {
 
         if(list.getUpdated().getTime() == 0) {
             Log.e(TAG,"invalid updated time"); //TODO, need new exception for this class
@@ -191,10 +192,10 @@ public class Sync {
 
         Log.d(TAG, "syncTasks() " + listId + "\t" + savedUpdatedNEW + "\t" + webUpdated);
 
-        ArrayList<Task> webTasks = null;
+        List<Task> webTasks = null;
         if (savedUpdatedNEW.getTime() == 0) {
             Log.d(TAG, "New list, getting all");
-            webTasks = mAPI.tasks.getList(listId, null);
+            webTasks = mAPI.tasks.list(listId, null);
         } else if (webUpdated.after(savedUpdatedNEW)) {
             //The default list can get its modified time updated without having any new tasks, we'll get 0 tasks here sometimes but not much we can do about it
             Log.d(TAG, "Getting updated Tasks");
@@ -202,7 +203,7 @@ public class Sync {
             Log.d(TAG, "Saved = " + savedUpdatedNEW);
 
             //Increase by 1 second to avoid getting previous updated record which already synced
-            webTasks = mAPI.tasks.getList(listId, new Date(savedUpdatedNEW.getTime() + 1000)  );
+            webTasks = mAPI.tasks.list(listId, new Date(savedUpdatedNEW.getTime() + 1000)  );
         }
 
         List<Task> dbTasks = mDb.tasks.getList(listId);
@@ -271,7 +272,7 @@ public class Sync {
             }
             else if(task.hasTempId())
             {
-                Task updated = mAPI.tasks.add(task);
+                Task updated = mAPI.tasks.insert(task);
                 if(updated != null) {
                     mDb.setTaskIds(task,updated.id,updated.listId);
                     dbToGoogle[SYNC_ADD_TASK]++;

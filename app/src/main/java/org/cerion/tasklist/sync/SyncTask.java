@@ -5,8 +5,8 @@ import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import org.cerion.tasklist.data.GoogleTasksAPI;
 import org.cerion.tasklist.data.Prefs;
-import org.cerion.tasklist.data.TasksAPI;
 
 import java.net.HttpURLConnection;
 import java.util.Date;
@@ -34,8 +34,8 @@ class SyncTask extends AsyncTask<Void, Void, Void> {
 
         try {
             mResult = sync.run();
-        } catch (TasksAPI.TasksAPIException e) {
-            Log.d(TAG,"TasksAPIException " + e.getMessage());
+        } catch (GoogleTasksAPI.APIException e) {
+            Log.d(TAG,"APIException " + e.getMessage());
             mError = e;
             mResult = false;
 

@@ -5,6 +5,7 @@ import android.util.Log;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Random;
 
 public class TaskList implements Serializable
@@ -81,7 +82,7 @@ public class TaskList implements Serializable
         return id.startsWith("temp_");
     }
 
-    public static TaskList get(ArrayList<TaskList> lists, String sId) {
+    public static TaskList get(List<TaskList> lists, String sId) {
         for(TaskList list : lists) {
             if(list.id == null)
                 continue;

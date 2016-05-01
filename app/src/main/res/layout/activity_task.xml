@@ -1,7 +1,5 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent">
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <fragment android:name="org.cerion.tasklist.ui.TaskFragment"
         android:id="@+id/fragment"
@@ -9,5 +7,4 @@
         android:layout_height="match_parent"
         tools:layout="@layout/fragment_task" />
 
-
-</FrameLayout>
+</merge>
