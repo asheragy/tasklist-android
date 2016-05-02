@@ -12,16 +12,18 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -50,14 +52,13 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
 
     private TextView mStatus;
     private SwipeRefreshLayout mSwipeRefresh;
-    private ActionBar mActionBar;
     private ArrayList<TaskList> mTaskLists;
-    private ArrayAdapter<TaskList> mActionBarAdapter;
     private int mDefaultTextColor;
     private Prefs mPrefs;
+    private Spinner mSpinner;
+    private ArrayAdapter<TaskList> mSpinnerAdapter;
 
     private final TaskListAdapter mTaskListAdapter = new TaskListAdapter(this);
-
     private static TaskList mCurrList;
 
     @Override
@@ -74,9 +75,11 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
         if(debug != null)
             debug.setVisibility(View.GONE);
 
-        mActionBar = getSupportActionBar();
-        if(mActionBar != null)
-            mActionBar.setDisplayShowTitleEnabled(false); //Hide app name, task lists replace title on actionbar
+        Toolbar toolbar = (Toolbar)findViewById(R.id.toolbar);
+        mSpinner = (Spinner)findViewById(R.id.spinner);
+        setSupportActionBar(toolbar);
+        if(getSupportActionBar() != null)
+            getSupportActionBar().setDisplayShowTitleEnabled(false); //Hide app name, task lists replace title on actionbar
 
         mStatus = (TextView) findViewById(R.id.status);
         mDefaultTextColor = mStatus != null ? mStatus.getTextColors().getDefaultColor() : 0;
@@ -464,8 +467,29 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
         mTaskLists.add(TaskList.ALL_TASKS);
         mTaskLists.addAll(dbLists);
 
-        if (mActionBarAdapter == null) {
-            mActionBarAdapter = new ArrayAdapter<>(mActionBar.getThemedContext(), android.R.layout.simple_spinner_dropdown_item, mTaskLists);
+        if (mSpinnerAdapter == null) {
+
+            mSpinnerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, mTaskLists);
+            mSpinner.setAdapter(mSpinnerAdapter);
+
+            mSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    Log.d(TAG, "onNavigationItemSelected: " + position + " index = " + mSpinner.getSelectedItemPosition());
+                    mCurrList = mTaskLists.get(position);
+                    refreshTasks();
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {
+
+                }
+            });
+
+
+
+            /*
+            mSpinnerAdapter = new ArrayAdapter<>(mActionBar.getThemedContext(), android.R.layout.simple_spinner_dropdown_item, mTaskLists);
             ActionBar.OnNavigationListener navigationListener = new ActionBar.OnNavigationListener() {
                 @Override
                 public boolean onNavigationItemSelected(int itemPosition, long itemId) {
@@ -476,13 +500,17 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
                     return false;
                 }
             };
+            */
 
-            mActionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
-            mActionBar.setListNavigationCallbacks(mActionBarAdapter, navigationListener);
+            //mActionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
+            //mActionBar.setListNavigationCallbacks(mSpinnerAdapter, navigationListener);
+
+
+
         } else
-            mActionBarAdapter.notifyDataSetChanged();
+            mSpinnerAdapter.notifyDataSetChanged();
 
-        mActionBar.setSelectedNavigationItem(getListPosition(mCurrList));
+        mSpinner.setSelection(getListPosition(mCurrList));
     }
 
     private void refreshTasks() {
@@ -495,8 +523,8 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
         String id = list.id;
         int index = 0;
         if (id != null) {
-            for (int i = 1; i < mActionBarAdapter.getCount(); i++) { //Skip first since its default
-                TaskList curr = mActionBarAdapter.getItem(i);
+            for (int i = 1; i < mSpinnerAdapter.getCount(); i++) { //Skip first since its default
+                TaskList curr = mSpinnerAdapter.getItem(i);
                 if (curr.id.contentEquals(id))
                     index = i;
             }
