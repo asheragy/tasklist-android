@@ -3,7 +3,6 @@ package org.cerion.tasklist.data;
 import android.util.Log;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
@@ -94,7 +93,7 @@ public class TaskList implements Serializable
         return null;
     }
 
-    public static TaskList getDefault(ArrayList<TaskList> lists) {
+    public static TaskList getDefault(List<TaskList> lists) {
         for(TaskList list : lists) {
             if(list.bDefault)
                 return list;

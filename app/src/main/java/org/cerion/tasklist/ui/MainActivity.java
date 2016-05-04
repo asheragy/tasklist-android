@@ -15,15 +15,11 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -45,18 +41,17 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements TaskListDialogListener {
+public class MainActivity extends AppCompatActivity implements TaskListDialogListener, TaskListsToolbar.TaskListsChangeListener {
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final int EDIT_TASK_REQUEST = 0;
     private static final int PICK_ACCOUNT_REQUEST = 1;
 
     private TextView mStatus;
     private SwipeRefreshLayout mSwipeRefresh;
-    private ArrayList<TaskList> mTaskLists;
     private int mDefaultTextColor;
     private Prefs mPrefs;
-    private Spinner mSpinner;
-    private ArrayAdapter<TaskList> mSpinnerAdapter;
+
+    private TaskListsToolbar mTaskListsToolbar;
 
     private final TaskListAdapter mTaskListAdapter = new TaskListAdapter(this);
     private static TaskList mCurrList;
@@ -75,11 +70,12 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
         if(debug != null)
             debug.setVisibility(View.GONE);
 
-        Toolbar toolbar = (Toolbar)findViewById(R.id.toolbar);
-        mSpinner = (Spinner)findViewById(R.id.spinner);
-        setSupportActionBar(toolbar);
+        //Toolbar
+        mTaskListsToolbar = (TaskListsToolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(mTaskListsToolbar);
         if(getSupportActionBar() != null)
             getSupportActionBar().setDisplayShowTitleEnabled(false); //Hide app name, task lists replace title on actionbar
+
 
         mStatus = (TextView) findViewById(R.id.status);
         mDefaultTextColor = mStatus != null ? mStatus.getTextColors().getDefaultColor() : 0;
@@ -268,7 +264,7 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
         else {
             TaskList list = mCurrList;
             if(list.isAllTasks())
-                list = TaskList.getDefault(mTaskLists);
+                list = mTaskListsToolbar.getDefaultList();
             intent.putExtra(TaskActivity.EXTRA_TASKLIST, list);
         }
 
@@ -342,7 +338,7 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
         Database db = Database.getInstance(MainActivity.this);
 
         //Move un-synced task to this default list
-        TaskList defaultList = TaskList.getDefault(mTaskLists);
+        TaskList defaultList = mTaskListsToolbar.getDefaultList();
 
         //Delete all non-temp Id records, also remove records marked as deleted
         List<Task> tasks = db.tasks.getList(null);
@@ -437,7 +433,6 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
         refreshTasks();
     }
 
-    @SuppressWarnings("deprecation")
     private void refreshLists() {
         Log.d(TAG, "refreshLists");
         setLastSync(); //Relative time so update it as much as possible
@@ -451,11 +446,6 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
             dbLists = db.taskLists.getList(); //re-get list
         }
 
-        if (mTaskLists == null)
-            mTaskLists = new ArrayList<>();
-        else
-            mTaskLists.clear();
-
         //If the current list is not set, try to restore last saved
         if (mCurrList == null)
             mCurrList = TaskList.get(dbLists, mPrefs.getString(Prefs.KEY_LAST_SELECTED_LIST_ID));
@@ -464,53 +454,7 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
         if (mCurrList == null)
             mCurrList = TaskList.ALL_TASKS;
 
-        mTaskLists.add(TaskList.ALL_TASKS);
-        mTaskLists.addAll(dbLists);
-
-        if (mSpinnerAdapter == null) {
-
-            mSpinnerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, mTaskLists);
-            mSpinner.setAdapter(mSpinnerAdapter);
-
-            mSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                @Override
-                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                    Log.d(TAG, "onNavigationItemSelected: " + position + " index = " + mSpinner.getSelectedItemPosition());
-                    mCurrList = mTaskLists.get(position);
-                    refreshTasks();
-                }
-
-                @Override
-                public void onNothingSelected(AdapterView<?> parent) {
-
-                }
-            });
-
-
-
-            /*
-            mSpinnerAdapter = new ArrayAdapter<>(mActionBar.getThemedContext(), android.R.layout.simple_spinner_dropdown_item, mTaskLists);
-            ActionBar.OnNavigationListener navigationListener = new ActionBar.OnNavigationListener() {
-                @Override
-                public boolean onNavigationItemSelected(int itemPosition, long itemId) {
-                    Log.d(TAG, "onNavigationItemSelected: " + itemPosition + " index = " + mActionBar.getSelectedNavigationIndex());
-                    mCurrList = mTaskLists.get(itemPosition);
-                    refreshTasks();
-
-                    return false;
-                }
-            };
-            */
-
-            //mActionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
-            //mActionBar.setListNavigationCallbacks(mSpinnerAdapter, navigationListener);
-
-
-
-        } else
-            mSpinnerAdapter.notifyDataSetChanged();
-
-        mSpinner.setSelection(getListPosition(mCurrList));
+        mTaskListsToolbar.refresh(dbLists);
     }
 
     private void refreshTasks() {
@@ -519,19 +463,19 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
         mTaskListAdapter.refresh(mCurrList);
     }
 
-    private int getListPosition(TaskList list) {
-        String id = list.id;
-        int index = 0;
-        if (id != null) {
-            for (int i = 1; i < mSpinnerAdapter.getCount(); i++) { //Skip first since its default
-                TaskList curr = mSpinnerAdapter.getItem(i);
-                if (curr.id.contentEquals(id))
-                    index = i;
-            }
-        }
 
-        Log.d(TAG, "listPosition = " + index);
-        return index;
+    @Override
+    public TaskList getCurrentList() {
+        return mCurrList;
     }
 
+    @Override
+    public void setCurrentList(TaskList list) {
+        mCurrList = list;
+    }
+
+    @Override
+    public void onListChanged() {
+        refreshTasks();
+    }
 }
