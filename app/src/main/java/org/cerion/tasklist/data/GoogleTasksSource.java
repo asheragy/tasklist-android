@@ -62,7 +62,7 @@ public class GoogleTasksSource
 
         @Override
         public TaskList get(String id) throws APIException {
-            String sURL = "users/@me/lists/" + id;
+            String sURL = parent.getURL("users/@me/lists/" + id);
             JSONObject json = parent.getJSON(sURL);
 
             if(json != null) {
@@ -79,7 +79,7 @@ public class GoogleTasksSource
 
         @Override
         public List<TaskList> list() throws APIException {
-            String sURL = "users/@me/lists";
+            String sURL = parent.getURL("users/@me/lists");
             JSONObject json = parent.getJSON(sURL);
             ArrayList<TaskList> result = new ArrayList<>();
 
@@ -112,7 +112,7 @@ public class GoogleTasksSource
 
         @Override
         public boolean update(TaskList list) throws APIException {
-            String sURL = "users/@me/lists/" + list.id;
+            String sURL = parent.getURL("users/@me/lists/" + list.id);
             JSONObject json = new JSONObject();
             boolean bResult = false;
 
@@ -135,7 +135,7 @@ public class GoogleTasksSource
 
         @Override
         public TaskList insert(TaskList list) throws GoogleTasksAPI.APIException {
-            String sURL = "users/@me/lists";
+            String sURL = parent.getURL("users/@me/lists");
             JSONObject json = new JSONObject();
             TaskList result = null;
 
@@ -172,7 +172,6 @@ public class GoogleTasksSource
         }
     }
 
-
     public static class Tasks implements GoogleTasksAPI.Tasks {
         private GoogleTasksSource parent = null;
         private Tasks(GoogleTasksSource api) {
@@ -191,7 +190,7 @@ public class GoogleTasksSource
         @Override
         public boolean delete(Task task)
         {
-            String sURL = "lists/" + task.listId + "/tasks/" + task.id;
+            String sURL = parent.getURL("lists/" + task.listId + "/tasks/" + task.id);
             String result = parent.getInetData(sURL,null,DELETE);
 
             return (result.length() == 0); //Successful delete does not return anything
@@ -203,7 +202,7 @@ public class GoogleTasksSource
             if(task.listId != null && task.listId.length() > 0)
                 listId = task.listId;
 
-            String sURL = "lists/" + listId + "/tasks";
+            String sURL = parent.getURL("lists/" + listId + "/tasks");
             JSONObject json = new JSONObject();
 
             try
@@ -240,7 +239,7 @@ public class GoogleTasksSource
 
         @Override
         public boolean update(Task task) throws GoogleTasksAPI.APIException {
-            String sURL = "lists/" + task.listId + "/tasks/" + task.id;
+            String sURL = parent.getURL("lists/" + task.listId + "/tasks/" + task.id);
             JSONObject json = new JSONObject();
             boolean bResult = false;
 
@@ -272,7 +271,7 @@ public class GoogleTasksSource
 
         @Override
         public List<Task> list(String listId, @Nullable Date dtUpdatedMin) throws APIException {
-            String sURL = "lists/" + listId + "/tasks";
+            String sURL = parent.getURL("lists/" + listId + "/tasks");
             if(dtUpdatedMin != null)
             {
                 sURL += "&updatedMin=" + parent.mDateFormat.format(dtUpdatedMin);
@@ -376,11 +375,12 @@ public class GoogleTasksSource
         return json;
     }
 
+    private String getURL(String endpoint) {
+        return GoogleTasksAPI.BASE_URL + endpoint + "?key=" + GoogleTasksAPI.API_KEY;
+    }
 
     private String getInetData(String sURL, String sRequestBody, int method)
     {
-        sURL = GoogleTasksAPI.BASE_URL + sURL + "?key=" + GoogleTasksAPI.API_KEY;
-
         String command = "GET";
         if(method == POST) command = "POST";
         else if(method == PUT) command = "PUT";

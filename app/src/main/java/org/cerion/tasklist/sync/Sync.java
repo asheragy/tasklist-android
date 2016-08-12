@@ -26,6 +26,7 @@ public class Sync {
     private static final int SYNC_CHANGE_TASK = 4;
     private static final int SYNC_DELETE_TASK = 5;
 
+    private static final boolean RESYNC_WEB = false;
 
     //Instance variables
     private GoogleTasksSource mAPI = null;
@@ -196,7 +197,11 @@ public class Sync {
         if (savedUpdatedNEW.getTime() == 0) {
             Log.d(TAG, "New list, getting all");
             webTasks = mAPI.tasks.list(listId, null);
-        } else if (webUpdated.after(savedUpdatedNEW)) {
+        } else if(RESYNC_WEB) {
+            Log.d(TAG, "Re-syncing web, getting all");
+            webTasks = mAPI.tasks.list(listId, null);
+        }
+        else if (webUpdated.after(savedUpdatedNEW)) {
             //The default list can get its modified time updated without having any new tasks, we'll get 0 tasks here sometimes but not much we can do about it
             Log.d(TAG, "Getting updated Tasks");
             Log.d(TAG, "Web   = " + webUpdated);
@@ -206,6 +211,9 @@ public class Sync {
             webTasks = mAPI.tasks.list(listId, new Date(savedUpdatedNEW.getTime() + 1000)  );
         }
 
+        /**************
+         Web -> Database
+         **************/
         List<Task> dbTasks = mDb.tasks.getList(listId);
         if (webTasks != null) {
             for (Task task : webTasks) {

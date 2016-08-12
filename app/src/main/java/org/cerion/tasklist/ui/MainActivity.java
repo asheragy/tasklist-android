@@ -3,6 +3,7 @@ package org.cerion.tasklist.ui;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.OperationCanceledException;
+import android.app.Activity;
 import android.app.DialogFragment;
 import android.content.Context;
 import android.content.Intent;
@@ -12,7 +13,6 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.format.DateUtils;
@@ -41,7 +41,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements TaskListDialogListener, TaskListsToolbar.TaskListsChangeListener {
+public class MainActivity extends Activity implements TaskListDialogListener, TaskListsToolbar.TaskListsChangeListener {
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final int EDIT_TASK_REQUEST = 0;
     private static final int PICK_ACCOUNT_REQUEST = 1;
@@ -72,9 +72,9 @@ public class MainActivity extends AppCompatActivity implements TaskListDialogLis
 
         //Toolbar
         mTaskListsToolbar = (TaskListsToolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(mTaskListsToolbar);
-        if(getSupportActionBar() != null)
-            getSupportActionBar().setDisplayShowTitleEnabled(false); //Hide app name, task lists replace title on actionbar
+        setActionBar(mTaskListsToolbar);
+        if(getActionBar() != null)
+            getActionBar().setDisplayShowTitleEnabled(false); //Hide app name, task lists replace title on actionbar
 
 
         mStatus = (TextView) findViewById(R.id.status);
