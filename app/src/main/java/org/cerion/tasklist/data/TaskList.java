@@ -3,6 +3,7 @@ package org.cerion.tasklist.data;
 import android.util.Log;
 
 import java.io.Serializable;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
@@ -114,6 +115,4 @@ public class TaskList implements Serializable
     {
         this.updated = updated;
     }
-
-
 }

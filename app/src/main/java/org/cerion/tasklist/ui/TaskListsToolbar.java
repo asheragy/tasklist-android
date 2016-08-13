@@ -1,6 +1,7 @@
 package org.cerion.tasklist.ui;
 
 
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
@@ -17,6 +18,8 @@ import org.cerion.tasklist.R;
 import org.cerion.tasklist.data.TaskList;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class TaskListsToolbar extends Toolbar {
@@ -91,8 +94,16 @@ public class TaskListsToolbar extends Toolbar {
 
     public void refresh(List<TaskList> lists) {
         mTaskLists.clear();
-        mTaskLists.add(TaskList.ALL_TASKS);
         mTaskLists.addAll(lists);
+
+        Collections.sort(mTaskLists, new Comparator<TaskList>() {
+            @Override
+            public int compare(TaskList taskList, TaskList t1) {
+                return taskList.title.compareToIgnoreCase(t1.title);
+            }
+        });
+
+        mTaskLists.add(0, TaskList.ALL_TASKS);
         mSpinnerAdapter.notifyDataSetChanged();
 
         //Re-select last position

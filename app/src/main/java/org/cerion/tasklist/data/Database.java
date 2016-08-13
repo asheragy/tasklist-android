@@ -32,6 +32,8 @@ public class Database extends SQLiteOpenHelper
         taskLists = new TaskLists(this);
         tasks = new Tasks(this);
     }
+
+    // This should be in the SQLiteOpenHelper class, the database class maybe but not as important
     public synchronized static Database getInstance(Context context)
     {
         if(mInstance == null)
@@ -331,9 +333,11 @@ public class Database extends SQLiteOpenHelper
             String sWhere = null;
             if(listId != null)
                 sWhere = COLUMN_LISTID + "='" + listId + "'";
-            String orderBy = COLUMN_DELETED + " ASC, " + COLUMN_COMPLETE + " ASC, " + COLUMN_TITLE + " ASC";
 
-            Cursor c = db.query(TABLE_NAME, null, sWhere, null, null, null, orderBy);
+            //Should be handled outside of database as needed
+            //String orderBy = COLUMN_DELETED + " ASC, " + COLUMN_COMPLETE + " ASC, " + COLUMN_TITLE + " ASC";
+
+            Cursor c = db.query(TABLE_NAME, null, sWhere, null, null, null, null);
             ArrayList<Task> result = new ArrayList<>();
 
             if(c != null)

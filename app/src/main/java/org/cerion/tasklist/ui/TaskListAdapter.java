@@ -25,6 +25,8 @@ import org.cerion.tasklist.data.Task;
 import org.cerion.tasklist.data.TaskList;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
@@ -62,6 +64,19 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
 
         mTasks.clear();
         mTasks.addAll(tasks);
+
+        Collections.sort(mTasks, new Comparator<Task>() {
+            @Override
+            public int compare(Task task, Task t1) {
+                if(task.deleted != t1.deleted)
+                    return task.deleted ? 1 : -1;
+                if(task.completed != t1.completed)
+                    return task.completed ? 1 : -1;
+
+                return task.title.compareToIgnoreCase(t1.title);
+            }
+        });
+
         notifyDataSetChanged();
     }
 
