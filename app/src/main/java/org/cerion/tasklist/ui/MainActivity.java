@@ -308,6 +308,10 @@ public class MainActivity extends Activity implements TaskListDialogListener, Ta
                 TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME, mCurrList);
                 dialog.show(getFragmentManager(), "dialog");
                 break;
+            case R.id.action_view_log:
+                Intent intent = new Intent(this, LogViewActivity.class);
+                startActivity(intent);
+                break;
         }
 
         return super.onOptionsItemSelected(item);

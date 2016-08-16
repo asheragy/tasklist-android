@@ -9,7 +9,6 @@
     <string name="select_account">Select Account</string>
     <string name="no_due_date">No Due Date</string>
 
-
     <string name="action_complete">Complete</string>
     <string name="action_delete">Delete</string>
     <string name="action_logout">Logout</string>
@@ -18,5 +17,6 @@
     <string name="action_rename_list">Rename List</string>
     <string name="action_change_theme">Change Theme</string>
     <string name="action_clear_completed">Clear completed</string>
+    <string name="action_view_log">View Log</string>
 
 </resources>
