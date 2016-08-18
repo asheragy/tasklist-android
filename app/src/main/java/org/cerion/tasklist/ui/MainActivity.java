@@ -41,6 +41,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+//TODO verify network is available and toast message
+
 public class MainActivity extends Activity implements TaskListDialogListener, TaskListsToolbar.TaskListsChangeListener {
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final int EDIT_TASK_REQUEST = 0;

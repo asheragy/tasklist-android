@@ -5,19 +5,19 @@ import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
 
-import org.cerion.tasklist.data.GoogleTasksAPI;
+import org.cerion.tasklist.data.IGoogleTasksAPI;
 import org.cerion.tasklist.data.Prefs;
 
 import java.net.HttpURLConnection;
 import java.util.Date;
 
-class SyncTask extends AsyncTask<Void, Void, Void> {
+class SyncTask extends AsyncTask<Void, Void, Boolean> {
 
     private static final String TAG = SyncTask.class.getSimpleName();
     private final Context mContext;
     private final String mAuthToken;
     private final OnSyncCompleteListener mCallback;
-    private boolean mResult = false;
+
     private int mChanges = 0;
     private Exception mError = null;
 
@@ -29,15 +29,16 @@ class SyncTask extends AsyncTask<Void, Void, Void> {
     }
 
     @Override
-    protected Void doInBackground(Void... params) {
+    protected Boolean doInBackground(Void... params) {
         Sync sync = new Sync(mContext,mAuthToken);
+        boolean result;
 
         try {
-            mResult = sync.run();
-        } catch (GoogleTasksAPI.APIException e) {
+            result = sync.run();
+        } catch (IGoogleTasksAPI.APIException e) {
             Log.d(TAG,"APIException " + e.getMessage());
             mError = e;
-            mResult = false;
+            result = false;
 
             //If unauthorized clear token so it will try to get a new one
             if(e.getErrorCode() == HttpURLConnection.HTTP_UNAUTHORIZED)
@@ -49,16 +50,16 @@ class SyncTask extends AsyncTask<Void, Void, Void> {
             mChanges += sync.googleToDb[i];
         }
 
-        return null;
+        return result;
     }
 
     @Override
-    protected void onPostExecute(Void aVoid)
+    protected void onPostExecute(Boolean result)
     {
-        Log.d(TAG, "Result=" + mResult + " Changes=" + mChanges);
-        if(mResult)
+        Log.d(TAG, "Result=" + result + " Changes=" + mChanges);
+        if(result)
             Prefs.getInstance(mContext).setDate(Prefs.KEY_LAST_SYNC, new Date());
 
-        mCallback.onSyncFinish(mResult,mError);
+        mCallback.onSyncFinish(result,mError);
     }
 }

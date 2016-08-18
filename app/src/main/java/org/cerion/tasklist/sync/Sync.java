@@ -7,10 +7,10 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import org.cerion.tasklist.data.Database;
-import org.cerion.tasklist.data.GoogleTasksAPI;
+import org.cerion.tasklist.data.IGoogleTasksAPI;
 import org.cerion.tasklist.data.Task;
 import org.cerion.tasklist.data.TaskList;
-import org.cerion.tasklist.data.GoogleTasksSource;
+import org.cerion.tasklist.data.GoogleTasksAPI;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -29,7 +29,7 @@ public class Sync {
     private static final boolean RESYNC_WEB = false;
 
     //Instance variables
-    private GoogleTasksSource mAPI = null;
+    private GoogleTasksAPI mAPI = null;
     private Database mDb = null;
     final int[] googleToDb = { 0, 0, 0, 0, 0, 0 }; //Add Change Delete Lists / Tasks
     final int[] dbToGoogle = { 0, 0, 0, 0, 0, 0 };
@@ -57,10 +57,10 @@ public class Sync {
     Sync(Context context, String sAuthKey)
     {
         mDb = Database.getInstance(context);
-        mAPI = new GoogleTasksSource(sAuthKey);
+        mAPI = new GoogleTasksAPI(sAuthKey);
     }
 
-    boolean run() throws GoogleTasksAPI.APIException {
+    boolean run() throws IGoogleTasksAPI.APIException {
         List<TaskList> googleLists = mAPI.taskLists.list();
         if(googleLists.size() == 0)
             return false;
@@ -180,7 +180,7 @@ public class Sync {
         return true;
     }
 
-    private void syncTasks(TaskList list, Date savedUpdatedNEW) throws GoogleTasksAPI.APIException {
+    private void syncTasks(TaskList list, Date savedUpdatedNEW) throws IGoogleTasksAPI.APIException {
 
         if(list.getUpdated().getTime() == 0) {
             Log.e(TAG,"invalid updated time"); //TODO, need new exception for this class
