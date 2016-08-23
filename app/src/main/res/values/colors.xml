@@ -3,6 +3,7 @@
 
     <item name="material_light_green_500" type="color">#8BC34A</item>
     <item name="material_light_green_700" type="color">#689F38</item>
+    <item name="material_light_green_900" type="color">#33691e</item>
 
     <item name="material_amber_500" type="color">#ffc107</item>
     <item name="material_amber_200" type="color">#ffe082</item>
