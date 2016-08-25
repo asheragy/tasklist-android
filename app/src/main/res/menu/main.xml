@@ -17,12 +17,8 @@
         android:title="@string/select_account"
         android:orderInCategory="100"/>
 
-    <item android:id="@+id/action_theme"
-        android:title="@string/action_change_theme"
-        android:orderInCategory="100"/>
-
-    <item android:id="@+id/action_view_log"
-        android:title="@string/action_view_log"
+    <item android:id="@+id/action_settings"
+        android:title="@string/action_settings"
         android:orderInCategory="100"/>
 
     <item android:id="@+id/action_logout"

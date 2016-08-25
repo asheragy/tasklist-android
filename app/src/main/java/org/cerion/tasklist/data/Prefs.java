@@ -5,6 +5,8 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
+import org.cerion.tasklist.R;
+
 import java.util.Date;
 import java.util.Map;
 
@@ -15,13 +17,14 @@ public class Prefs
     public static final String KEY_LAST_SYNC = "lastSync";
     public static final String KEY_ACCOUNT_NAME = "accountName";
     public static final String KEY_LAST_SELECTED_LIST_ID = "lastListId";
-    public static final String KEY_DARK_THEME = "darkTheme";
     public static final String KEY_AUTHTOKEN = "authToken";
     public static final String KEY_AUTHTOKEN_DATE = "authTokenDate";
 
     private final SharedPreferences mPrefs;
+    private final Context mContext;
 
     private Prefs(Context context) {
+        mContext = context;
         mPrefs = PreferenceManager.getDefaultSharedPreferences(context);
     }
 
@@ -90,5 +93,9 @@ public class Prefs
             Log.d("map values",entry.getKey() + ": " +
                     entry.getValue().toString());
         }
+    }
+
+    public boolean isDarkTheme() {
+        return mPrefs.getString(mContext.getString(R.string.pref_key_background),"0").contentEquals("1");
     }
 }

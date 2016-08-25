@@ -62,7 +62,7 @@ public class MainActivity extends Activity implements TaskListDialogListener, Ta
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate " + (savedInstanceState == null ? "null" : "saveState"));
         mPrefs = Prefs.getInstance(this);
-        if (mPrefs.getBool(Prefs.KEY_DARK_THEME))
+        if (mPrefs.isDarkTheme())
             setTheme(R.style.AppTheme_Dark);
 
         super.onCreate(savedInstanceState);
@@ -304,15 +304,15 @@ public class MainActivity extends Activity implements TaskListDialogListener, Ta
             case R.id.action_add: onAddTaskList(); break;
             case R.id.action_account: onChooseAccount(); break;
             case R.id.action_logout: onLogout(); break;
-            case R.id.action_theme: onChangeTheme(); break;
+            case R.id.action_settings: {
+                Intent intent = new Intent(this, SettingsActivity.class);
+                startActivity(intent);
+                break;
+            }
             case R.id.action_clear_completed: onClearCompleted(); break;
             case R.id.action_rename:
                 TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME, mCurrList);
                 dialog.show(getFragmentManager(), "dialog");
-                break;
-            case R.id.action_view_log:
-                Intent intent = new Intent(this, LogViewActivity.class);
-                startActivity(intent);
                 break;
         }
 
@@ -325,18 +325,6 @@ public class MainActivity extends Activity implements TaskListDialogListener, Ta
         db.tasks.clearCompleted(mCurrList);
 
         refreshTasks();
-    }
-
-    private void onChangeTheme() {
-        //Toggle theme
-        mPrefs.setBool(Prefs.KEY_DARK_THEME, !mPrefs.getBool(Prefs.KEY_DARK_THEME));
-
-        //Restart activity
-        finish();
-        Intent intent = new Intent(this, MainActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(intent);
     }
 
     private void onLogout() {

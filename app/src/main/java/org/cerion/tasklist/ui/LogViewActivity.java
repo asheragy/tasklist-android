@@ -10,6 +10,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 import org.cerion.tasklist.R;
+import org.cerion.tasklist.data.Prefs;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -25,6 +26,9 @@ public class LogViewActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        if (Prefs.getInstance(this).isDarkTheme())
+            setTheme(R.style.AppTheme_Dark);
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_log_view);
 

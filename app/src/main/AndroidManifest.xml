@@ -29,7 +29,10 @@
             android:screenOrientation="portrait">
             >
         </activity>
-        <activity android:name=".ui.LogViewActivity" android:label="Log"></activity>
+        <activity
+            android:name=".ui.LogViewActivity"
+            android:label="Log" />
+        <activity android:name=".ui.SettingsActivity"></activity>
     </application>
 
 </manifest>
