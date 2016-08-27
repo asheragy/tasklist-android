@@ -43,14 +43,14 @@ public class Sync {
      */
     public static void run(Context context, @Nullable Activity activity, OnSyncCompleteListener callback)
     {
-        String token = Auth.getSavedToken(context);
+        String token = AuthTools.getSavedToken(context);
 
         if(token != null) {
             SyncTask task = new SyncTask(context, token, callback);
             task.execute();
         } else {
             //Get new token then run sync
-            Auth.getTokenAndSync(context, activity, callback);
+            AuthTools.getTokenAndSync(context, activity, callback);
         }
     }
 

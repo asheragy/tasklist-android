@@ -42,7 +42,7 @@ class SyncTask extends AsyncTask<Void, Void, Boolean> {
 
             //If unauthorized clear token so it will try to get a new one
             if(e.getErrorCode() == HttpURLConnection.HTTP_UNAUTHORIZED)
-                Auth.clearSavedToken(mContext);
+                AuthTools.clearSavedToken(mContext);
         }
 
         for(int i = 0; i < sync.dbToGoogle.length; i++) {

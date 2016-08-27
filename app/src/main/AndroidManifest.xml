@@ -32,7 +32,7 @@
         <activity
             android:name=".ui.LogViewActivity"
             android:label="Log" />
-        <activity android:name=".ui.SettingsActivity"></activity>
+        <activity android:name=".ui.SettingsActivity"/>
     </application>
 
 </manifest>

@@ -2,7 +2,6 @@ package org.cerion.tasklist.data;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Random;

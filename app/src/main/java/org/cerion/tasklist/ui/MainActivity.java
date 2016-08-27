@@ -1,7 +1,5 @@
 package org.cerion.tasklist.ui;
 
-import android.accounts.Account;
-import android.accounts.AccountManager;
 import android.accounts.OperationCanceledException;
 import android.app.Activity;
 import android.app.DialogFragment;
@@ -23,8 +21,6 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.common.AccountPicker;
-
 import org.cerion.tasklist.data.Database;
 import org.cerion.tasklist.data.Prefs;
 import org.cerion.tasklist.R;
@@ -36,17 +32,14 @@ import org.cerion.tasklist.dialogs.TaskListDialogFragment.TaskListDialogListener
 import org.cerion.tasklist.sync.OnSyncCompleteListener;
 import org.cerion.tasklist.sync.Sync;
 
-
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 //TODO verify network is available and toast message
 
 public class MainActivity extends Activity implements TaskListDialogListener, TaskListsToolbar.TaskListsChangeListener {
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final int EDIT_TASK_REQUEST = 0;
-    private static final int PICK_ACCOUNT_REQUEST = 1;
 
     private TextView mStatus;
     private SwipeRefreshLayout mSwipeRefresh;
@@ -174,7 +167,8 @@ public class MainActivity extends Activity implements TaskListDialogListener, Ta
                     setInSync(false);
 
                     if (e == null) {
-                        onChooseAccount();
+                        //TODO do automatically
+                        Toast.makeText(MainActivity.this, "Open settings and select account", Toast.LENGTH_LONG).show();
                     } else if (e instanceof OperationCanceledException) {
                         Log.d(TAG, "User denied auth prompt");
                         //For some reason showing an AlertDialog here causes a crash
@@ -244,16 +238,18 @@ public class MainActivity extends Activity implements TaskListDialogListener, Ta
         if (resultCode == RESULT_OK) {
             if (requestCode == EDIT_TASK_REQUEST)
                 refreshTasks();
+            /*
             else if (requestCode == PICK_ACCOUNT_REQUEST) {
                 String currentAccount = mPrefs.getString(Prefs.KEY_ACCOUNT_NAME);
                 String accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
 
                 //If current account is set and different than selected account, logout first
                 if (currentAccount.length() > 0 && !currentAccount.contentEquals(accountName))
-                    onLogout();
+                    AuthTools.logout(this);
 
                 mPrefs.setString(Prefs.KEY_ACCOUNT_NAME, accountName);
             }
+            */
         }
     }
 
@@ -302,8 +298,6 @@ public class MainActivity extends Activity implements TaskListDialogListener, Ta
 
         switch(id) {
             case R.id.action_add: onAddTaskList(); break;
-            case R.id.action_account: onChooseAccount(); break;
-            case R.id.action_logout: onLogout(); break;
             case R.id.action_settings: {
                 Intent intent = new Intent(this, SettingsActivity.class);
                 startActivity(intent);
@@ -327,79 +321,10 @@ public class MainActivity extends Activity implements TaskListDialogListener, Ta
         refreshTasks();
     }
 
-    private void onLogout() {
-        Log.d(TAG, "onLogout");
-        Database db = Database.getInstance(MainActivity.this);
-
-        //Move un-synced task to this default list
-        TaskList defaultList = mTaskListsToolbar.getDefaultList();
-
-        //Delete all non-temp Id records, also remove records marked as deleted
-        List<Task> tasks = db.tasks.getList(null);
-        for (Task task : tasks) {
-            if (!task.hasTempId() || task.deleted)
-                db.tasks.delete(task);
-            else {
-                //Since we are also removing synced lists, check if we need to move this task to an un-synced list
-                TaskList list = new TaskList(task.listId, "");
-                if (!list.hasTempId() && defaultList != null) {
-                    //Move this task to default list
-                    db.setTaskIds(task, task.id, defaultList.id);
-                }
-            }
-        }
-
-        ArrayList<TaskList> lists = db.taskLists.getList();
-        for (TaskList list : lists) {
-            if (!list.hasTempId()) //don't delete un-synced lists
-            {
-                if (list.bDefault) { //Keep default but assign temp id
-                    db.taskLists.setLastUpdated(list, new Date(0));
-                    db.taskLists.setId(list, TaskList.generateId());
-                } else
-                    db.taskLists.delete(list);
-            }
-        }
-
-        //Remove prefs related to sync/account
-        mPrefs.remove(Prefs.KEY_LAST_SYNC);
-        mPrefs.remove(Prefs.KEY_ACCOUNT_NAME);
-        mPrefs.remove(Prefs.KEY_AUTHTOKEN);
-        mPrefs.remove(Prefs.KEY_AUTHTOKEN_DATE);
-
-        refreshAll();
-        setLastSync();
-
-        //Log data which should be empty except for un-synced records
-        db.log();
-        mPrefs.log();
-    }
-
-    private void onChooseAccount() {
-        //Find current account
-        AccountManager accountManager = AccountManager.get(this);
-        Account[] accounts = accountManager.getAccountsByType("com.google");
-        String accountName = mPrefs.getString(Prefs.KEY_ACCOUNT_NAME);
-        Account account = null;
-        for (Account tmpAccount : accounts) {
-            if (tmpAccount.name.contentEquals(accountName))
-                account = tmpAccount;
-        }
-
-        //Display account picker
-        try {
-            Intent intent = AccountPicker.newChooseAccountIntent(account, null, new String[]{"com.google"}, false, null, null, null, null);
-            startActivityForResult(intent, PICK_ACCOUNT_REQUEST);
-        } catch(Exception e) {
-            Toast.makeText(this, "Google play services not available", Toast.LENGTH_LONG).show();
-        }
-    }
-
     private void onAddTaskList() {
         TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_ADD, null);
         dialog.show(getFragmentManager(), "dialog");
     }
-
 
     public boolean onContextItemSelected(MenuItem item) {
 

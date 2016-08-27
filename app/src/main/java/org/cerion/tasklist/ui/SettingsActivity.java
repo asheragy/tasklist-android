@@ -8,11 +8,23 @@ import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.support.v4.app.TaskStackBuilder;
 import android.os.Bundle;
+import android.util.Log;
+import android.widget.Toast;
+
+import com.google.android.gms.common.AccountPicker;
 
 import org.cerion.tasklist.R;
 import org.cerion.tasklist.data.Prefs;
+import org.cerion.tasklist.sync.AuthTools;
 
 public class SettingsActivity extends PreferenceActivity {
+
+    private static final String TAG = SettingsActivity.class.getSimpleName();
+    private Preference mAccountList;
+    private Preference mLogout;
+    private ListPreference mBackground;
+    private Prefs mPrefs;
+    private static final int PICK_ACCOUNT_REQUEST = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,50 +33,45 @@ public class SettingsActivity extends PreferenceActivity {
 
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.preferences);
+        mPrefs = Prefs.getInstance(this);
 
-        //Set Account list
-        final ListPreference accountList = (ListPreference) findPreference(getString(R.string.pref_key_accountName));
-        initAccounts(accountList);
+        mLogout = get("logout");
+        mAccountList = get(getString(R.string.pref_key_accountName));
+        mBackground = (ListPreference)get(getString(R.string.pref_key_background));
 
-        final ListPreference background = (ListPreference)findPreference(getString(R.string.pref_key_background));
-        initBackground(background);
+        init();
+    }
 
-        findPreference("viewlog").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+    private void init() {
+        //Accounts
+        final String currentAccount = mPrefs.getString(mAccountList.getKey());
+        mAccountList.setSummary(currentAccount);
+        mAccountList.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             @Override
             public boolean onPreferenceClick(Preference preference) {
-                Intent intent = new Intent(SettingsActivity.this, LogViewActivity.class);
-                startActivity(intent);
-                return false;
+                onChooseAccount();
+                return true;
             }
         });
-    }
 
-    private void initAccounts(ListPreference accountList) {
-        final String currentAccount = Prefs.getInstance(this).getString(Prefs.KEY_ACCOUNT_NAME);
-        accountList.setSummary(currentAccount);
-
-        //Get accounts from account manager
-        AccountManager accountManager = AccountManager.get(SettingsActivity.this);
-        Account[] accounts = accountManager.getAccountsByType("com.google");
-        CharSequence[] accts = new CharSequence[accounts.length];
-        for(int i = 0; i < accounts.length; i++)
-            accts[i] = accounts[i].name;
-
-        accountList.setEntries(accts);
-        accountList.setEntryValues(accts);
-        accountList.setDefaultValue(currentAccount);
-
-        accountList.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+        //Logout button
+        String acct = mPrefs.getString(mAccountList.getKey());
+        mLogout.setEnabled(acct != null && acct.length() > 0);
+        mLogout.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             @Override
-            public boolean onPreferenceChange(Preference preference, Object o) {
-                //TODO, if changed need to logout and log back in
-                return false;
+            public boolean onPreferenceClick(Preference preference) {
+                //TODO, progress indicator and async
+                AuthTools.logout(SettingsActivity.this);
+
+                //Restart app
+                TaskStackBuilder.create(SettingsActivity.this)
+                        .addNextIntent(new Intent(SettingsActivity.this, MainActivity.class))
+                        .startActivities();
+                return true;
             }
         });
-    }
 
-    private void initBackground(ListPreference background) {
-        background.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+        mBackground.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
             @Override
             public boolean onPreferenceChange(Preference preference, Object o) {
                 String curr = ((ListPreference)preference).getValue();
@@ -85,5 +92,62 @@ public class SettingsActivity extends PreferenceActivity {
                 return true;
             }
         });
+
+        get("viewlog").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+            @Override
+            public boolean onPreferenceClick(Preference preference) {
+                Intent intent = new Intent(SettingsActivity.this, LogViewActivity.class);
+                startActivity(intent);
+                return true;
+            }
+        });
+    }
+
+    //Temp to reduce warnings to 1 location
+    private Preference get(CharSequence key) {
+        return findPreference(key);
+    }
+
+    private void onChooseAccount() {
+        //Find current account
+        AccountManager accountManager = AccountManager.get(this);
+        Account[] accounts = accountManager.getAccountsByType("com.google");
+        String accountName = mPrefs.getString(Prefs.KEY_ACCOUNT_NAME);
+        Account account = null;
+        for (Account tmpAccount : accounts) {
+            if (tmpAccount.name.contentEquals(accountName))
+                account = tmpAccount;
+        }
+
+        //Display account picker
+        try {
+            Intent intent = AccountPicker.newChooseAccountIntent(
+                    account, null, new String[]{"com.google"},
+                    true, //always prompt, if false and there is 1 account it will be auto selected without a prompt which may be confusing
+                    null, null, null, null);
+            startActivityForResult(intent, PICK_ACCOUNT_REQUEST);
+        } catch(Exception e) {
+            Toast.makeText(this, "Google play services not available", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.d(TAG, "onActivityResult: " + resultCode);
+
+        if (resultCode == RESULT_OK) {
+            if (requestCode == PICK_ACCOUNT_REQUEST) {
+                String currentAccount = mPrefs.getString(Prefs.KEY_ACCOUNT_NAME);
+                String accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
+
+                //If current account is set and different than selected account, logout first
+                if (currentAccount.length() > 0 && !currentAccount.contentEquals(accountName))
+                    AuthTools.logout(this);
+
+                mAccountList.setSummary(accountName);
+                mPrefs.setString(mAccountList.getKey(), accountName);
+                mLogout.setEnabled(true);
+            }
+        }
     }
 }

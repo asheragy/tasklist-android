@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <ListPreference
+    <Preference
         android:key="@string/pref_key_accountName"
-        android:title="Google Account"
-        android:dialogTitle="Google Account"/>
+        android:title="Google Account" />
 
     <ListPreference
         android:key="@string/pref_key_background"
@@ -18,5 +17,9 @@
     <Preference
         android:title="@string/action_view_log"
         android:key="viewlog"/>
+
+    <Preference
+        android:title="@string/action_logout"
+        android:key="logout"/>
 
 </PreferenceScreen>
