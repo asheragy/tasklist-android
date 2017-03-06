@@ -3,5 +3,6 @@
 
     <item android:id="@+id/complete" android:title="@string/action_complete"/>
     <item android:id="@+id/delete" android:title="@string/action_delete"/>
+    <item android:id="@+id/move" android:title="@string/action_move"/>
 
 </menu>

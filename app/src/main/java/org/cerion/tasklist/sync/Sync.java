@@ -65,7 +65,7 @@ public class Sync {
         if(googleLists.size() == 0)
             return false;
 
-        ArrayList<TaskList> dbLists = mDb.taskLists.getList();
+        List<TaskList> dbLists = mDb.taskLists.getList();
 
         //Google->Local (Added or Updated)
         for(TaskList curr : googleLists) {

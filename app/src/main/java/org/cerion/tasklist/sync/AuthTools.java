@@ -55,6 +55,7 @@ public class AuthTools {
 
     protected static void getTokenAndSync(final Context context, @Nullable Activity activity, final OnSyncCompleteListener callback)
     {
+        // TODO handle permission on first time use with new emulator
         Log.d(TAG, "Getting Token");
         AccountManager accountManager = AccountManager.get(context);
         Account[] accounts = accountManager.getAccountsByType("com.google");

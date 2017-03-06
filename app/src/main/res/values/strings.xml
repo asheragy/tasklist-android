@@ -23,5 +23,6 @@
 
     <string name="action_clear_completed">Clear completed</string>
     <string name="action_view_log">View Log</string>
+    <string name="action_move">Move</string>
 
 </resources>

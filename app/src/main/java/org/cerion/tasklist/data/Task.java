@@ -3,13 +3,17 @@ package org.cerion.tasklist.data;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 import java.util.TimeZone;
 
 public class Task implements Serializable {
-    public final String id;
-    public final String listId;
+
+    // TODO make id and listId private
+    public String id;
+    public String listId;
+
     public String title = "";
     public Date updated = new Date(0);
     public String notes = "";
@@ -62,6 +66,22 @@ public class Task implements Serializable {
 
     public boolean isBlank() {
         return (title.length() == 0 && notes.length() == 0 && due.getTime() == 0);
+    }
+
+    public void moveToList(String listId) {
+        this.listId = listId;
+        this.id = generateId();
+    }
+
+    public static Task getTask(List<Task> tasks, String id) {
+        Task task = null;
+
+        for(Task t : tasks) {
+            if (t.id.contentEquals(id))
+                task = t;
+        }
+
+        return task;
     }
 
 }

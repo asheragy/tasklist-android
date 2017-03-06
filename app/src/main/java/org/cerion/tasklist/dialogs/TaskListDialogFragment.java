@@ -21,10 +21,6 @@ public class TaskListDialogFragment extends DialogFragment {
     public static final int TYPE_ADD = 0;
     public static final int TYPE_RENAME = 1;
 
-    public interface TaskListDialogListener {
-        void onFinishTaskListDialog(TaskList currList);
-    }
-
     public static TaskListDialogFragment newInstance(int type, TaskList list) {
         TaskListDialogFragment frag = new TaskListDialogFragment();
 
@@ -59,7 +55,7 @@ public class TaskListDialogFragment extends DialogFragment {
                     TaskList update = new TaskList(name);
                     db.taskLists.add(update);
 
-                    ((TaskListDialogListener) getActivity()).onFinishTaskListDialog(update);
+                    ((TaskListsChangedListener) getActivity()).onTaskListsChanged(update);
                 }
             });
 
@@ -78,7 +74,7 @@ public class TaskListDialogFragment extends DialogFragment {
                     Database db = Database.getInstance(getActivity());
                     db.taskLists.update(update);
 
-                    ((TaskListDialogListener) getActivity()).onFinishTaskListDialog(update);
+                    ((TaskListsChangedListener) getActivity()).onTaskListsChanged(update);
                 }
             });
         }

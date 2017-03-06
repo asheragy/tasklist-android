@@ -208,6 +208,7 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
                 refresh();
             }
         }
+
     }
 
 }

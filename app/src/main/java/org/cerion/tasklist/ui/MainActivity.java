@@ -18,6 +18,8 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -27,17 +29,20 @@ import org.cerion.tasklist.R;
 import org.cerion.tasklist.data.Task;
 import org.cerion.tasklist.data.TaskList;
 import org.cerion.tasklist.dialogs.AlertDialogFragment;
+import org.cerion.tasklist.dialogs.DatePickerFragment;
+import org.cerion.tasklist.dialogs.MoveTaskDialogFragment;
 import org.cerion.tasklist.dialogs.TaskListDialogFragment;
-import org.cerion.tasklist.dialogs.TaskListDialogFragment.TaskListDialogListener;
+import org.cerion.tasklist.dialogs.TaskListsChangedListener;
 import org.cerion.tasklist.sync.OnSyncCompleteListener;
 import org.cerion.tasklist.sync.Sync;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 //TODO verify network is available and toast message
 
-public class MainActivity extends Activity implements TaskListDialogListener, TaskListsToolbar.TaskListsChangeListener {
+public class MainActivity extends Activity implements TaskListsChangedListener, TaskListsToolbar.TaskListsChangeListener {
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final int EDIT_TASK_REQUEST = 0;
 
@@ -270,7 +275,7 @@ public class MainActivity extends Activity implements TaskListDialogListener, Ta
     }
 
     @Override
-    public void onFinishTaskListDialog(TaskList current) {
+    public void onTaskListsChanged(TaskList current) {
         mCurrList = current; //This list was added or updated
         refreshLists();
     }
@@ -327,13 +332,11 @@ public class MainActivity extends Activity implements TaskListDialogListener, Ta
     }
 
     public boolean onContextItemSelected(MenuItem item) {
-
         int id = item.getItemId();
+        Task task = mTaskListAdapter.getItem(mTaskListAdapter.getPosition());
+        Database db = Database.getInstance(this);
 
         if (id == R.id.complete || id == R.id.delete) {
-            Task task = mTaskListAdapter.getItem(mTaskListAdapter.getPosition());
-            Database db = Database.getInstance(this);
-
             if (id == R.id.complete)
                 task.setCompleted(!task.completed);
             else
@@ -341,6 +344,15 @@ public class MainActivity extends Activity implements TaskListDialogListener, Ta
 
             db.tasks.update(task);
             refreshTasks();
+            return true;
+        }
+
+        if(id == R.id.move) {
+            Log.d(TAG,"onMove");
+
+            DialogFragment newFragment = MoveTaskDialogFragment.newInstance(task);
+            newFragment.show(getFragmentManager(), "moveTask");
+
             return true;
         }
 
@@ -356,7 +368,7 @@ public class MainActivity extends Activity implements TaskListDialogListener, Ta
         Log.d(TAG, "refreshLists");
         setLastSync(); //Relative time so update it as much as possible
         Database db = Database.getInstance(this);
-        ArrayList<TaskList> dbLists = db.taskLists.getList();
+        List<TaskList> dbLists = db.taskLists.getList();
         if (dbLists.size() == 0) {
             Log.d(TAG, "No lists, adding default");
             TaskList defaultList = new TaskList("Default");

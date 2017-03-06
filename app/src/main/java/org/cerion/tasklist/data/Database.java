@@ -58,7 +58,7 @@ public class Database extends DBBase
             return result;
         }
 
-        public ArrayList<TaskList> getList()
+        public List<TaskList> getList()
         {
             SQLiteDatabase db = parent.openReadOnly();
 
@@ -277,7 +277,7 @@ public class Database extends DBBase
         mDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 
         Log.d(TAG,"--- Table: " + TaskLists.TABLE_NAME);
-        ArrayList<TaskList> lists = this.taskLists.getList();
+        List<TaskList> lists = this.taskLists.getList();
         for(TaskList list : lists)
         {
             String time = "0";
