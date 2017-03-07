@@ -1,13 +1,17 @@
 package org.cerion.tasklist.ui;
 
+import android.Manifest;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.os.Bundle;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -25,6 +29,7 @@ public class SettingsActivity extends PreferenceActivity {
     private ListPreference mBackground;
     private Prefs mPrefs;
     private static final int PICK_ACCOUNT_REQUEST = 0;
+    private static final int PERMISSIONS_REQUEST_GET_ACCOUNTS = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,7 +113,50 @@ public class SettingsActivity extends PreferenceActivity {
         return findPreference(key);
     }
 
+    private boolean checkAndVerifyPermission() {
+
+        int permission = ContextCompat.checkSelfPermission(this, Manifest.permission.GET_ACCOUNTS);
+        if(permission != PackageManager.PERMISSION_GRANTED) {
+            // Should we show an explanation?
+            // TODO add this
+            if (false)//ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.GET_ACCOUNTS))
+            {
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+            } else {
+
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.GET_ACCOUNTS},
+                        PERMISSIONS_REQUEST_GET_ACCOUNTS);
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSIONS_REQUEST_GET_ACCOUNTS: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    onChooseAccount();
+                } else {
+                    Toast.makeText(this, "Account permission needed to sync", Toast.LENGTH_LONG).show();
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                }
+            }
+        }
+    }
+
     private void onChooseAccount() {
+        if(!checkAndVerifyPermission())
+            return;
+
         //Find current account
         AccountManager accountManager = AccountManager.get(this);
         Account[] accounts = accountManager.getAccountsByType("com.google");
