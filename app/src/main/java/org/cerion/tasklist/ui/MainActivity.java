@@ -18,25 +18,21 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ArrayAdapter;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.cerion.tasklist.R;
 import org.cerion.tasklist.data.Database;
 import org.cerion.tasklist.data.Prefs;
-import org.cerion.tasklist.R;
 import org.cerion.tasklist.data.Task;
 import org.cerion.tasklist.data.TaskList;
 import org.cerion.tasklist.dialogs.AlertDialogFragment;
-import org.cerion.tasklist.dialogs.DatePickerFragment;
 import org.cerion.tasklist.dialogs.MoveTaskDialogFragment;
 import org.cerion.tasklist.dialogs.TaskListDialogFragment;
 import org.cerion.tasklist.dialogs.TaskListsChangedListener;
 import org.cerion.tasklist.sync.OnSyncCompleteListener;
 import org.cerion.tasklist.sync.Sync;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -71,23 +67,34 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
             debug.setVisibility(View.GONE);
 
         //Toolbar
-        mTaskListsToolbar = (TaskListsToolbar) findViewById(R.id.toolbar);
+        mTaskListsToolbar = findViewById(R.id.toolbar);
         setActionBar(mTaskListsToolbar);
         if(getActionBar() != null)
             getActionBar().setDisplayShowTitleEnabled(false); //Hide app name, task lists replace title on actionbar
 
 
-        mStatus = (TextView) findViewById(R.id.status);
+        mStatus = findViewById(R.id.status);
         mDefaultTextColor = mStatus != null ? mStatus.getTextColors().getDefaultColor() : 0;
 
-        RecyclerView rv = (RecyclerView) findViewById(android.R.id.list);
+        RecyclerView rv = findViewById(android.R.id.list);
         if(rv != null) {
             rv.setLayoutManager(new LinearLayoutManager(this));
             rv.setAdapter(mTaskListAdapter);
         }
 
-        mSwipeRefresh = (SwipeRefreshLayout) findViewById(R.id.swipeRefresh);
+        findViewById(android.R.id.list).setOnTouchListener(new OnSwipeTouchListener(this) {
+            @Override
+            public void onSwipeLeft() {
+                mTaskListsToolbar.moveLeft();
+            }
 
+            @Override
+            public void onSwipeRight() {
+                mTaskListsToolbar.moveRight();
+            }
+        });
+
+        mSwipeRefresh = findViewById(R.id.swipeRefresh);
         mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
@@ -95,14 +102,13 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
             }
         });
 
-        FloatingActionButton fab = (FloatingActionButton)  findViewById(R.id.fab);
+        FloatingActionButton fab = findViewById(R.id.fab);
         if(fab != null)
             fab.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
                     onOpenTask(null);
                 }
             });
-
 
         View logdb = findViewById(R.id.logdb);
         if(logdb != null)

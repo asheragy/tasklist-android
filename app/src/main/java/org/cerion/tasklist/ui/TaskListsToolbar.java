@@ -90,6 +90,18 @@ public class TaskListsToolbar extends Toolbar {
         return index;
     }
 
+    public void moveLeft() {
+        int position = mSpinner.getSelectedItemPosition();
+        position = (position + 1) % mSpinner.getCount();
+        mSpinner.setSelection(position, true);
+    }
+
+    public void moveRight() {
+        int position = mSpinner.getSelectedItemPosition();
+        position = (position - 1 + mSpinner.getCount()) % mSpinner.getCount();
+        mSpinner.setSelection(position, true);
+    }
+
     public void refresh(List<TaskList> lists) {
         mTaskLists.clear();
         mTaskLists.addAll(lists);
