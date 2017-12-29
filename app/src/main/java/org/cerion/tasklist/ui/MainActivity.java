@@ -81,6 +81,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
             rv.setLayoutManager(new LinearLayoutManager(this));
             rv.setAdapter(mTaskListAdapter);
         }
+        mTaskListAdapter.setEmptyView(rv, findViewById(R.id.empty_view));
 
         findViewById(android.R.id.list).setOnTouchListener(new OnSwipeTouchListener(this) {
             @Override
@@ -296,6 +297,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         menu.findItem(R.id.action_rename).setVisible(!mCurrList.isAllTasks()); //Hide rename if "All Tasks" list
+        menu.findItem(R.id.action_delete).setVisible(mTaskListAdapter.getItemCount() == 0);
 
         return super.onPrepareOptionsMenu(menu);
     }
@@ -318,6 +320,9 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
             case R.id.action_rename:
                 TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME, mCurrList);
                 dialog.show(getFragmentManager(), "dialog");
+                break;
+            case R.id.action_delete:
+                Toast.makeText(this, "not implemented", Toast.LENGTH_SHORT).show();
                 break;
         }
 
@@ -399,7 +404,6 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
         setLastSync(); //Relative time so update it as much as possible
         mTaskListAdapter.refresh(mCurrList);
     }
-
 
     @Override
     public TaskList getCurrentList() {

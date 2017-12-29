@@ -55,11 +55,23 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
-            <android.support.v7.widget.RecyclerView
-                android:id="@android:id/list"
-                android:scrollbars="vertical"
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"/>
+                android:layout_height="match_parent">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:id="@+id/empty_view"
+                    android:gravity="center_horizontal|center_vertical"
+                    android:text="No Tasks"/>
+
+                <android.support.v7.widget.RecyclerView
+                    android:id="@android:id/list"
+                    android:scrollbars="vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"/>
+            </FrameLayout>
 
         </android.support.v4.widget.SwipeRefreshLayout>
 

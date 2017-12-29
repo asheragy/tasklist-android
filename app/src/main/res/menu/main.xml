@@ -5,6 +5,10 @@
         android:title="@string/action_add_list"
         android:orderInCategory="100"/>
 
+    <item android:id="@+id/action_delete"
+        android:title="Delete List"
+        android:orderInCategory="100"/>
+
     <item android:id="@+id/action_rename"
         android:title="@string/action_rename_list"
         android:orderInCategory="100"/>

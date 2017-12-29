@@ -38,10 +38,16 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
     private int mSecondaryColor;
     private final MainActivity mActivity;
     private TaskList mCurrList;
+    private RecyclerView parent;
+    private View emptyView;
 
     public TaskListAdapter(MainActivity activity) {
         mActivity = activity;
+    }
 
+    public void setEmptyView(RecyclerView recyclerView, View emptyView) {
+        this.parent = recyclerView;
+        this.emptyView = emptyView;
     }
 
     @Override
@@ -76,6 +82,14 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
                 return task.title.compareToIgnoreCase(t1.title);
             }
         });
+
+        if (mTasks.size() > 0) {
+            parent.setVisibility(View.VISIBLE);
+            emptyView.setVisibility(View.GONE);
+        } else {
+            parent.setVisibility(View.GONE);
+            emptyView.setVisibility(View.VISIBLE);
+        }
 
         notifyDataSetChanged();
     }
