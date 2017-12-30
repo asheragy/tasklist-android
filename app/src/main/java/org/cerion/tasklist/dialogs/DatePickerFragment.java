@@ -4,6 +4,7 @@ package org.cerion.tasklist.dialogs;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.app.Fragment;
 import android.os.Bundle;
 import android.widget.DatePicker;
 
@@ -11,10 +12,10 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
 
-public class DatePickerFragment extends DialogFragment implements DatePickerDialog.OnDateSetListener
-{
+public class DatePickerFragment extends DialogFragment implements DatePickerDialog.OnDateSetListener {
 
     private static final String DATE = "date";
+    private DatePickerListener listener;
 
     public interface DatePickerListener {
         void onSelectDate(Date date);
@@ -24,10 +25,25 @@ public class DatePickerFragment extends DialogFragment implements DatePickerDial
         DatePickerFragment frag = new DatePickerFragment();
 
         Bundle args = new Bundle();
-        args.putLong(DATE, date.getTime());
+        if (date != null)
+            args.putLong(DATE, date.getTime());
+        else
+            args.putLong(DATE, 0);
+        
         frag.setArguments(args);
 
         return frag;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        Fragment fragment = getTargetFragment();
+        if (fragment != null && fragment instanceof DatePickerListener)
+            listener = (DatePickerListener)fragment;
+        else
+            throw new RuntimeException("parent does not implement DatePickerListener");
     }
 
     @Override
@@ -49,7 +65,6 @@ public class DatePickerFragment extends DialogFragment implements DatePickerDial
         return new DatePickerDialog(getActivity(), this, year, month, day);
     }
 
-
     @Override
     public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
         Calendar c = Calendar.getInstance();
@@ -59,6 +74,7 @@ public class DatePickerFragment extends DialogFragment implements DatePickerDial
         c.set(Calendar.MONTH,monthOfYear);
         c.set(Calendar.DAY_OF_MONTH, dayOfMonth);
 
-        ((DatePickerListener)getActivity()).onSelectDate(c.getTime());
+        if (listener != null)
+            listener.onSelectDate(c.getTime());
     }
 }

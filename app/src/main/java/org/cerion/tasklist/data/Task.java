@@ -20,6 +20,7 @@ public class Task implements Serializable {
     public boolean completed;
     public Date due = new Date(0);
     public boolean deleted;
+
     private static final SimpleDateFormat mDateFormat = new SimpleDateFormat("EEE, MMM d, yyyy", Locale.US);
 
     private static String generateId() {
