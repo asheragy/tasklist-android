@@ -2,10 +2,12 @@ package org.cerion.tasklist.ui;
 
 
 import android.app.Activity;
-import android.app.DialogFragment;
-import android.app.Fragment;
+import android.arch.lifecycle.ViewModelProviders;
 import android.databinding.Observable;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.v4.app.DialogFragment;
+import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.util.Linkify;
@@ -25,10 +27,9 @@ import org.cerion.tasklist.dialogs.DatePickerFragment;
 import java.util.Date;
 
 public class TaskFragment extends Fragment implements DatePickerFragment.DatePickerListener {
-
     private static final String TAG = TaskFragment.class.getSimpleName();
     private FragmentTaskBinding binding;
-    private MenuItem mMenuSave;
+    private MenuItem menuSave;
     private TaskViewModel vm;
 
     public TaskFragment() {
@@ -39,19 +40,27 @@ public class TaskFragment extends Fragment implements DatePickerFragment.DatePic
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
-        vm = new TaskViewModel(getActivity());
+
+        vm = ViewModelProviders.of(this).get(TaskViewModel.class);
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentTaskBinding.inflate(inflater, container, false);
         binding.setViewModel(vm);
 
         vm.isDirty.addOnPropertyChangedCallback(new Observable.OnPropertyChangedCallback() {
             @Override
             public void onPropertyChanged(Observable observable, int i) {
-                if(mMenuSave != null)
-                    mMenuSave.setVisible(vm.isDirty.get());
+                if(menuSave != null)
+                    menuSave.setVisible(vm.isDirty.get());
+            }
+        });
+
+        vm.windowTitle.addOnPropertyChangedCallback(new Observable.OnPropertyChangedCallback() {
+            @Override
+            public void onPropertyChanged(Observable observable, int i) {
+                getActivity().setTitle(vm.windowTitle.get());
             }
         });
 
@@ -71,14 +80,13 @@ public class TaskFragment extends Fragment implements DatePickerFragment.DatePic
                 onEditDueDate();
             }
         });
-
         return binding.getRoot();
     }
 
     private void onEditDueDate() {
         DialogFragment newFragment = DatePickerFragment.newInstance(vm.getDueDate());
         newFragment.setTargetFragment(this, 0);
-        newFragment.show(getActivity().getFragmentManager(), "datePicker");
+        newFragment.show(getActivity().getSupportFragmentManager(), "datePicker");
     }
 
     private void saveAndFinish() {
@@ -89,17 +97,11 @@ public class TaskFragment extends Fragment implements DatePickerFragment.DatePic
     }
 
     public void showNewTask(TaskList taskList) {
-        getActivity().setTitle("Add new task");
         vm.addTask(taskList.id);
     }
 
     public void showTask(Task task) {
-        getActivity().setTitle("Edit task");
         vm.setTask(task);
-
-        // TODO move to viewmodel
-        if(task.updated != null)
-            binding.modified.setText(task.updated.toString());
     }
 
     @Override
@@ -110,7 +112,8 @@ public class TaskFragment extends Fragment implements DatePickerFragment.DatePic
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.task, menu);
-        mMenuSave = menu.getItem(0);
+        menuSave = menu.getItem(0);
+        menuSave.setVisible(vm.isDirty.get());
         super.onCreateOptionsMenu(menu, inflater);
     }
 

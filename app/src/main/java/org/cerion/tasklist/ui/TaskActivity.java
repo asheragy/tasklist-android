@@ -28,7 +28,7 @@ public class TaskActivity extends AppCompatActivity
         if(getSupportActionBar() != null)
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        TaskFragment fragment = (TaskFragment)getFragmentManager().findFragmentById(R.id.fragment);
+        TaskFragment fragment = (TaskFragment)getSupportFragmentManager().findFragmentById(R.id.fragment);
 
         Task task = (Task)getIntent().getSerializableExtra(EXTRA_TASK);
         TaskList list = (TaskList)getIntent().getSerializableExtra(EXTRA_TASKLIST);

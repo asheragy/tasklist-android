@@ -1,8 +1,10 @@
 package org.cerion.tasklist.ui;
 
-import android.content.Context;
+import android.app.Application;
+import android.arch.lifecycle.AndroidViewModel;
 import android.databinding.Observable;
 import android.databinding.ObservableField;
+import android.support.annotation.NonNull;
 
 import org.cerion.tasklist.R;
 import org.cerion.tasklist.data.Database;
@@ -10,31 +12,42 @@ import org.cerion.tasklist.data.Task;
 
 import java.util.Date;
 
-public class TaskViewModel {
+public class TaskViewModel extends AndroidViewModel {
 
     private Task task;
-    private Context context;
     private boolean isNew = false;
-
     private Date dueDate;
+
+    public ObservableField<String> windowTitle = new ObservableField<>("");
     public ObservableField<String> title = new ObservableField<>("");
     public ObservableField<String> notes = new ObservableField<>("");
     public ObservableField<Boolean> completed = new ObservableField<>(false);
     public ObservableField<String> due = new ObservableField<>("");
     public ObservableField<Boolean> hasDueDate = new ObservableField<>(false);
     public ObservableField<Boolean> isDirty = new ObservableField<>(false);
+    public ObservableField<String> modified = new ObservableField<>("");
 
-    public TaskViewModel(Context context) {
-        this.context = context;
+    public TaskViewModel(@NonNull Application application) {
+        super(application);
     }
 
     public void addTask(String taskListId) {
-        isNew = true;
-        Task task = new Task( taskListId );
-        setTask(task);
+        if (!isNew) {
+            isNew = true;
+            Task task = new Task(taskListId);
+            windowTitle.set("Add new task");
+            loadTaskFields(task);
+        }
     }
 
     public void setTask(Task task) {
+        if (this.task == null || !this.task.id.contentEquals(task.id)) {
+            windowTitle.set("Edit task");
+            loadTaskFields(task);
+        }
+    }
+
+    private void loadTaskFields(Task task) {
         this.task = task;
 
         title.set(task.title);
@@ -52,11 +65,15 @@ public class TaskViewModel {
             }
         };
 
-
         title.addOnPropertyChangedCallback(onPropertyChangedCallback);
         notes.addOnPropertyChangedCallback(onPropertyChangedCallback);
         completed.addOnPropertyChangedCallback(onPropertyChangedCallback);
         due.addOnPropertyChangedCallback(onPropertyChangedCallback);
+
+        if(task.updated != null && task.updated.getTime() > 0)
+            modified.set(task.updated.toString());
+        else
+            modified.set("");
 
         isDirty.set(false);
     }
@@ -68,7 +85,7 @@ public class TaskViewModel {
         task.completed = completed.get();
         task.due = dueDate != null ? dueDate : new Date(0);
 
-        Database database = Database.getInstance(context);
+        Database database = Database.getInstance(getApplication());
         if (isNew)
             database.tasks.add(task);
         else
@@ -96,7 +113,7 @@ public class TaskViewModel {
             hasDueDate.set(true);
         }
         else {
-            due.set(context.getString(R.string.no_due_date));
+            due.set(getApplication().getString(R.string.no_due_date));
             hasDueDate.set(false);
         }
     }

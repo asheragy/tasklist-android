@@ -27,6 +27,7 @@
                 android:id="@+id/modified"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:text="@{viewModel.modified}"
                 android:visibility="visible" />
 
             <!-- Display Fields -->

@@ -3,9 +3,9 @@ package org.cerion.tasklist.dialogs;
 
 import android.app.DatePickerDialog;
 import android.app.Dialog;
-import android.app.DialogFragment;
-import android.app.Fragment;
 import android.os.Bundle;
+import android.support.v4.app.DialogFragment;
+import android.support.v4.app.Fragment;
 import android.widget.DatePicker;
 
 import java.util.Calendar;
