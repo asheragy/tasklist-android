@@ -13,6 +13,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
@@ -157,13 +159,14 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
         final CheckBox completed;
         final ImageButton undelete;
 
-        public ViewHolder(View view) {
+        ViewHolder(View view) {
             super(view);
-            title = (TextView)view.findViewById(R.id.title);
-            due = (TextView)view.findViewById(R.id.dueDate);
-            notes = (TextView)view.findViewById(R.id.notes);
-            completed = (CheckBox)view.findViewById(R.id.completed);
-            undelete = (ImageButton)view.findViewById(R.id.undelete);
+
+            title = view.findViewById(R.id.title);
+            due = view.findViewById(R.id.dueDate);
+            notes = view.findViewById(R.id.notes);
+            completed = view.findViewById(R.id.completed);
+            undelete = view.findViewById(R.id.undelete);
 
             view.setOnClickListener(this);
             view.setOnCreateContextMenuListener(this);
@@ -210,16 +213,35 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
         }
 
         @Override
-        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-            Task task = mTasks.get(getLayoutPosition());
+        public void onCheckedChanged(final CompoundButton buttonView, final boolean isChecked) {
+            final Task task = mTasks.get(getLayoutPosition());
             if(task.completed != isChecked) { //checkbox was manually changed
 
-                //Update record in database and refresh list
-                Log.d(TAG,"Toggle completed checkbox");
-                Database db = Database.getInstance(buttonView.getContext());
-                task.setCompleted(isChecked);
-                db.tasks.update(task);
-                refresh();
+                AlphaAnimation anim = new AlphaAnimation(1.0f, 0.0f);
+                anim.setDuration(500);
+                anim.setAnimationListener(new Animation.AnimationListener() {
+                    @Override
+                    public void onAnimationStart(Animation animation) {
+
+                    }
+
+                    @Override
+                    public void onAnimationEnd(Animation animation) {
+                        //Update record in database and refresh list
+                        Log.d(TAG,"Toggle completed checkbox");
+                        Database db = Database.getInstance(buttonView.getContext());
+                        task.setCompleted(isChecked);
+                        db.tasks.update(task);
+                        refresh();
+                    }
+
+                    @Override
+                    public void onAnimationRepeat(Animation animation) {
+
+                    }
+                });
+
+                this.itemView.startAnimation(anim);
             }
         }
 
