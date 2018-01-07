@@ -5,6 +5,8 @@ import android.app.Activity;
 import android.app.DialogFragment;
 import android.content.Context;
 import android.content.Intent;
+import android.databinding.DataBindingUtil;
+import android.databinding.Observable;
 import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -12,13 +14,10 @@ import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import org.cerion.tasklist.R;
@@ -26,6 +25,7 @@ import org.cerion.tasklist.data.Database;
 import org.cerion.tasklist.data.Prefs;
 import org.cerion.tasklist.data.Task;
 import org.cerion.tasklist.data.TaskList;
+import org.cerion.tasklist.databinding.ActivityMainBinding;
 import org.cerion.tasklist.dialogs.AlertDialogFragment;
 import org.cerion.tasklist.dialogs.MoveTaskDialogFragment;
 import org.cerion.tasklist.dialogs.TaskListDialogFragment;
@@ -33,7 +33,6 @@ import org.cerion.tasklist.dialogs.TaskListsChangedListener;
 import org.cerion.tasklist.sync.OnSyncCompleteListener;
 import org.cerion.tasklist.sync.Sync;
 
-import java.util.Date;
 import java.util.List;
 
 //TODO verify network is available and toast message
@@ -42,15 +41,11 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final int EDIT_TASK_REQUEST = 0;
 
-    private TextView mStatus;
     private SwipeRefreshLayout mSwipeRefresh;
-    private int mDefaultTextColor;
     private Prefs mPrefs;
-
     private TaskListsToolbar mTaskListsToolbar;
-
     private final TaskListAdapter mTaskListAdapter = new TaskListAdapter(this);
-    private static TaskList mCurrList;
+    private TasksViewModel vm;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,30 +55,36 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
             setTheme(R.style.AppTheme_Dark);
 
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        vm = new TasksViewModel(this);
 
-        View debug = findViewById(R.id.layoutDebug);
-        if(debug != null)
-            debug.setVisibility(View.GONE);
+        final ActivityMainBinding binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
+        binding.layoutDebug.setVisibility(View.GONE);
+
+        binding.setViewModel(vm);
+
+        final int defaultTextColor = binding.status.getTextColors().getDefaultColor();
+        vm.isOutOfSync.addOnPropertyChangedCallback(new Observable.OnPropertyChangedCallback() {
+            @Override
+            public void onPropertyChanged(Observable observable, int i) {
+                if(vm.isOutOfSync.get())
+                    binding.status.setTextColor(Color.RED);
+                else
+                    binding.status.setTextColor(defaultTextColor);
+            }
+        });
 
         //Toolbar
         mTaskListsToolbar = findViewById(R.id.toolbar);
         setActionBar(mTaskListsToolbar);
         if(getActionBar() != null)
             getActionBar().setDisplayShowTitleEnabled(false); //Hide app name, task lists replace title on actionbar
+        mTaskListsToolbar.setViewModel(vm);
 
+        binding.recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        binding.recyclerView.setAdapter(mTaskListAdapter);
+        mTaskListAdapter.setEmptyView(binding.recyclerView, findViewById(R.id.empty_view));
 
-        mStatus = findViewById(R.id.status);
-        mDefaultTextColor = mStatus != null ? mStatus.getTextColors().getDefaultColor() : 0;
-
-        RecyclerView rv = findViewById(android.R.id.list);
-        if(rv != null) {
-            rv.setLayoutManager(new LinearLayoutManager(this));
-            rv.setAdapter(mTaskListAdapter);
-        }
-        mTaskListAdapter.setEmptyView(rv, findViewById(R.id.empty_view));
-
-        findViewById(android.R.id.list).setOnTouchListener(new OnSwipeTouchListener(this) {
+        binding.recyclerView.setOnTouchListener(new OnSwipeTouchListener(this) {
             @Override
             public void onSwipeLeft() {
                 mTaskListsToolbar.moveLeft();
@@ -122,7 +123,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
                 }
             });
 
-        setLastSync();
+        vm.updateLastSync();
         refreshLists();
     }
 
@@ -134,14 +135,14 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
     @Override
     protected void onResume() {
         //Log.d(TAG,"onResume");
-        setLastSync();
+        vm.updateLastSync();
         super.onResume();
     }
 
     @Override
     protected void onPause() {
         //Log.d(TAG,"onPause");
-        mPrefs.setString(Prefs.KEY_LAST_SELECTED_LIST_ID, mCurrList.id);
+        mPrefs.setString(Prefs.KEY_LAST_SELECTED_LIST_ID, vm.currList.get().id);
         super.onPause();
     }
 
@@ -195,7 +196,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
                     setInSync(false);
 
                     if (bSuccess) {
-                        setLastSync(); //Update last sync time only if successful
+                        vm.updateLastSync(); //Update last sync time only if successful
                     } else {
                         String message = "Sync Failed, unknown error";
                         if (e != null)
@@ -215,27 +216,6 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
             if (mSwipeRefresh.isRefreshing())
                 mSwipeRefresh.setRefreshing(false);
         }
-    }
-
-    private void setLastSync() {
-        String sText = "Last Sync: ";
-        Date lastSync = mPrefs.getDate(Prefs.KEY_LAST_SYNC);
-        if (lastSync == null || lastSync.getTime() == 0)
-            sText += "Never";
-        else {
-            long now = new Date().getTime();
-            if(now - lastSync.getTime() < 60 * 1000)
-                sText += "Less than 1 minute ago";
-            else
-                sText += DateUtils.getRelativeTimeSpanString(lastSync.getTime(), now, DateUtils.SECOND_IN_MILLIS).toString();
-
-            if(now - lastSync.getTime() > (24 * 60 * 60 * 1000))
-                mStatus.setTextColor(Color.RED);
-            else
-                mStatus.setTextColor(mDefaultTextColor);
-        }
-
-        mStatus.setText(sText);
     }
 
     private void setInSync(boolean bSyncing) {
@@ -272,7 +252,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
         if (task != null)
             intent.putExtra(TaskActivity.EXTRA_TASK, task);
         else {
-            TaskList list = mCurrList;
+            TaskList list = vm.currList.get();
             if(list.isAllTasks())
                 list = mTaskListsToolbar.getDefaultList();
             intent.putExtra(TaskActivity.EXTRA_TASKLIST, list);
@@ -283,7 +263,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
 
     @Override
     public void onTaskListsChanged(TaskList current) {
-        mCurrList = current; //This list was added or updated
+        vm.currList.set(current); //This list was added or updated
         refreshLists();
     }
 
@@ -296,7 +276,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        menu.findItem(R.id.action_rename).setVisible(!mCurrList.isAllTasks()); //Hide rename if "All Tasks" list
+        menu.findItem(R.id.action_rename).setVisible(!vm.currList.get().isAllTasks()); //Hide rename if "All Tasks" list
         menu.findItem(R.id.action_delete).setVisible(mTaskListAdapter.getItemCount() == 0);
 
         return super.onPrepareOptionsMenu(menu);
@@ -318,7 +298,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
             }
             case R.id.action_clear_completed: onClearCompleted(); break;
             case R.id.action_rename:
-                TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME, mCurrList);
+                TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME, vm.currList.get());
                 dialog.show(getFragmentManager(), "dialog");
                 break;
             case R.id.action_delete:
@@ -332,7 +312,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
     private void onClearCompleted() {
         Log.d(TAG,"onClearCompleted");
         Database db = Database.getInstance(this);
-        db.tasks.clearCompleted(mCurrList);
+        db.tasks.clearCompleted(vm.currList.get());
 
         refreshTasks();
     }
@@ -377,7 +357,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
 
     private void refreshLists() {
         Log.d(TAG, "refreshLists");
-        setLastSync(); //Relative time so update it as much as possible
+        vm.updateLastSync(); //Relative time so update it as much as possible
         Database db = Database.getInstance(this);
         List<TaskList> dbLists = db.taskLists.getList();
         if (dbLists.size() == 0) {
@@ -389,30 +369,20 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
         }
 
         //If the current list is not set, try to restore last saved
-        if (mCurrList == null)
-            mCurrList = TaskList.get(dbLists, mPrefs.getString(Prefs.KEY_LAST_SELECTED_LIST_ID));
+        if (vm.currList.get() == null)
+            vm.currList.set( TaskList.get(dbLists, mPrefs.getString(Prefs.KEY_LAST_SELECTED_LIST_ID)) );
 
         //If nothing valid is saved default to "all tasks" list
-        if (mCurrList == null)
-            mCurrList = TaskList.ALL_TASKS;
+        if (vm.currList.get() == null)
+            vm.currList.set( TaskList.ALL_TASKS );
 
         mTaskListsToolbar.refresh(dbLists);
     }
 
     private void refreshTasks() {
         Log.d(TAG, "refreshTasks");
-        setLastSync(); //Relative time so update it as much as possible
-        mTaskListAdapter.refresh(mCurrList);
-    }
-
-    @Override
-    public TaskList getCurrentList() {
-        return mCurrList;
-    }
-
-    @Override
-    public void setCurrentList(TaskList list) {
-        mCurrList = list;
+        vm.updateLastSync(); //Relative time so update it as much as possible
+        mTaskListAdapter.refresh(vm.currList.get());
     }
 
     @Override

@@ -11,11 +11,9 @@ import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.Toolbar;
 
-
 import org.cerion.tasklist.R;
 import org.cerion.tasklist.data.TaskList;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -24,15 +22,39 @@ public class TaskListsToolbar extends Toolbar {
 
     private static final String TAG = TaskListsToolbar.class.getSimpleName();
 
-    private final List<TaskList> mTaskLists = new ArrayList<>();
+    //private final List<TaskList> mTaskLists = new ArrayList<>();
     private Spinner mSpinner;
     private ArrayAdapter<TaskList> mSpinnerAdapter;
     private TaskListsChangeListener mListener;
+    private TasksViewModel vm;
 
     public interface TaskListsChangeListener {
-        TaskList getCurrentList();
-        void setCurrentList(TaskList list);
+        //TaskList getCurrentList();
+        //void setCurrentList(TaskList list);
         void onListChanged();
+    }
+
+    public void setViewModel(final TasksViewModel vm) {
+        this.vm = vm;
+
+        mSpinnerAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, vm.lists);
+        mSpinner.setAdapter(mSpinnerAdapter);
+
+        mListener = (TaskListsChangeListener)getContext();
+
+        mSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                Log.d(TAG, "onNavigationItemSelected: " + position + " index = " + mSpinner.getSelectedItemPosition());
+                vm.currList.set( vm.lists.get(position) );
+                mListener.onListChanged();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
     }
 
     public TaskListsToolbar(Context context) {
@@ -54,25 +76,6 @@ public class TaskListsToolbar extends Toolbar {
         LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         inflater.inflate(R.layout.toolbar_tasklists, this);
         mSpinner = (Spinner)findViewById(R.id.spinner);
-
-        mSpinnerAdapter = new ArrayAdapter<>(context, android.R.layout.simple_spinner_dropdown_item, mTaskLists);
-        mSpinner.setAdapter(mSpinnerAdapter);
-
-        mListener = (TaskListsChangeListener)context;
-
-        mSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                Log.d(TAG, "onNavigationItemSelected: " + position + " index = " + mSpinner.getSelectedItemPosition());
-                mListener.setCurrentList( mTaskLists.get(position) );
-                mListener.onListChanged();
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
-        });
     }
 
     private int getListPosition(TaskList list) {
@@ -103,24 +106,24 @@ public class TaskListsToolbar extends Toolbar {
     }
 
     public void refresh(List<TaskList> lists) {
-        mTaskLists.clear();
-        mTaskLists.addAll(lists);
+        vm.lists.clear();
+        vm.lists.addAll(lists);
 
-        Collections.sort(mTaskLists, new Comparator<TaskList>() {
+        Collections.sort(vm.lists, new Comparator<TaskList>() {
             @Override
             public int compare(TaskList taskList, TaskList t1) {
                 return taskList.title.compareToIgnoreCase(t1.title);
             }
         });
 
-        mTaskLists.add(0, TaskList.ALL_TASKS);
+        vm.lists.add(0, TaskList.ALL_TASKS);
         mSpinnerAdapter.notifyDataSetChanged();
 
         //Re-select last position
-        mSpinner.setSelection(getListPosition( mListener.getCurrentList()));
+        mSpinner.setSelection(getListPosition( vm.currList.get()));
     }
 
     public TaskList getDefaultList() {
-        return TaskList.getDefault(mTaskLists);
+        return TaskList.getDefault(vm.lists);
     }
 }
