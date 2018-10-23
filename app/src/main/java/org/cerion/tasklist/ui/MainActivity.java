@@ -33,8 +33,6 @@ import org.cerion.tasklist.dialogs.TaskListsChangedListener;
 import org.cerion.tasklist.sync.OnSyncCompleteListener;
 import org.cerion.tasklist.sync.Sync;
 
-import java.util.List;
-
 //TODO verify network is available and toast message
 
 public class MainActivity extends Activity implements TaskListsChangedListener, TaskListsToolbar.TaskListsChangeListener {
@@ -63,10 +61,10 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
         binding.setViewModel(vm);
 
         final int defaultTextColor = binding.status.getTextColors().getDefaultColor();
-        vm.isOutOfSync.addOnPropertyChangedCallback(new Observable.OnPropertyChangedCallback() {
+        vm.isOutOfSync().addOnPropertyChangedCallback(new Observable.OnPropertyChangedCallback() {
             @Override
             public void onPropertyChanged(Observable observable, int i) {
-                if(vm.isOutOfSync.get())
+                if(vm.isOutOfSync().get())
                     binding.status.setTextColor(Color.RED);
                 else
                     binding.status.setTextColor(defaultTextColor);
@@ -123,8 +121,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
                 }
             });
 
-        vm.updateLastSync();
-        refreshLists();
+        vm.refreshLists();
     }
 
     @Override
@@ -142,7 +139,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
     @Override
     protected void onPause() {
         //Log.d(TAG,"onPause");
-        mPrefs.setString(Prefs.KEY_LAST_SELECTED_LIST_ID, vm.currList.get().id);
+        mPrefs.setString(Prefs.KEY_LAST_SELECTED_LIST_ID, vm.getCurrList().get().id);
         super.onPause();
     }
 
@@ -252,9 +249,9 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
         if (task != null)
             intent.putExtra(TaskActivity.EXTRA_TASK, task);
         else {
-            TaskList list = vm.currList.get();
+            TaskList list = vm.getCurrList().get();
             if(list.isAllTasks())
-                list = mTaskListsToolbar.getDefaultList();
+                list = vm.getDefaultList();
             intent.putExtra(TaskActivity.EXTRA_TASKLIST, list);
         }
 
@@ -263,8 +260,8 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
 
     @Override
     public void onTaskListsChanged(TaskList current) {
-        vm.currList.set(current); //This list was added or updated
-        refreshLists();
+        vm.getCurrList().set(current); //This list was added or updated
+        vm.refreshLists();
     }
 
     @Override
@@ -276,7 +273,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        menu.findItem(R.id.action_rename).setVisible(!vm.currList.get().isAllTasks()); //Hide rename if "All Tasks" list
+        menu.findItem(R.id.action_rename).setVisible(!vm.getCurrList().get().isAllTasks()); //Hide rename if "All Tasks" list
         menu.findItem(R.id.action_delete).setVisible(mTaskListAdapter.getItemCount() == 0);
 
         return super.onPrepareOptionsMenu(menu);
@@ -298,7 +295,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
             }
             case R.id.action_clear_completed: onClearCompleted(); break;
             case R.id.action_rename:
-                TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME, vm.currList.get());
+                TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME, vm.getCurrList().get());
                 dialog.show(getFragmentManager(), "dialog");
                 break;
             case R.id.action_delete:
@@ -312,7 +309,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
     private void onClearCompleted() {
         Log.d(TAG,"onClearCompleted");
         Database db = Database.getInstance(this);
-        db.tasks.clearCompleted(vm.currList.get());
+        db.tasks.clearCompleted(vm.getCurrList().get());
 
         refreshTasks();
     }
@@ -351,38 +348,14 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
     }
 
     private void refreshAll() {
-        refreshLists();
+        vm.refreshLists();
         refreshTasks();
-    }
-
-    private void refreshLists() {
-        Log.d(TAG, "refreshLists");
-        vm.updateLastSync(); //Relative time so update it as much as possible
-        Database db = Database.getInstance(this);
-        List<TaskList> dbLists = db.taskLists.getList();
-        if (dbLists.size() == 0) {
-            Log.d(TAG, "No lists, adding default");
-            TaskList defaultList = new TaskList("Default");
-            defaultList.bDefault = true;
-            db.taskLists.add(defaultList);
-            dbLists = db.taskLists.getList(); //re-get list
-        }
-
-        //If the current list is not set, try to restore last saved
-        if (vm.currList.get() == null)
-            vm.currList.set( TaskList.get(dbLists, mPrefs.getString(Prefs.KEY_LAST_SELECTED_LIST_ID)) );
-
-        //If nothing valid is saved default to "all tasks" list
-        if (vm.currList.get() == null)
-            vm.currList.set( TaskList.ALL_TASKS );
-
-        mTaskListsToolbar.refresh(dbLists);
     }
 
     private void refreshTasks() {
         Log.d(TAG, "refreshTasks");
         vm.updateLastSync(); //Relative time so update it as much as possible
-        mTaskListAdapter.refresh(vm.currList.get());
+        mTaskListAdapter.refresh(vm.getCurrList().get());
     }
 
     @Override

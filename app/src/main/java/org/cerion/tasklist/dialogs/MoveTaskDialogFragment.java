@@ -35,7 +35,7 @@ public class MoveTaskDialogFragment extends DialogFragment {
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
 
-        ArrayAdapter adapter = new ArrayAdapter(getActivity(), android.R.layout.simple_spinner_dropdown_item);
+        ArrayAdapter<TaskList> adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_spinner_dropdown_item);
         final Database db = Database.getInstance(getActivity());
         final List<TaskList> lists = db.taskLists.getList();
         adapter.addAll(lists);

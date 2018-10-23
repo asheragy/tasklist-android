@@ -1,6 +1,7 @@
 package org.cerion.tasklist.ui;
 
 import android.content.Context;
+import android.databinding.ObservableList;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -12,11 +13,10 @@ import android.widget.Spinner;
 import android.widget.Toolbar;
 
 import org.cerion.tasklist.R;
+import org.cerion.tasklist.common.OnListAnyChangeCallback;
 import org.cerion.tasklist.data.TaskList;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.Objects;
 
 public class TaskListsToolbar extends Toolbar {
 
@@ -37,7 +37,7 @@ public class TaskListsToolbar extends Toolbar {
     public void setViewModel(final TasksViewModel vm) {
         this.vm = vm;
 
-        mSpinnerAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, vm.lists);
+        mSpinnerAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, vm.getLists());
         mSpinner.setAdapter(mSpinnerAdapter);
 
         mListener = (TaskListsChangeListener)getContext();
@@ -46,13 +46,23 @@ public class TaskListsToolbar extends Toolbar {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 Log.d(TAG, "onNavigationItemSelected: " + position + " index = " + mSpinner.getSelectedItemPosition());
-                vm.currList.set( vm.lists.get(position) );
+                vm.getCurrList().set( vm.getLists().get(position) );
                 mListener.onListChanged();
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
 
+            }
+        });
+
+        vm.getLists().addOnListChangedCallback(new OnListAnyChangeCallback<ObservableList<TaskList>>() {
+            @Override
+            public void onAnyChange(ObservableList sender) {
+                mSpinnerAdapter.notifyDataSetChanged();
+
+                //Re-select last
+                mSpinner.setSelection(getListPosition(Objects.requireNonNull(vm.getCurrList().get())));
             }
         });
     }
@@ -75,7 +85,19 @@ public class TaskListsToolbar extends Toolbar {
     private void init(Context context) {
         LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         inflater.inflate(R.layout.toolbar_tasklists, this);
-        mSpinner = (Spinner)findViewById(R.id.spinner);
+        mSpinner = findViewById(R.id.spinner);
+    }
+
+    public void moveLeft() {
+        int position = mSpinner.getSelectedItemPosition();
+        position = (position + 1) % mSpinner.getCount();
+        mSpinner.setSelection(position, true);
+    }
+
+    public void moveRight() {
+        int position = mSpinner.getSelectedItemPosition();
+        position = (position - 1 + mSpinner.getCount()) % mSpinner.getCount();
+        mSpinner.setSelection(position, true);
     }
 
     private int getListPosition(TaskList list) {
@@ -91,39 +113,5 @@ public class TaskListsToolbar extends Toolbar {
 
         Log.d(TAG, "listPosition = " + index);
         return index;
-    }
-
-    public void moveLeft() {
-        int position = mSpinner.getSelectedItemPosition();
-        position = (position + 1) % mSpinner.getCount();
-        mSpinner.setSelection(position, true);
-    }
-
-    public void moveRight() {
-        int position = mSpinner.getSelectedItemPosition();
-        position = (position - 1 + mSpinner.getCount()) % mSpinner.getCount();
-        mSpinner.setSelection(position, true);
-    }
-
-    public void refresh(List<TaskList> lists) {
-        vm.lists.clear();
-        vm.lists.addAll(lists);
-
-        Collections.sort(vm.lists, new Comparator<TaskList>() {
-            @Override
-            public int compare(TaskList taskList, TaskList t1) {
-                return taskList.title.compareToIgnoreCase(t1.title);
-            }
-        });
-
-        vm.lists.add(0, TaskList.ALL_TASKS);
-        mSpinnerAdapter.notifyDataSetChanged();
-
-        //Re-select last position
-        mSpinner.setSelection(getListPosition( vm.currList.get()));
-    }
-
-    public TaskList getDefaultList() {
-        return TaskList.getDefault(vm.lists);
     }
 }
