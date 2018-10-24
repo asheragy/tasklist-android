@@ -35,14 +35,15 @@ import org.cerion.tasklist.sync.Sync;
 
 //TODO verify network is available and toast message
 
-public class MainActivity extends Activity implements TaskListsChangedListener, TaskListsToolbar.TaskListsChangeListener {
+public class MainActivity extends Activity implements TaskListsChangedListener {
+
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final int EDIT_TASK_REQUEST = 0;
 
     private SwipeRefreshLayout mSwipeRefresh;
     private Prefs mPrefs;
     private TaskListsToolbar mTaskListsToolbar;
-    private final TaskListAdapter mTaskListAdapter = new TaskListAdapter(this);
+    private TaskListAdapter mTaskListAdapter;
     private TasksViewModel vm;
 
     @Override
@@ -54,6 +55,8 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
 
         super.onCreate(savedInstanceState);
         vm = new TasksViewModel(this);
+
+        mTaskListAdapter = new TaskListAdapter(this, vm);
 
         final ActivityMainBinding binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
         binding.layoutDebug.setVisibility(View.GONE);
@@ -121,7 +124,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
                 }
             });
 
-        vm.refreshLists();
+        vm.load();
     }
 
     @Override
@@ -203,7 +206,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
                         dialog.show(getFragmentManager(), "dialog");
                     }
 
-                    refreshAll(); //refresh since data may have changed
+                    vm.load(); //refresh since data may have changed
                 }
 
             });
@@ -226,7 +229,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
 
         if (resultCode == RESULT_OK) {
             if (requestCode == EDIT_TASK_REQUEST)
-                refreshTasks();
+                vm.refreshTasks();
             /*
             else if (requestCode == PICK_ACCOUNT_REQUEST) {
                 String currentAccount = mPrefs.getString(Prefs.KEY_ACCOUNT_NAME);
@@ -261,7 +264,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
     @Override
     public void onTaskListsChanged(TaskList current) {
         vm.getCurrList().set(current); //This list was added or updated
-        vm.refreshLists();
+        vm.load();
     }
 
     @Override
@@ -293,7 +296,9 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
                 startActivity(intent);
                 break;
             }
-            case R.id.action_clear_completed: onClearCompleted(); break;
+            case R.id.action_clear_completed:
+                vm.clearCompleted();
+                break;
             case R.id.action_rename:
                 TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME, vm.getCurrList().get());
                 dialog.show(getFragmentManager(), "dialog");
@@ -304,14 +309,6 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    private void onClearCompleted() {
-        Log.d(TAG,"onClearCompleted");
-        Database db = Database.getInstance(this);
-        db.tasks.clearCompleted(vm.getCurrList().get());
-
-        refreshTasks();
     }
 
     private void onAddTaskList() {
@@ -331,7 +328,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
                 task.setDeleted(!task.deleted);
 
             db.tasks.update(task);
-            refreshTasks();
+            vm.refreshTasks();
             return true;
         }
 
@@ -345,21 +342,5 @@ public class MainActivity extends Activity implements TaskListsChangedListener, 
         }
 
         return super.onContextItemSelected(item);
-    }
-
-    private void refreshAll() {
-        vm.refreshLists();
-        refreshTasks();
-    }
-
-    private void refreshTasks() {
-        Log.d(TAG, "refreshTasks");
-        vm.updateLastSync(); //Relative time so update it as much as possible
-        mTaskListAdapter.refresh(vm.getCurrList().get());
-    }
-
-    @Override
-    public void onListChanged() {
-        refreshTasks();
     }
 }

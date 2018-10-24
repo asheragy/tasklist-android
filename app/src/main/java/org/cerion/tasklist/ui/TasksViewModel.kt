@@ -8,6 +8,7 @@ import android.text.format.DateUtils
 import android.util.Log
 import org.cerion.tasklist.data.Database
 import org.cerion.tasklist.data.Prefs
+import org.cerion.tasklist.data.Task
 import org.cerion.tasklist.data.TaskList
 import java.util.*
 
@@ -15,14 +16,33 @@ class TasksViewModel(private val context: Context) {
 
     private val TAG = TasksViewModel::class.qualifiedName
     private val prefs = Prefs.getInstance(context)
+    private val db = Database.getInstance(context)
 
     val lists: ObservableList<TaskList> = ObservableArrayList()
+    val tasks: ObservableList<Task> = ObservableArrayList()
+
     val currList = ObservableField<TaskList>()
     val lastSync = ObservableField("")
     val isOutOfSync = ObservableField(false)
 
-    fun refreshLists() {
-        Log.d(TAG, "refreshLists")
+    // TODO make private, should be based on actions that change it which only this class does
+    fun refreshTasks() {
+        updateLastSync() //Relative time so update it as much as possible
+
+        val dbTasks = db.tasks.getList(currList.get()!!.id, false) //Get list with blank records excluded
+
+        Collections.sort(dbTasks, Comparator { task, t1 ->
+            if (task.deleted != t1.deleted)
+                return@Comparator if (task.deleted) 1 else -1
+            if (task.completed != t1.completed) if (task.completed) 1 else -1 else task.title.compareTo(t1.title, ignoreCase = true)
+        })
+
+        tasks.clear()
+        tasks.addAll(dbTasks)
+    }
+
+    fun load() {
+        Log.d(TAG, "load")
         updateLastSync() //Relative time so update it as much as possible
 
         val dbLists = getListsFromDatabase()
@@ -41,10 +61,18 @@ class TasksViewModel(private val context: Context) {
         Collections.sort(lists, { taskList, t1 -> taskList.title.compareTo(t1.title, ignoreCase = true) })
 
         lists.add(0, TaskList.ALL_TASKS)
+
+        refreshTasks()
+    }
+
+    fun clearCompleted() {
+        Log.d(TAG, "onClearCompleted")
+        db.tasks.clearCompleted(currList.get())
+
+        refreshTasks()
     }
 
     private fun getListsFromDatabase(): List<TaskList> {
-        val db = Database.getInstance(context)
         var dbLists = db.taskLists.list
         if (dbLists.size == 0) {
             Log.d(TAG, "No lists, adding default")

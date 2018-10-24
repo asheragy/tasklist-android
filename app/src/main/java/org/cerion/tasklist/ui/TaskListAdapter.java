@@ -1,6 +1,7 @@
 package org.cerion.tasklist.ui;
 
 import android.content.res.Resources;
+import android.databinding.ObservableList;
 import android.graphics.Paint;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
@@ -22,29 +23,25 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 
 import org.cerion.tasklist.R;
+import org.cerion.tasklist.common.OnListAnyChangeCallback;
 import org.cerion.tasklist.data.Database;
 import org.cerion.tasklist.data.Task;
-import org.cerion.tasklist.data.TaskList;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 
 class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
 
     private static final String TAG = TaskListAdapter.class.getSimpleName();
 
-    private final List<Task> mTasks = new ArrayList<>();
+    private final TasksViewModel vm;
     private int mPrimaryColor;
     private int mSecondaryColor;
     private final MainActivity mActivity;
-    private TaskList mCurrList;
+    //private TaskList mCurrList;
     private RecyclerView parent;
     private View emptyView;
 
-    public TaskListAdapter(MainActivity activity) {
+    public TaskListAdapter(MainActivity activity, TasksViewModel viewModel) {
         mActivity = activity;
+        vm = viewModel;
     }
 
     public void setEmptyView(RecyclerView recyclerView, View emptyView) {
@@ -63,41 +60,21 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
         mPrimaryColor = ContextCompat.getColor(mActivity, typedValue.resourceId);
         theme.resolveAttribute(android.R.attr.textColorSecondary, typedValue, true);
         mSecondaryColor = ContextCompat.getColor(mActivity, typedValue.resourceId);
-    }
 
-    public void refresh(TaskList list) {
-        mCurrList = list;
-        Database db = Database.getInstance(mActivity);
-        List<Task> tasks = db.tasks.getList(list.id, false); //Get list with blank records excluded
-
-        mTasks.clear();
-        mTasks.addAll(tasks);
-
-        Collections.sort(mTasks, new Comparator<Task>() {
+        vm.getTasks().addOnListChangedCallback(new OnListAnyChangeCallback<ObservableList<Task>>() {
             @Override
-            public int compare(Task task, Task t1) {
-                if(task.deleted != t1.deleted)
-                    return task.deleted ? 1 : -1;
-                if(task.completed != t1.completed)
-                    return task.completed ? 1 : -1;
+            public void onAnyChange(ObservableList sender) {
+                if (vm.getTasks().size() > 0) {
+                    parent.setVisibility(View.VISIBLE);
+                    emptyView.setVisibility(View.GONE);
+                } else {
+                    parent.setVisibility(View.GONE);
+                    emptyView.setVisibility(View.VISIBLE);
+                }
 
-                return task.title.compareToIgnoreCase(t1.title);
+                notifyDataSetChanged();
             }
         });
-
-        if (mTasks.size() > 0) {
-            parent.setVisibility(View.VISIBLE);
-            emptyView.setVisibility(View.GONE);
-        } else {
-            parent.setVisibility(View.GONE);
-            emptyView.setVisibility(View.VISIBLE);
-        }
-
-        notifyDataSetChanged();
-    }
-
-    private void refresh() {
-        refresh(mCurrList);
     }
 
     @Override
@@ -108,7 +85,7 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
-        Task task = mTasks.get(position);
+        Task task = vm.getTasks().get(position);
 
         String sTitle = task.title.length() > 0 ? task.title : "<Blank>";
         holder.title.setText(sTitle);
@@ -138,11 +115,11 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
 
     @Override
     public int getItemCount() {
-        return mTasks.size();
+        return vm.getTasks().size();
     }
 
     public Task getItem(int position) {
-        return mTasks.get(position);
+        return vm.getTasks().get(position);
     }
 
     //Workaround for activity to get context menu position
@@ -177,20 +154,19 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
         private final OnClickListener mOnUnDeleteListener = new OnClickListener() {
             @Override
             public void onClick(View v) {
-                Task task = mTasks.get(getLayoutPosition());
+                Task task = vm.getTasks().get(getLayoutPosition());
 
                 Log.d(TAG,"onUnDelete");
                 Database db = Database.getInstance(v.getContext());
                 task.setDeleted(false);
                 db.tasks.update(task);
-                refresh();
-
+                vm.refreshTasks();
             }
         };
 
         @Override
         public void onClick(View v) {
-            Task task = mTasks.get(getLayoutPosition());
+            Task task = vm.getTasks().get(getLayoutPosition());
             mActivity.onOpenTask(task);
         }
 
@@ -201,7 +177,7 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
             inflater.inflate(R.menu.main_context, menu);
 
             position = getLayoutPosition();
-            Task task = mTasks.get(position);
+            Task task = vm.getTasks().get(position);
             if (task.completed) {
                 MenuItem item = menu.findItem(R.id.complete);
                 item.setTitle("Un-Complete");
@@ -214,7 +190,7 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
 
         @Override
         public void onCheckedChanged(final CompoundButton buttonView, final boolean isChecked) {
-            final Task task = mTasks.get(getLayoutPosition());
+            final Task task = vm.getTasks().get(getLayoutPosition());
             if(task.completed != isChecked) { //checkbox was manually changed
 
                 AlphaAnimation anim = new AlphaAnimation(1.0f, 0.0f);
@@ -232,7 +208,7 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
                         Database db = Database.getInstance(buttonView.getContext());
                         task.setCompleted(isChecked);
                         db.tasks.update(task);
-                        refresh();
+                        vm.refreshTasks();
                     }
 
                     @Override
@@ -244,7 +220,6 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
                 this.itemView.startAnimation(anim);
             }
         }
-
     }
 
 }

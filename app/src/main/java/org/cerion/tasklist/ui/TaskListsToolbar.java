@@ -25,14 +25,7 @@ public class TaskListsToolbar extends Toolbar {
     //private final List<TaskList> mTaskLists = new ArrayList<>();
     private Spinner mSpinner;
     private ArrayAdapter<TaskList> mSpinnerAdapter;
-    private TaskListsChangeListener mListener;
     private TasksViewModel vm;
-
-    public interface TaskListsChangeListener {
-        //TaskList getCurrentList();
-        //void setCurrentList(TaskList list);
-        void onListChanged();
-    }
 
     public void setViewModel(final TasksViewModel vm) {
         this.vm = vm;
@@ -40,14 +33,12 @@ public class TaskListsToolbar extends Toolbar {
         mSpinnerAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, vm.getLists());
         mSpinner.setAdapter(mSpinnerAdapter);
 
-        mListener = (TaskListsChangeListener)getContext();
-
         mSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 Log.d(TAG, "onNavigationItemSelected: " + position + " index = " + mSpinner.getSelectedItemPosition());
                 vm.getCurrList().set( vm.getLists().get(position) );
-                mListener.onListChanged();
+                vm.refreshTasks();
             }
 
             @Override
