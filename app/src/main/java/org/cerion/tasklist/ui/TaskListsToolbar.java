@@ -37,8 +37,7 @@ public class TaskListsToolbar extends Toolbar {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 Log.d(TAG, "onNavigationItemSelected: " + position + " index = " + mSpinner.getSelectedItemPosition());
-                vm.getCurrList().set( vm.getLists().get(position) );
-                vm.refreshTasks();
+                vm.setList( vm.getLists().get(position) );
             }
 
             @Override
@@ -53,7 +52,7 @@ public class TaskListsToolbar extends Toolbar {
                 mSpinnerAdapter.notifyDataSetChanged();
 
                 //Re-select last
-                mSpinner.setSelection(getListPosition(Objects.requireNonNull(vm.getCurrList().get())));
+                mSpinner.setSelection(getListPosition(Objects.requireNonNull(vm.getCurrList())));
             }
         });
     }

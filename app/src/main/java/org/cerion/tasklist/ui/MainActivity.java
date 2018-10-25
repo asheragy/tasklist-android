@@ -21,7 +21,6 @@ import android.view.View;
 import android.widget.Toast;
 
 import org.cerion.tasklist.R;
-import org.cerion.tasklist.data.Database;
 import org.cerion.tasklist.data.Prefs;
 import org.cerion.tasklist.data.Task;
 import org.cerion.tasklist.data.TaskList;
@@ -118,9 +117,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener {
             logdb.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Database db = Database.getInstance(MainActivity.this);
-                    db.log();
-                    mPrefs.log();
+                    vm.logDatabase();
                 }
             });
 
@@ -142,7 +139,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener {
     @Override
     protected void onPause() {
         //Log.d(TAG,"onPause");
-        mPrefs.setString(Prefs.KEY_LAST_SELECTED_LIST_ID, vm.getCurrList().get().id);
+        mPrefs.setString(Prefs.KEY_LAST_SELECTED_LIST_ID, vm.getCurrList().id);
         super.onPause();
     }
 
@@ -252,7 +249,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener {
         if (task != null)
             intent.putExtra(TaskActivity.EXTRA_TASK, task);
         else {
-            TaskList list = vm.getCurrList().get();
+            TaskList list = vm.getCurrList();
             if(list.isAllTasks())
                 list = vm.getDefaultList();
             intent.putExtra(TaskActivity.EXTRA_TASKLIST, list);
@@ -263,8 +260,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener {
 
     @Override
     public void onTaskListsChanged(TaskList current) {
-        vm.getCurrList().set(current); //This list was added or updated
-        vm.load();
+        vm.setList(current); //This list was added or updated
     }
 
     @Override
@@ -276,7 +272,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener {
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        menu.findItem(R.id.action_rename).setVisible(!vm.getCurrList().get().isAllTasks()); //Hide rename if "All Tasks" list
+        menu.findItem(R.id.action_rename).setVisible(!vm.getCurrList().isAllTasks()); //Hide rename if "All Tasks" list
         menu.findItem(R.id.action_delete).setVisible(mTaskListAdapter.getItemCount() == 0);
 
         return super.onPrepareOptionsMenu(menu);
@@ -300,7 +296,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener {
                 vm.clearCompleted();
                 break;
             case R.id.action_rename:
-                TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME, vm.getCurrList().get());
+                TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME, vm.getCurrList());
                 dialog.show(getFragmentManager(), "dialog");
                 break;
             case R.id.action_delete:
@@ -319,16 +315,13 @@ public class MainActivity extends Activity implements TaskListsChangedListener {
     public boolean onContextItemSelected(MenuItem item) {
         int id = item.getItemId();
         Task task = mTaskListAdapter.getItem(mTaskListAdapter.getPosition());
-        Database db = Database.getInstance(this);
 
         if (id == R.id.complete || id == R.id.delete) {
             if (id == R.id.complete)
-                task.setCompleted(!task.completed);
+                vm.toggleCompleted(task);
             else
-                task.setDeleted(!task.deleted);
+                vm.toggleDeleted(task);
 
-            db.tasks.update(task);
-            vm.refreshTasks();
             return true;
         }
 

@@ -24,7 +24,6 @@ import android.widget.TextView;
 
 import org.cerion.tasklist.R;
 import org.cerion.tasklist.common.OnListAnyChangeCallback;
-import org.cerion.tasklist.data.Database;
 import org.cerion.tasklist.data.Task;
 
 class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
@@ -155,12 +154,7 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
             @Override
             public void onClick(View v) {
                 Task task = vm.getTasks().get(getLayoutPosition());
-
-                Log.d(TAG,"onUnDelete");
-                Database db = Database.getInstance(v.getContext());
-                task.setDeleted(false);
-                db.tasks.update(task);
-                vm.refreshTasks();
+                vm.toggleDeleted(task);
             }
         };
 
@@ -205,10 +199,7 @@ class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.ViewHolder> {
                     public void onAnimationEnd(Animation animation) {
                         //Update record in database and refresh list
                         Log.d(TAG,"Toggle completed checkbox");
-                        Database db = Database.getInstance(buttonView.getContext());
-                        task.setCompleted(isChecked);
-                        db.tasks.update(task);
-                        vm.refreshTasks();
+                        vm.toggleCompleted(task);
                     }
 
                     @Override

@@ -21,7 +21,11 @@ class TasksViewModel(private val context: Context) {
     val lists: ObservableList<TaskList> = ObservableArrayList()
     val tasks: ObservableList<Task> = ObservableArrayList()
 
-    val currList = ObservableField<TaskList>()
+    var currList: TaskList? = null
+        private set(value) {
+            field = value
+        }
+
     val lastSync = ObservableField("")
     val isOutOfSync = ObservableField(false)
 
@@ -29,7 +33,7 @@ class TasksViewModel(private val context: Context) {
     fun refreshTasks() {
         updateLastSync() //Relative time so update it as much as possible
 
-        val dbTasks = db.tasks.getList(currList.get()!!.id, false) //Get list with blank records excluded
+        val dbTasks = db.tasks.getList(currList!!.id, false) //Get list with blank records excluded
 
         Collections.sort(dbTasks, Comparator { task, t1 ->
             if (task.deleted != t1.deleted)
@@ -41,6 +45,12 @@ class TasksViewModel(private val context: Context) {
         tasks.addAll(dbTasks)
     }
 
+    fun setList(list: TaskList) {
+        // TODO reload tasks here the list may have just been added via dialog
+        currList = list
+        refreshTasks()
+    }
+
     fun load() {
         Log.d(TAG, "load")
         updateLastSync() //Relative time so update it as much as possible
@@ -48,12 +58,12 @@ class TasksViewModel(private val context: Context) {
         val dbLists = getListsFromDatabase()
 
         //If the current list is not set, try to restore last saved
-        if (currList.get() == null)
-            currList.set(TaskList.get(dbLists, prefs.getString(Prefs.KEY_LAST_SELECTED_LIST_ID)))
+        if (currList == null)
+            currList = TaskList.get(dbLists, prefs.getString(Prefs.KEY_LAST_SELECTED_LIST_ID))
 
         //If nothing valid is saved default to "all tasks" list
-        if (currList.get() == null)
-            currList.set(TaskList.ALL_TASKS)
+        if (currList == null)
+            currList = TaskList.ALL_TASKS
 
         lists.clear()
         lists.addAll(dbLists)
@@ -67,9 +77,26 @@ class TasksViewModel(private val context: Context) {
 
     fun clearCompleted() {
         Log.d(TAG, "onClearCompleted")
-        db.tasks.clearCompleted(currList.get())
+        db.tasks.clearCompleted(currList)
 
         refreshTasks()
+    }
+
+    fun toggleCompleted(task: Task) {
+        task.setCompleted(!task.completed)
+        db.tasks.update(task)
+        refreshTasks()
+    }
+
+    fun toggleDeleted(task: Task) {
+        task.setDeleted(!task.deleted)
+        db.tasks.update(task)
+        refreshTasks()
+    }
+
+    fun logDatabase() {
+        db.log()
+        prefs.log()
     }
 
     private fun getListsFromDatabase(): List<TaskList> {
