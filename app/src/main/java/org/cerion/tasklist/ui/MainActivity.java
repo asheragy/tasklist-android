@@ -5,25 +5,24 @@ import android.app.Activity;
 import android.app.DialogFragment;
 import android.content.Context;
 import android.content.Intent;
-import android.databinding.DataBindingUtil;
-import android.databinding.Observable;
 import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.widget.LinearLayoutManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
 import org.cerion.tasklist.R;
+import org.cerion.tasklist.data.AppDatabase;
 import org.cerion.tasklist.data.Prefs;
 import org.cerion.tasklist.data.Task;
 import org.cerion.tasklist.data.TaskList;
+import org.cerion.tasklist.data.TaskListDao;
 import org.cerion.tasklist.databinding.ActivityMainBinding;
 import org.cerion.tasklist.dialogs.AlertDialogFragment;
 import org.cerion.tasklist.dialogs.MoveTaskDialogFragment;
@@ -31,6 +30,13 @@ import org.cerion.tasklist.dialogs.TaskListDialogFragment;
 import org.cerion.tasklist.dialogs.TaskListsChangedListener;
 import org.cerion.tasklist.sync.OnSyncCompleteListener;
 import org.cerion.tasklist.sync.Sync;
+
+import java.util.List;
+
+import androidx.databinding.DataBindingUtil;
+import androidx.databinding.Observable;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 //TODO verify network is available and toast message
 
@@ -120,6 +126,10 @@ public class MainActivity extends Activity implements TaskListsChangedListener {
                     vm.logDatabase();
                 }
             });
+
+        AppDatabase db = AppDatabase.getInstance(this);
+        TaskListDao dao = db.taskListDao();
+        List<TaskList> list = dao.getAll();
 
         vm.load();
     }
@@ -314,7 +324,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener {
 
     public boolean onContextItemSelected(MenuItem item) {
         int id = item.getItemId();
-        Task task = mTaskListAdapter.getItem(mTaskListAdapter.getPosition());
+        Task task = mTaskListAdapter.getItem(mTaskListAdapter.getItemPosition());
 
         if (id == R.id.complete || id == R.id.delete) {
             if (id == R.id.complete)

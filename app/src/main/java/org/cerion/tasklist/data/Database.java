@@ -53,7 +53,7 @@ public class Database extends DBBase
             int def = c.getInt(c.getColumnIndexOrThrow(COLUMN_DEFAULT));
 
             TaskList result = new TaskList(id,title, (renamed == 1) );
-            result.bDefault = (def == 1);
+            result.isDefault = (def == 1);
             result.setUpdated ( new Date( c.getLong(c.getColumnIndexOrThrow(COLUMN_UPDATED)) ));
             return result;
         }
@@ -85,7 +85,7 @@ public class Database extends DBBase
             ContentValues values = new ContentValues();
             values.put(COLUMN_ID, taskList.id);
             values.put(COLUMN_TITLE, taskList.title);
-            values.put(COLUMN_DEFAULT, taskList.bDefault);
+            values.put(COLUMN_DEFAULT, taskList.isDefault);
 
             parent.insert(TABLE_NAME, values);
         }
@@ -95,9 +95,8 @@ public class Database extends DBBase
             String where = COLUMN_ID + "='" + taskList.id + "'";
             ContentValues values = new ContentValues();
             values.put(COLUMN_TITLE, taskList.title);
-            values.put(COLUMN_DEFAULT, taskList.bDefault);
-            if(taskList.hasRenamed())
-                values.put(COLUMN_RENAMED, (taskList.isRenamed() ? 1 : 0) );
+            values.put(COLUMN_DEFAULT, taskList.isDefault);
+            values.put(COLUMN_RENAMED, (taskList.isRenamed ? 1 : 0) );
 
             parent.update(TABLE_NAME, values, where);
         }
@@ -223,7 +222,7 @@ public class Database extends DBBase
         {
             SQLiteDatabase db = parent.openReadOnly();
             String sWhere = null;
-            if(listId != null)
+            if(listId.length() > 0) // TODO should just be a new function to get ALL tasks
                 sWhere = COLUMN_LISTID + "='" + listId + "'";
 
             //Should be handled outside of database as needed

@@ -3,18 +3,18 @@ package org.cerion.tasklist.sync;
 
 import android.app.Activity;
 import android.content.Context;
-import android.support.annotation.Nullable;
 import android.util.Log;
 
 import org.cerion.tasklist.data.Database;
+import org.cerion.tasklist.data.GoogleTasksAPI;
 import org.cerion.tasklist.data.IGoogleTasksAPI;
 import org.cerion.tasklist.data.Task;
 import org.cerion.tasklist.data.TaskList;
-import org.cerion.tasklist.data.GoogleTasksAPI;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
+import androidx.annotation.Nullable;
 
 public class Sync {
 
@@ -74,17 +74,17 @@ public class Sync {
             if(dbList != null) {
                 if(!curr.title.contentEquals(dbList.title)) {
                     //Name mismatch, update only if local list was not renamed
-                    if(!dbList.isRenamed()) {
+                    if(!dbList.isRenamed) {
                         mDb.taskLists.update(curr);
                         googleToDb[SYNC_CHANGE_LIST]++;
                     }
                 }
             }
             //--- MERGE default, first sync only
-            else if(curr.bDefault) {
+            else if(curr.isDefault) {
                 dbList = TaskList.getDefault(dbLists);
                 if(dbList != null) {
-                    if(!dbList.isRenamed()) {
+                    if(!dbList.isRenamed) {
                         dbList.title = curr.title;
                         mDb.taskLists.update(dbList);
                     }
@@ -139,14 +139,14 @@ public class Sync {
             }
 
             //--- UPDATE
-            if(dbList.isRenamed())
+            if(dbList.isRenamed)
             {
                 TaskList googleList = TaskList.get(googleLists,dbList.id);
 
                 if (googleList != null) {
                     if(mAPI.taskLists.update(dbList)) {
                         //Save state in db to indicate rename was successful
-                        dbList.clearRenamed();
+                        dbList.isRenamed = false;
                         mDb.taskLists.update(dbList);
                         dbToGoogle[SYNC_CHANGE_LIST]++;
                     }

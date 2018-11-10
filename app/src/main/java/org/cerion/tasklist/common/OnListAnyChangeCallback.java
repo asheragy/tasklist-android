@@ -1,6 +1,6 @@
 package org.cerion.tasklist.common;
 
-import android.databinding.ObservableList;
+import androidx.databinding.ObservableList;
 
 public abstract class OnListAnyChangeCallback<T extends ObservableList> extends ObservableList.OnListChangedCallback<T> {
 

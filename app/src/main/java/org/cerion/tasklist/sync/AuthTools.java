@@ -8,7 +8,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.util.Log;
 
 import org.cerion.tasklist.data.Database;
@@ -18,6 +17,8 @@ import org.cerion.tasklist.data.TaskList;
 
 import java.util.Date;
 import java.util.List;
+
+import androidx.annotation.Nullable;
 
 public class AuthTools {
 
@@ -134,7 +135,7 @@ public class AuthTools {
         for (TaskList list : lists) {
             if (!list.hasTempId()) //don't delete un-synced lists
             {
-                if (list.bDefault) { //Keep default but assign temp id
+                if (list.isDefault) { //Keep default but assign temp id
                     db.taskLists.setLastUpdated(list, new Date(0));
                     db.taskLists.setId(list, TaskList.generateId());
                 } else

@@ -8,10 +8,10 @@ import android.content.pm.PackageManager;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.TaskStackBuilder;
+import androidx.core.app.ActivityCompat;
+import androidx.core.app.TaskStackBuilder;
 import android.os.Bundle;
-import android.support.v4.content.ContextCompat;
+import androidx.core.content.ContextCompat;
 import android.util.Log;
 import android.widget.Toast;
 

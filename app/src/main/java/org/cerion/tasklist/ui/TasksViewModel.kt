@@ -1,11 +1,11 @@
 package org.cerion.tasklist.ui
 
 import android.content.Context
-import android.databinding.ObservableArrayList
-import android.databinding.ObservableField
-import android.databinding.ObservableList
 import android.text.format.DateUtils
 import android.util.Log
+import androidx.databinding.ObservableArrayList
+import androidx.databinding.ObservableField
+import androidx.databinding.ObservableList
 import org.cerion.tasklist.data.Database
 import org.cerion.tasklist.data.Prefs
 import org.cerion.tasklist.data.Task
@@ -104,7 +104,7 @@ class TasksViewModel(private val context: Context) {
         if (dbLists.size == 0) {
             Log.d(TAG, "No lists, adding default")
             val defaultList = TaskList("Default")
-            defaultList.bDefault = true
+            defaultList.isDefault = true
             db.taskLists.add(defaultList)
             dbLists = db.taskLists.list //re-get list
         }

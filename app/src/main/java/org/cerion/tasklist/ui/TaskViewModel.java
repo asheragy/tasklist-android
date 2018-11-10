@@ -1,16 +1,18 @@
 package org.cerion.tasklist.ui;
 
 import android.app.Application;
-import android.arch.lifecycle.AndroidViewModel;
-import android.databinding.Observable;
-import android.databinding.ObservableField;
-import android.support.annotation.NonNull;
 
 import org.cerion.tasklist.R;
 import org.cerion.tasklist.data.Database;
 import org.cerion.tasklist.data.Task;
 
 import java.util.Date;
+
+import androidx.annotation.NonNull;
+import androidx.databinding.Observable;
+import androidx.databinding.ObservableBoolean;
+import androidx.databinding.ObservableField;
+import androidx.lifecycle.AndroidViewModel;
 
 public class TaskViewModel extends AndroidViewModel {
 
@@ -21,9 +23,9 @@ public class TaskViewModel extends AndroidViewModel {
     public ObservableField<String> windowTitle = new ObservableField<>("");
     public ObservableField<String> title = new ObservableField<>("");
     public ObservableField<String> notes = new ObservableField<>("");
-    public ObservableField<Boolean> completed = new ObservableField<>(false);
+    public ObservableBoolean completed = new ObservableBoolean(false);
+    public ObservableBoolean hasDueDate = new ObservableBoolean(false);
     public ObservableField<String> due = new ObservableField<>("");
-    public ObservableField<Boolean> hasDueDate = new ObservableField<>(false);
     public ObservableField<Boolean> isDirty = new ObservableField<>(false);
     public ObservableField<String> modified = new ObservableField<>("");
 

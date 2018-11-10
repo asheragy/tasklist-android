@@ -1,13 +1,14 @@
 package org.cerion.tasklist.ui;
 
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 
 import org.cerion.tasklist.R;
 import org.cerion.tasklist.data.Prefs;
 import org.cerion.tasklist.data.Task;
 import org.cerion.tasklist.data.TaskList;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 
 public class TaskActivity extends AppCompatActivity

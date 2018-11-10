@@ -1,6 +1,5 @@
 package org.cerion.tasklist.data;
 
-import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.squareup.okhttp.MediaType;
@@ -9,9 +8,11 @@ import com.squareup.okhttp.Request;
 import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
 
+import org.cerion.tasklist.data.IGoogleTasksAPI.APIException;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -21,7 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import org.cerion.tasklist.data.IGoogleTasksAPI.APIException;
+import androidx.annotation.Nullable;
 
 public class GoogleTasksAPI
 {
@@ -98,7 +99,7 @@ public class GoogleTasksAPI
                         TaskList list = parseItem(item);
                         if (list != null) {
                             if(i==0)
-                                list.bDefault = true; //first list is default list
+                                list.isDefault = true; //first list is default list
                             result.add(list);
                         }
 

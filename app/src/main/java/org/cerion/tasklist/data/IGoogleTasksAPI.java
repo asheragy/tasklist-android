@@ -1,10 +1,10 @@
 package org.cerion.tasklist.data;
 
 
-import android.support.annotation.Nullable;
-
 import java.util.Date;
 import java.util.List;
+
+import androidx.annotation.Nullable;
 
 public interface IGoogleTasksAPI {
 

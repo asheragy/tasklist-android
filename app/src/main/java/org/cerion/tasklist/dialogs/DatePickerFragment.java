@@ -4,13 +4,14 @@ package org.cerion.tasklist.dialogs;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.os.Bundle;
-import android.support.v4.app.DialogFragment;
-import android.support.v4.app.Fragment;
 import android.widget.DatePicker;
 
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
+
+import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.Fragment;
 
 public class DatePickerFragment extends DialogFragment implements DatePickerDialog.OnDateSetListener {
 

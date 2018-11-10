@@ -2,12 +2,7 @@ package org.cerion.tasklist.ui;
 
 
 import android.app.Activity;
-import android.arch.lifecycle.ViewModelProviders;
-import android.databinding.Observable;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.v4.app.DialogFragment;
-import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.util.Linkify;
@@ -25,6 +20,12 @@ import org.cerion.tasklist.databinding.FragmentTaskBinding;
 import org.cerion.tasklist.dialogs.DatePickerFragment;
 
 import java.util.Date;
+
+import androidx.annotation.NonNull;
+import androidx.databinding.Observable;
+import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProviders;
 
 public class TaskFragment extends Fragment implements DatePickerFragment.DatePickerListener {
     private static final String TAG = TaskFragment.class.getSimpleName();
