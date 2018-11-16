@@ -62,9 +62,10 @@ dependencies {
     implementation "androidx.room:room-runtime:$room_version"
     annotationProcessor "androidx.room:room-compiler:$room_version"
 
-    androidTestImplementation 'junit:junit:4.12'
+    //androidTestImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.annotation:annotation:1.0.0'
     androidTestImplementation 'androidx.test:runner:1.1.0'
+    androidTestImplementation "androidx.test.ext:junit:1.0.0"
 
 
 }

@@ -16,7 +16,6 @@ public class TaskList implements Serializable
 {
     static final String TABLE_NAME = "tasklists";
 
-
     @PrimaryKey @NotNull
     public String id;
 
