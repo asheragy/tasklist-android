@@ -60,7 +60,7 @@ class TasksViewModel(context: Context) {
 
     fun load() {
         Log.d(TAG, "load")
-        db.log();
+        db.log()
         updateLastSync() //Relative time so update it as much as possible
 
         val dbLists = getListsFromDatabase()

@@ -52,7 +52,7 @@ class DatabaseTest {
 
     @Test
     fun init_tasks() {
-        val tasks = taskDao.all
+        val tasks = taskDao.getAll()
         assertEquals(2, tasks.size)
     }
 
@@ -105,7 +105,7 @@ class DatabaseTest {
         listDao.updateId("123", "999")
 
         assertTrue("list id did not update", listDao.getAll().any { it.id == "999" })
-        assertTrue("task parent list id did not update", taskDao.all.any { it.listId == "999" })
+        assertTrue("task parent list id did not update", taskDao.getAll().any { it.listId == "999" })
     }
 
     /*

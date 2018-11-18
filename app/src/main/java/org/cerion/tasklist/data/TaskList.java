@@ -3,10 +3,13 @@ package org.cerion.tasklist.data;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
+import java.text.DateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.room.Entity;
 import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
@@ -27,6 +30,7 @@ public class TaskList implements Serializable
 
     public boolean isDefault;
     public boolean isRenamed;
+
 
     /**
      * Special list to represent a list containing tasks from all available lists
@@ -59,8 +63,21 @@ public class TaskList implements Serializable
         this.isDefault = isDefault;
     }
 
+    @NonNull
+    @Override
     public String toString() {
         return title;
+    }
+
+    String logString(@Nullable DateFormat dateFormat) {
+        String result = String.format("List(id=%s, updated='%s', title='%s'", id, dateFormat != null ? dateFormat.format(updated) : updated.toString(), title);
+        if (isDefault)
+            result += ", **default";
+        if (isRenamed)
+            result += ", **renamed";
+        result += ")";
+
+        return result;
     }
 
     public static String generateId() {

@@ -13,7 +13,7 @@ import androidx.room.Room;
 import androidx.room.RoomDatabase;
 import androidx.room.TypeConverters;
 
-@androidx.room.Database(entities = {TaskList.class, Task.class}, version = 1)
+@androidx.room.Database(entities = {TaskList.class, Task.class}, version = 1, exportSchema = false)
 @TypeConverters(DateConverter.class)
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -40,18 +40,15 @@ public abstract class AppDatabase extends RoomDatabase {
     public void log() {
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 
-        Log.d(TAG, "--- Table: " + Database.TaskLists.TABLE_NAME);
         List<TaskList> lists = taskListDao().getAll();
+        Log.d(TAG, "---------------------- App Database ----------------------");
+
         for (TaskList list : lists) {
-            String time = "0";
-            if (list.getUpdated().getTime() > 0)
-                time = dateFormat.format(list.getUpdated());
-
-            String id = String.format("%1$-" + 43 + "s", list.id);
-            Log.d(TAG, time + "   " + id + " " + list.title);
-
+            Log.d(TAG, list.logString(dateFormat));
             logTasks(list.id);
         }
+
+        Log.d(TAG, "----------------------------------------------------------");
     }
 
     private final String TAG = AppDatabase.class.getSimpleName();
@@ -60,7 +57,7 @@ public abstract class AppDatabase extends RoomDatabase {
         for (Task task : tasks) {
             String listid = String.format("%1$-" + 43 + "s", task.listId);
             String id = String.format("%1$-" + 55 + "s", task.id);
-            Log.d(TAG, listid + " " + id + " " + task.title);
+            Log.d(TAG, "\t" + listid + " " + id + " " + task.title);
         }
     }
 

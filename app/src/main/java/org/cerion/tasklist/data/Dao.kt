@@ -4,6 +4,27 @@ import androidx.room.*
 import java.util.*
 
 @Dao
+interface TaskDao {
+
+    //String orderBy = COLUMN_DELETED + " ASC, " + COLUMN_COMPLETE + " ASC, " + COLUMN_TITLE + " ASC";
+
+    @Query("SELECT * FROM " + Task.TABLE_NAME)
+    fun getAll(): List<Task>
+
+    @Query("SELECT * FROM " + Task.TABLE_NAME + " WHERE listId = :listId")
+    fun getAllbyList(listId: String): List<Task>
+
+    @Insert
+    fun add(task: Task)
+
+    @Update
+    fun update(task: Task)
+
+    @Delete
+    fun delete(task: Task)
+}
+
+@Dao
 interface TaskListDao {
 
     @Query("SELECT * FROM " + TaskList.TABLE_NAME)
