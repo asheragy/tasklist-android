@@ -5,11 +5,13 @@ import android.app.Activity;
 import android.content.Context;
 import android.util.Log;
 
-import org.cerion.tasklist.data.Database;
+import org.cerion.tasklist.data.AppDatabase;
 import org.cerion.tasklist.data.GoogleTasksAPI;
 import org.cerion.tasklist.data.IGoogleTasksAPI;
 import org.cerion.tasklist.data.Task;
+import org.cerion.tasklist.data.TaskDao;
 import org.cerion.tasklist.data.TaskList;
+import org.cerion.tasklist.data.TaskListDao;
 
 import java.util.Date;
 import java.util.List;
@@ -30,7 +32,8 @@ public class Sync {
 
     //Instance variables
     private GoogleTasksAPI mAPI = null;
-    private Database mDb = null;
+    private TaskDao taskDb;
+    private TaskListDao listDb;
     final int[] googleToDb = { 0, 0, 0, 0, 0, 0 }; //Add Change Delete Lists / Tasks
     final int[] dbToGoogle = { 0, 0, 0, 0, 0, 0 };
 
@@ -54,9 +57,10 @@ public class Sync {
         }
     }
 
-    Sync(Context context, String sAuthKey)
-    {
-        mDb = Database.getInstance(context);
+    Sync(Context context, String sAuthKey) {
+        AppDatabase db = AppDatabase.getInstance(context);
+        taskDb = db.taskDao();
+        listDb = db.taskListDao();
         mAPI = new GoogleTasksAPI(sAuthKey);
     }
 
@@ -65,7 +69,7 @@ public class Sync {
         if(googleLists.size() == 0)
             return false;
 
-        List<TaskList> dbLists = mDb.taskLists.getList();
+        List<TaskList> dbLists = listDb.getAll();
 
         //Google->Local (Added or Updated)
         for(TaskList curr : googleLists) {
@@ -75,7 +79,7 @@ public class Sync {
                 if(!curr.title.contentEquals(dbList.title)) {
                     //Name mismatch, update only if local list was not renamed
                     if(!dbList.isRenamed) {
-                        mDb.taskLists.update(curr);
+                        listDb.update(curr);
                         googleToDb[SYNC_CHANGE_LIST]++;
                     }
                 }
@@ -86,10 +90,10 @@ public class Sync {
                 if(dbList != null) {
                     if(!dbList.isRenamed) {
                         dbList.title = curr.title;
-                        mDb.taskLists.update(dbList);
+                        listDb.update(dbList);
                     }
 
-                    mDb.taskLists.setId(dbList,curr.id); //assign ID
+                    listDb.updateId(dbList.id, curr.id); //assign ID
                     dbList.id = curr.id;
                 }
                 else
@@ -97,7 +101,7 @@ public class Sync {
             }
             //--- ADD
             else { //Does not exist locally, add it
-                mDb.taskLists.add(curr);
+                listDb.add(curr);
                 googleToDb[SYNC_ADD_LIST]++;
 
             }
@@ -111,15 +115,17 @@ public class Sync {
 
             TaskList googleList = TaskList.get(googleLists,curr.id);
             if(googleList == null) {
-                mDb.taskLists.delete(curr);
+                // TODO this will cascade delete so log tasks count its removing...
+                listDb.delete(curr);
                 googleToDb[SYNC_DELETE_LIST]++;
             }
 
         }
 
+        // TODO always reload?
         //If any changes made to local database, just reload it
         if(googleToDb[SYNC_DELETE_LIST] > 0 || googleToDb[SYNC_ADD_LIST] > 0)
-            dbLists = mDb.taskLists.getList();
+            dbLists = listDb.getAll();
 
         //Local ----> Google
         for(TaskList dbList : dbLists) {
@@ -127,7 +133,7 @@ public class Sync {
             if(dbList.hasTempId()) {
                 TaskList addedList = mAPI.taskLists.insert(dbList);
                 if(addedList != null) {
-                    mDb.taskLists.setId(dbList, addedList.id);
+                    listDb.updateId(dbList.id, addedList.id);
                     dbList.id = addedList.id;
                     googleLists.add(addedList);
                     dbToGoogle[SYNC_ADD_LIST]++;
@@ -139,15 +145,14 @@ public class Sync {
             }
 
             //--- UPDATE
-            if(dbList.isRenamed)
-            {
+            if(dbList.isRenamed) {
                 TaskList googleList = TaskList.get(googleLists,dbList.id);
 
                 if (googleList != null) {
                     if(mAPI.taskLists.update(dbList)) {
                         //Save state in db to indicate rename was successful
                         dbList.isRenamed = false;
-                        mDb.taskLists.update(dbList);
+                        listDb.update(dbList);
                         dbToGoogle[SYNC_CHANGE_LIST]++;
                     }
                     else
@@ -214,13 +219,13 @@ public class Sync {
         /**************
          Web -> Database
          **************/
-        List<Task> dbTasks = mDb.tasks.getList(listId);
+        List<Task> dbTasks = taskDb.getAllbyList(listId);
         if (webTasks != null) {
             for (Task task : webTasks) {
                 Task dbTask = getTask(dbTasks, task.id);
                 if (dbTask != null) {
                     if (task.deleted) {
-                        mDb.tasks.delete(task);
+                        taskDb.delete(task);
                         googleToDb[SYNC_DELETE_TASK]++;
                         dbTasks.remove(dbTask);
                     } else if(dbTask.deleted) {
@@ -232,7 +237,7 @@ public class Sync {
                             Log.e(TAG,"Conflict: Local task was updated most recently");
                         else {
                             dbTasks.remove(dbTask);
-                            mDb.tasks.update(task);
+                            taskDb.update(task);
                             googleToDb[SYNC_CHANGE_TASK]++;
                         }
 
@@ -240,7 +245,7 @@ public class Sync {
                 } else if (task.deleted) {
                     Log.d(TAG,"Ignoring web delete since record was never added locally");
                 } else {
-                    mDb.tasks.add(task);
+                    taskDb.add(task);
                     googleToDb[SYNC_ADD_TASK]++;
                 }
             }
@@ -268,27 +273,29 @@ public class Sync {
 
                 if(task.hasTempId()) //If never added just delete from local database
                 {
-                    mDb.tasks.delete(task);
+                    taskDb.delete(task);
                 }
                 else if (mAPI.tasks.delete(task))
                 {
-                    mDb.tasks.delete(task);
+                    taskDb.delete(task);
                     dbToGoogle[SYNC_DELETE_TASK]++;
                     bListUpdated = true;
                 }
-
             }
             else if(task.hasTempId())
             {
                 Task updated = mAPI.tasks.insert(task);
                 if(updated != null) {
-                    mDb.setTaskIds(task,updated.id,updated.listId);
+                    taskDb.delete(task);
+                    task.id = updated.id;
+                    task.listId = updated.listId;
+                    taskDb.add(task);
+
                     dbToGoogle[SYNC_ADD_TASK]++;
                     bListUpdated = true;
 
-                    if(listId == null) //When adding a new task without a list this will be the default task list id
+                    if(listId.isEmpty()) //When adding a new task without a list this will be the default task list id
                         listId = updated.listId;
-
                 }
             }
             else if(bModified)
@@ -311,16 +318,12 @@ public class Sync {
         }
 
         if(webUpdated.getTime() > savedUpdatedNEW.getTime()) {
-            mDb.taskLists.setLastUpdated(list, webUpdated);
+            listDb.setLastUpdated(list.id, webUpdated);
         }
-
     }
 
-
-    private static Task getTask(List<Task> tasks, String sId)
-    {
-        for(Task task : tasks)
-        {
+    private static Task getTask(List<Task> tasks, String sId) {
+        for(Task task : tasks) {
             if(task.id.contentEquals(sId))
                 return task;
         }

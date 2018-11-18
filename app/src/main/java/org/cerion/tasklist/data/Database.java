@@ -17,8 +17,8 @@ public class Database extends DBBase
 {
     private static final String TAG = Database.class.getSimpleName();
 
-    public final TaskLists taskLists;
-    public final Tasks tasks;
+    final TaskLists taskLists;
+    final Tasks tasks;
 
     //Singleton class
     private static Database mInstance;
@@ -115,26 +115,6 @@ public class Database extends DBBase
             db.endTransaction();
             db.close();
         }
-
-        //This is only set after tasks have successfully synced, so it needs to be updated on its own
-        public void setLastUpdated(TaskList taskList, Date updated)
-        {
-            String where = COLUMN_ID + "='" + taskList.id + "'";
-            ContentValues values = new ContentValues();
-            values.put(COLUMN_UPDATED, updated.getTime());
-
-            parent.update(TABLE_NAME, values, where);
-        }
-
-        public void setId(TaskList taskList, String sNewId)
-        {
-            String where = String.format("%s='%s'", COLUMN_ID, taskList.id);
-            ContentValues values = new ContentValues();
-            values.put(COLUMN_ID, sNewId);
-            parent.update(TABLE_NAME, values, where);
-            //Foreign key ON UPDATE CASCADE will update associated tasks
-        }
-
     }
 
     public static class Tasks extends DatabaseOpenHelper.Tasks
@@ -208,7 +188,7 @@ public class Database extends DBBase
          * @param listId ID of list
          * @return list of tasks
          */
-        public List<Task> getList(String listId) {
+        List<Task> getList(String listId) {
             return getList(listId,true);
         }
 
@@ -218,7 +198,7 @@ public class Database extends DBBase
          * @param bIncludeBlanks option to exclude blank records which can easily get added on the web
          * @return list of tasks
          */
-        public List<Task> getList(String listId, boolean bIncludeBlanks)
+        List<Task> getList(String listId, boolean bIncludeBlanks)
         {
             SQLiteDatabase db = parent.openReadOnly();
             String sWhere = null;
@@ -244,29 +224,6 @@ public class Database extends DBBase
 
             return result;
         }
-
-        public void clearCompleted(TaskList list) {
-            String sWhere = COLUMN_COMPLETE + "=1 AND " + COLUMN_DELETED + "=0";
-            if(!list.isAllTasks())
-                sWhere += " AND " + COLUMN_LISTID + "='" + list.id + "'";
-
-            ContentValues values = new ContentValues();
-            values.put(COLUMN_DELETED,1);
-            values.put(COLUMN_UPDATED,System.currentTimeMillis());
-
-            parent.update(TABLE_NAME, values, sWhere);
-        }
-    }
-
-    public void setTaskIds(Task task, String sNewId, String sNewListId)
-    {
-        String where = String.format("%s='%s' AND %s='%s'", Tasks.COLUMN_ID, task.id, Tasks.COLUMN_LISTID, task.listId);
-        ContentValues values = new ContentValues();
-        values.put(Tasks.COLUMN_ID, sNewId);
-        if(sNewListId != null)
-            values.put(Tasks.COLUMN_LISTID, sNewListId);
-
-        update(Tasks.TABLE_NAME, values, where);
 
     }
 

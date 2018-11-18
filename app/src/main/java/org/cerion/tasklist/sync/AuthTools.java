@@ -10,10 +10,12 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 
-import org.cerion.tasklist.data.Database;
+import org.cerion.tasklist.data.AppDatabase;
 import org.cerion.tasklist.data.Prefs;
 import org.cerion.tasklist.data.Task;
+import org.cerion.tasklist.data.TaskDao;
 import org.cerion.tasklist.data.TaskList;
+import org.cerion.tasklist.data.TaskListDao;
 
 import java.util.Date;
 import java.util.List;
@@ -111,23 +113,28 @@ public class AuthTools {
     //Also this should be an async task that can just be ran with callback
     public static void logout(Context context) {
         Log.d(TAG, "onLogout");
-        Database db = Database.getInstance(context);
+
+        AppDatabase db = AppDatabase.getInstance(context);
+        TaskDao taskDb = db.taskDao();
+        TaskListDao listDb = db.taskListDao();
 
         //Move un-synced task to this default list
-        List<TaskList> lists = db.taskLists.getList();
+        List<TaskList> lists = listDb.getAll();
         TaskList defaultList = TaskList.getDefault(lists);
 
         //Delete all non-temp Id records, also remove records marked as deleted
-        List<Task> tasks = db.tasks.getList(null);
+        List<Task> tasks = taskDb.getAll();
         for (Task task : tasks) {
             if (!task.hasTempId() || task.deleted)
-                db.tasks.delete(task);
+                taskDb.delete(task);
             else {
                 //Since we are also removing synced lists, check if we need to move this task to an un-synced list
                 TaskList list = new TaskList(task.listId, "");
                 if (!list.hasTempId() && defaultList != null) {
                     //Move this task to default list
-                    db.setTaskIds(task, task.id, defaultList.id);
+                    taskDb.delete(task);
+                    task.listId = defaultList.id;
+                    taskDb.add(task);
                 }
             }
         }
@@ -136,10 +143,10 @@ public class AuthTools {
             if (!list.hasTempId()) //don't delete un-synced lists
             {
                 if (list.isDefault) { //Keep default but assign temp id
-                    db.taskLists.setLastUpdated(list, new Date(0));
-                    db.taskLists.setId(list, TaskList.generateId());
+                    listDb.setLastUpdated(list.id, new Date(0));
+                    listDb.updateId(list.id, TaskList.generateId());
                 } else
-                    db.taskLists.delete(list);
+                    listDb.delete(list);
             }
         }
 
@@ -151,7 +158,7 @@ public class AuthTools {
         prefs.remove(Prefs.KEY_AUTHTOKEN_DATE);
 
         //Log data which should be empty except for un-synced records
-        db.log();
+        //db.log();
         prefs.log();
     }
 

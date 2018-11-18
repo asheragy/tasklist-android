@@ -1,8 +1,6 @@
 package org.cerion.tasklist.ui;
 
 import android.accounts.OperationCanceledException;
-import android.app.Activity;
-import android.app.DialogFragment;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
@@ -18,11 +16,9 @@ import android.widget.Toast;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import org.cerion.tasklist.R;
-import org.cerion.tasklist.data.AppDatabase;
 import org.cerion.tasklist.data.Prefs;
 import org.cerion.tasklist.data.Task;
 import org.cerion.tasklist.data.TaskList;
-import org.cerion.tasklist.data.TaskListDao;
 import org.cerion.tasklist.databinding.ActivityMainBinding;
 import org.cerion.tasklist.dialogs.AlertDialogFragment;
 import org.cerion.tasklist.dialogs.MoveTaskDialogFragment;
@@ -31,16 +27,16 @@ import org.cerion.tasklist.dialogs.TaskListsChangedListener;
 import org.cerion.tasklist.sync.OnSyncCompleteListener;
 import org.cerion.tasklist.sync.Sync;
 
-import java.util.List;
-
 import androidx.databinding.DataBindingUtil;
 import androidx.databinding.Observable;
+import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 //TODO verify network is available and toast message
 
-public class MainActivity extends Activity implements TaskListsChangedListener {
+public class MainActivity extends FragmentActivity implements TaskListsChangedListener {
 
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final int EDIT_TASK_REQUEST = 0;
@@ -127,10 +123,6 @@ public class MainActivity extends Activity implements TaskListsChangedListener {
                 }
             });
 
-        AppDatabase db = AppDatabase.getInstance(this);
-        TaskListDao dao = db.taskListDao();
-        List<TaskList> list = dao.getAll();
-
         vm.load();
     }
 
@@ -194,7 +186,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener {
                         //For some reason showing an AlertDialog here causes a crash
                     } else {
                         DialogFragment dialog = AlertDialogFragment.newInstance("Auth Error", e.getMessage());
-                        dialog.show(getFragmentManager(), "dialog");
+                        dialog.show(getSupportFragmentManager(), "dialog");
                     }
                 }
 
@@ -210,7 +202,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener {
                             message = e.getMessage();
 
                         DialogFragment dialog = AlertDialogFragment.newInstance("Sync failed", message);
-                        dialog.show(getFragmentManager(), "dialog");
+                        dialog.show(getSupportFragmentManager(), "dialog");
                     }
 
                     vm.load(); //refresh since data may have changed
@@ -219,7 +211,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener {
             });
         } else {
             DialogFragment dialog = AlertDialogFragment.newInstance("Error", "Internet not available");
-            dialog.show(getFragmentManager(), "dialog");
+            dialog.show(getSupportFragmentManager(), "dialog");
             if (mSwipeRefresh.isRefreshing())
                 mSwipeRefresh.setRefreshing(false);
         }
@@ -307,7 +299,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener {
                 break;
             case R.id.action_rename:
                 TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME, vm.getCurrList());
-                dialog.show(getFragmentManager(), "dialog");
+                dialog.show(getSupportFragmentManager(), "dialog");
                 break;
             case R.id.action_delete:
                 Toast.makeText(this, "not implemented", Toast.LENGTH_SHORT).show();
@@ -319,7 +311,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener {
 
     private void onAddTaskList() {
         TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_ADD, null);
-        dialog.show(getFragmentManager(), "dialog");
+        dialog.show(getSupportFragmentManager(), "dialog");
     }
 
     public boolean onContextItemSelected(MenuItem item) {
@@ -339,7 +331,7 @@ public class MainActivity extends Activity implements TaskListsChangedListener {
             Log.d(TAG,"onMove");
 
             DialogFragment newFragment = MoveTaskDialogFragment.newInstance(task);
-            newFragment.show(getFragmentManager(), "moveTask");
+            newFragment.show(getSupportFragmentManager(), "moveTask");
 
             return true;
         }

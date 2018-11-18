@@ -2,14 +2,16 @@ package org.cerion.tasklist.dialogs;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.DialogFragment;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.EditText;
 
-import org.cerion.tasklist.data.Database;
+import org.cerion.tasklist.data.AppDatabase;
 import org.cerion.tasklist.data.TaskList;
+import org.cerion.tasklist.data.TaskListDao;
+
+import androidx.fragment.app.DialogFragment;
 
 public class TaskListDialogFragment extends DialogFragment {
 
@@ -51,9 +53,9 @@ public class TaskListDialogFragment extends DialogFragment {
                 public void onClick(DialogInterface dialog, int whichButton) {
                     String name = edittext.getText().toString();
 
-                    Database db = Database.getInstance(getActivity());
+                    TaskListDao db = AppDatabase.getInstance(getActivity()).taskListDao();
                     TaskList update = new TaskList(name);
-                    db.taskLists.add(update);
+                    db.add(update);
 
                     ((TaskListsChangedListener) getActivity()).onTaskListsChanged(update);
                 }
@@ -71,8 +73,8 @@ public class TaskListDialogFragment extends DialogFragment {
                     Log.d(TAG, "Rename " + listName + " to " + newName);
 
                     TaskList update = new TaskList(listId, newName, true);
-                    Database db = Database.getInstance(getActivity());
-                    db.taskLists.update(update);
+                    TaskListDao db = AppDatabase.getInstance(getActivity()).taskListDao();
+                    db.update(update);
 
                     ((TaskListsChangedListener) getActivity()).onTaskListsChanged(update);
                 }

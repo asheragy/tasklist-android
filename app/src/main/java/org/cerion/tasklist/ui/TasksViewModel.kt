@@ -6,22 +6,24 @@ import android.util.Log
 import androidx.databinding.ObservableArrayList
 import androidx.databinding.ObservableField
 import androidx.databinding.ObservableList
-import org.cerion.tasklist.data.Database
+import org.cerion.tasklist.data.AppDatabase
 import org.cerion.tasklist.data.Prefs
 import org.cerion.tasklist.data.Task
 import org.cerion.tasklist.data.TaskList
 import java.util.*
 
-class TasksViewModel(private val context: Context) {
+class TasksViewModel(context: Context) {
 
     private val TAG = TasksViewModel::class.qualifiedName
     private val prefs = Prefs.getInstance(context)
-    private val db = Database.getInstance(context)
+    private val db = AppDatabase.getInstance(context)
+    private val taskDao = db.taskDao()
+    private val listDao = db.taskListDao()
 
     val lists: ObservableList<TaskList> = ObservableArrayList()
     val tasks: ObservableList<Task> = ObservableArrayList()
 
-    var currList: TaskList? = null
+    var currList: TaskList = TaskList.ALL_TASKS
         private set(value) {
             field = value
         }
@@ -33,7 +35,12 @@ class TasksViewModel(private val context: Context) {
     fun refreshTasks() {
         updateLastSync() //Relative time so update it as much as possible
 
-        val dbTasks = db.tasks.getList(currList!!.id, false) //Get list with blank records excluded
+        // TODO filter out blank records here
+        val dbTasks: List<Task>
+        if(currList.isAllTasks)
+            dbTasks = taskDao.getAll()
+        else
+            dbTasks = taskDao.getAllbyList(currList.id)
 
         Collections.sort(dbTasks, Comparator { task, t1 ->
             if (task.deleted != t1.deleted)
@@ -53,6 +60,7 @@ class TasksViewModel(private val context: Context) {
 
     fun load() {
         Log.d(TAG, "load")
+        db.log();
         updateLastSync() //Relative time so update it as much as possible
 
         val dbLists = getListsFromDatabase()
@@ -77,36 +85,41 @@ class TasksViewModel(private val context: Context) {
 
     fun clearCompleted() {
         Log.d(TAG, "onClearCompleted")
-        db.tasks.clearCompleted(currList)
+
+        val tasks = taskDao.getAllbyList(currList.id).filter { it.completed && !it.deleted }
+        for (task in tasks) {
+            task.setDeleted(true)
+            taskDao.update(task)
+        }
 
         refreshTasks()
     }
 
     fun toggleCompleted(task: Task) {
         task.setCompleted(!task.completed)
-        db.tasks.update(task)
+        taskDao.update(task)
         refreshTasks()
     }
 
     fun toggleDeleted(task: Task) {
         task.setDeleted(!task.deleted)
-        db.tasks.update(task)
+        taskDao.update(task)
         refreshTasks()
     }
 
     fun logDatabase() {
-        db.log()
-        prefs.log()
+        //db.log()
+        //prefs.log()
     }
 
     private fun getListsFromDatabase(): List<TaskList> {
-        var dbLists = db.taskLists.list
-        if (dbLists.size == 0) {
+        var dbLists = listDao.getAll()
+        if (dbLists.isEmpty()) {
             Log.d(TAG, "No lists, adding default")
             val defaultList = TaskList("Default")
             defaultList.isDefault = true
-            db.taskLists.add(defaultList)
-            dbLists = db.taskLists.list //re-get list
+            listDao.add(defaultList)
+            dbLists = listDao.getAll() //re-get list
         }
 
         return dbLists

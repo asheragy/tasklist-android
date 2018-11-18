@@ -73,6 +73,7 @@ public class TaskList implements Serializable
         return id.startsWith("temp_");
     }
 
+    // TODO remove this and just use kotlin lambdas to get the list we want
     public static TaskList get(List<TaskList> lists, String sId) {
         for(TaskList list : lists) {
             if(list.isAllTasks())

@@ -3,8 +3,9 @@ package org.cerion.tasklist.ui;
 import android.app.Application;
 
 import org.cerion.tasklist.R;
-import org.cerion.tasklist.data.Database;
+import org.cerion.tasklist.data.AppDatabase;
 import org.cerion.tasklist.data.Task;
+import org.cerion.tasklist.data.TaskDao;
 
 import java.util.Date;
 
@@ -87,11 +88,11 @@ public class TaskViewModel extends AndroidViewModel {
         task.completed = completed.get();
         task.due = dueDate != null ? dueDate : new Date(0);
 
-        Database database = Database.getInstance(getApplication());
+        TaskDao db = AppDatabase.getInstance(getApplication()).taskDao();
         if (isNew)
-            database.tasks.add(task);
+            db.add(task);
         else
-            database.tasks.update(task);
+            db.update(task);
 
         isNew = false;
     }
