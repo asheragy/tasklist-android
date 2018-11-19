@@ -269,7 +269,7 @@ public class Sync {
                 if(!bModified)
                     Log.e(TAG,"ERROR, deleted task not modified");
 
-                if(task.hasTempId()) //If never added just delete from local database
+                if(task.getHasTempId()) //If never added just delete from local database
                 {
                     taskDb.delete(task);
                 }
@@ -280,7 +280,7 @@ public class Sync {
                     bListUpdated = true;
                 }
             }
-            else if(task.hasTempId())
+            else if(task.getHasTempId())
             {
                 Task updated = mAPI.tasks.insert(task);
                 if(updated != null) {

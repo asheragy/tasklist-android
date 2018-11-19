@@ -125,7 +125,7 @@ public class AuthTools {
         //Delete all non-temp Id records, also remove records marked as deleted
         List<Task> tasks = taskDb.getAll();
         for (Task task : tasks) {
-            if (!task.hasTempId() || task.getDeleted())
+            if (!task.getHasTempId() || task.getDeleted())
                 taskDb.delete(task);
             else {
                 //Since we are also removing synced lists, check if we need to move this task to an un-synced list

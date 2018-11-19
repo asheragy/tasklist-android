@@ -215,7 +215,7 @@ public class GoogleTasksAPI
                 json.put(FIELD_TITLE, task.getTitle());
                 json.put(FIELD_NOTES, task.getNotes());
                 //Only need to set these if non-default value
-                if(task.hasDueDate())
+                if(task.getHasDueDate())
                     json.put(FIELD_DUE, parent.mDateFormat.format(task.getDue()));
                 if(task.getCompleted())
                     json.put(FIELD_STATUS, "completed");
@@ -257,7 +257,7 @@ public class GoogleTasksAPI
 
                 if(!task.getCompleted())
                     json.put(FIELD_COMPLETED, JSONObject.NULL);
-                if(task.hasDueDate())
+                if(task.getHasDueDate())
                     json.put(FIELD_DUE, parent.mDateFormat.format(task.getDue()));
                 else
                     json.put(FIELD_DUE, JSONObject.NULL);

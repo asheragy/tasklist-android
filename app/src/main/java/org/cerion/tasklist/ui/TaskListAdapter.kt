@@ -96,7 +96,7 @@ internal class TaskListAdapter(private val mActivity: MainActivity, private val 
         holder.completed.visibility = if (task.deleted) View.GONE else View.VISIBLE
         holder.undelete.visibility = if (task.deleted) View.VISIBLE else View.GONE
 
-        if (task.hasDueDate())
+        if (task.hasDueDate)
             holder.due.text = dateFormat.format(task.due)
         else
             holder.due.text = ""
