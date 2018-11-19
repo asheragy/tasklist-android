@@ -8,10 +8,13 @@ interface TaskDao {
 
     //String orderBy = COLUMN_DELETED + " ASC, " + COLUMN_COMPLETE + " ASC, " + COLUMN_TITLE + " ASC";
 
+    @Query("SELECT * FROM " + Task.TABLE_NAME + " WHERE listId=:listId AND id=:id")
+    fun get(listId: String, id: String): Task
+
     @Query("SELECT * FROM " + Task.TABLE_NAME)
     fun getAll(): List<Task>
 
-    @Query("SELECT * FROM " + Task.TABLE_NAME + " WHERE listId = :listId")
+    @Query("SELECT * FROM " + Task.TABLE_NAME + " WHERE listId=:listId")
     fun getAllbyList(listId: String): List<Task>
 
     @Insert

@@ -81,7 +81,8 @@ class TasksViewModel(context: Context) {
 
         val tasks = taskDao.getAllbyList(currList.id).filter { it.completed && !it.deleted }
         for (task in tasks) {
-            task.setDeleted(true)
+            task.setModified()
+            task.deleted = true
             taskDao.update(task)
         }
 
@@ -89,13 +90,15 @@ class TasksViewModel(context: Context) {
     }
 
     fun toggleCompleted(task: Task) {
-        task.setCompleted(!task.completed)
+        task.setModified()
+        task.completed = !task.completed
         taskDao.update(task)
         refreshTasks()
     }
 
     fun toggleDeleted(task: Task) {
-        task.setDeleted(!task.deleted)
+        task.setModified()
+        task.deleted = !task.deleted
         taskDao.update(task)
         refreshTasks()
     }
@@ -139,8 +142,8 @@ class TasksViewModel(context: Context) {
         lastSync.set(sText)
     }
 
-    fun getDefaultList(): TaskList? {
-        return TaskList.getDefault(lists)
+    fun getDefaultList(): TaskList {
+        return TaskList.getDefault(lists)!!
     }
 
 

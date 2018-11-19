@@ -27,8 +27,8 @@ public class MoveTaskDialogFragment extends DialogFragment {
         MoveTaskDialogFragment frag = new MoveTaskDialogFragment();
 
         Bundle args = new Bundle();
-        args.putString(TASK_LISTID, task.listId);
-        args.putString(TASK_ID, task.id);
+        args.putString(TASK_LISTID, task.getListId());
+        args.putString(TASK_ID, task.getId());
 
         frag.setArguments(args);
         return frag;
@@ -48,25 +48,26 @@ public class MoveTaskDialogFragment extends DialogFragment {
         Bundle bundle = getArguments();
         String taskId = bundle.getString(TASK_ID);
         final String listId = bundle.getString(TASK_LISTID);
-
-        List<Task> tasks = taskDb.getAllbyList(listId);
-        final Task task = Task.getTask(tasks, taskId);
+        final Task task = taskDb.get(listId, taskId);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle("Move to list")
                 .setAdapter(adapter, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
-                        if(task != null && listId.length() > 0) {
+                        if(listId.length() > 0) {
                             TaskList list = lists.get(which);
                             if(list.getId().contentEquals(listId)) {
                                 Log.d(TAG,"Ignoring moving since same list");
                             } else {
                                 // Delete task, add to new list and refresh
+                                // TODO if temp ID permanently delete
+                                task.setModified();
                                 task.setDeleted(true);
                                 taskDb.update(task);
-                                task.setDeleted(false);
 
-                                task.moveToList(list.getId());
+                                task.setDeleted(false);
+                                task.setListId(list.getId());
+                                task.setId(AppDatabase.generateTempId());
                                 taskDb.add(task);
                                 ((TaskListsChangedListener) getActivity()).onTaskListsChanged(list);
                             }

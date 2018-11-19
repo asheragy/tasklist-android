@@ -220,18 +220,18 @@ public class Sync {
         List<Task> dbTasks = taskDb.getAllbyList(listId);
         if (webTasks != null) {
             for (Task task : webTasks) {
-                Task dbTask = getTask(dbTasks, task.id);
+                Task dbTask = getTask(dbTasks, task.getId());
                 if (dbTask != null) {
-                    if (task.deleted) {
+                    if (task.getDeleted()) {
                         taskDb.delete(task);
                         googleToDb[SYNC_DELETE_TASK]++;
                         dbTasks.remove(dbTask);
-                    } else if(dbTask.deleted) {
+                    } else if(dbTask.getDeleted()) {
                         Log.d(TAG,"Ignoring update since deleted on local"); //Local task is deleted and will be handled on next phase
                     }
                     else {
                         //Conflict
-                        if(dbTask.updated.getTime() > task.updated.getTime())
+                        if(dbTask.getUpdated().getTime() > task.getUpdated().getTime())
                             Log.e(TAG,"Conflict: Local task was updated most recently");
                         else {
                             dbTasks.remove(dbTask);
@@ -240,7 +240,7 @@ public class Sync {
                         }
 
                     }
-                } else if (task.deleted) {
+                } else if (task.getDeleted()) {
                     Log.d(TAG,"Ignoring web delete since record was never added locally");
                 } else {
                     taskDb.add(task);
@@ -259,10 +259,10 @@ public class Sync {
         {
             //Log.d(TAG,"Title = " + task.title + "\t" + task.updated);
             boolean bModified = false;
-            if(savedUpdatedNEW.getTime() == 0 || task.updated.after(savedUpdatedNEW))
+            if(savedUpdatedNEW.getTime() == 0 || task.getUpdated().after(savedUpdatedNEW))
                 bModified = true;
 
-            if(task.deleted)
+            if(task.getDeleted())
             {
                 //Deleted tasks get processed then deleted from database
                 //Modified time is not required but should be logged for potential bugs elsewhere
@@ -285,15 +285,15 @@ public class Sync {
                 Task updated = mAPI.tasks.insert(task);
                 if(updated != null) {
                     taskDb.delete(task);
-                    task.id = updated.id;
-                    task.listId = updated.listId;
+                    task.setId(updated.getId());
+                    task.setListId(updated.getListId());
                     taskDb.add(task);
 
                     dbToGoogle[SYNC_ADD_TASK]++;
                     bListUpdated = true;
 
                     if(listId.isEmpty()) //When adding a new task without a list this will be the default task list id
-                        listId = updated.listId;
+                        listId = updated.getListId();
                 }
             }
             else if(bModified)
@@ -322,7 +322,7 @@ public class Sync {
 
     private static Task getTask(List<Task> tasks, String sId) {
         for(Task task : tasks) {
-            if(task.id.contentEquals(sId))
+            if(task.getId().contentEquals(sId))
                 return task;
         }
 

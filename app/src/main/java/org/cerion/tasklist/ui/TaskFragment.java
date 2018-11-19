@@ -14,7 +14,6 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import org.cerion.tasklist.R;
-import org.cerion.tasklist.data.Task;
 import org.cerion.tasklist.databinding.FragmentTaskBinding;
 import org.cerion.tasklist.dialogs.DatePickerFragment;
 
@@ -100,8 +99,8 @@ public class TaskFragment extends Fragment implements DatePickerFragment.DatePic
         vm.addTask(listId);
     }
 
-    public void showTask(Task task) {
-        vm.setTask(task);
+    public void showTask(String listId, String id) {
+        vm.setTask(listId, id);
     }
 
     @Override

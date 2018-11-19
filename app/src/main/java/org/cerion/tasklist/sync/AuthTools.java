@@ -125,15 +125,15 @@ public class AuthTools {
         //Delete all non-temp Id records, also remove records marked as deleted
         List<Task> tasks = taskDb.getAll();
         for (Task task : tasks) {
-            if (!task.hasTempId() || task.deleted)
+            if (!task.hasTempId() || task.getDeleted())
                 taskDb.delete(task);
             else {
                 //Since we are also removing synced lists, check if we need to move this task to an un-synced list
-                TaskList list = new TaskList(task.listId, "");
+                TaskList list = new TaskList(task.getId(), "");
                 if (!list.getHasTempId() && defaultList != null) {
                     //Move this task to default list
                     taskDb.delete(task);
-                    task.listId = defaultList.getId();
+                    task.setListId(defaultList.getId());
                     taskDb.add(task);
                 }
             }
@@ -144,7 +144,7 @@ public class AuthTools {
             {
                 if (list.isDefault()) { //Keep default but assign temp id
                     listDb.setLastUpdated(list.getId(), new Date(0));
-                    listDb.updateId(list.getId(), TaskList.Companion.generateId());
+                    listDb.updateId(list.getId(), AppDatabase.generateTempId());
                 } else
                     listDb.delete(list);
             }

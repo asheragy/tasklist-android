@@ -16,7 +16,7 @@ class TaskList(@field:PrimaryKey var id: String, var title: String, var updated:
         get() = id.startsWith("temp_")
 
     @Ignore
-    constructor(title: String) : this(generateId(), title)
+    constructor(title: String) : this(AppDatabase.generateTempId(), title)
 
     @Ignore
     constructor(id: String, title: String) : this(id, title, Date(0), false, false)
@@ -39,12 +39,6 @@ class TaskList(@field:PrimaryKey var id: String, var title: String, var updated:
 
         // Special list to represent a list containing tasks from all available lists
         val ALL_TASKS = TaskList("", "All Tasks")
-
-        fun generateId(): String {
-            val rand = Random()
-            val i = rand.nextInt() + (1L shl 31)
-            return "temp_$i"
-        }
 
         // TODO remove this and just use kotlin lambdas to get the list we want
         operator fun get(lists: List<TaskList>, sId: String): TaskList? {

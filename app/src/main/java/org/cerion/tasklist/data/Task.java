@@ -2,13 +2,7 @@ package org.cerion.tasklist.data;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.io.Serializable;
-import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.Random;
-import java.util.TimeZone;
 
 import androidx.room.Entity;
 import androidx.room.ForeignKey;
@@ -22,26 +16,22 @@ import androidx.room.Ignore;
                 childColumns = "listId",
                 onDelete = ForeignKey.CASCADE,
                 onUpdate = ForeignKey.CASCADE))
-public class Task implements Serializable {
+public class Task {
 
     static final String TABLE_NAME = "tasks";
 
-    // TODO make id and listId private
-
-    @NotNull public String id;
-    @NotNull public String listId;
-    @NotNull public String title;
-    @NotNull public Date due;
-    @NotNull public Date updated;
-    @NotNull public String notes;
-    public boolean completed;
-    public boolean deleted;
-
-    private static final SimpleDateFormat mDateFormat = new SimpleDateFormat("EEE, MMM d, yyyy", Locale.US);
+    @NotNull private String id;
+    @NotNull private String listId;
+    @NotNull private String title;
+    @NotNull private Date due;
+    @NotNull private Date updated;
+    @NotNull private String notes;
+    private boolean completed;
+    private boolean deleted;
 
     @Ignore
     public Task(String listId) {
-        this(listId, generateId());
+        this(listId, AppDatabase.generateTempId());
     }
 
     @Ignore
@@ -64,52 +54,81 @@ public class Task implements Serializable {
         return title + (deleted ? " (Deleted)" : "");
     }
 
-    public void setDeleted(boolean del) {
-        deleted = del;
-        setModified();
+    public @NotNull String getId() {
+        return id;
     }
 
-    public void setCompleted(boolean complete) {
-        completed = complete;
-        setModified();
+    public void setId(@NotNull String id) {
+        this.id = id;
+    }
+
+    public @NotNull String getListId() {
+        return listId;
+    }
+
+    public void setListId(@NotNull String listId) {
+        this.listId = listId;
+    }
+
+    public @NotNull String getTitle() {
+        return title;
+    }
+
+    public void setTitle(@NotNull String title) {
+        this.title = title;
+    }
+
+    public @NotNull String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(@NotNull String notes) {
+        this.notes = notes;
     }
 
     public void setModified() {
         updated = new Date();
     }
 
+    public @NotNull Date getDue() {
+        return due;
+    }
+
+    public void setDue(@NotNull Date due) {
+        this.due = due;
+    }
+
+    public boolean hasDueDate() {
+        return due.getTime() > 0;
+    }
+
+    public boolean getCompleted() {
+        return completed;
+    }
+
+    public void setCompleted(boolean completed) {
+        this.completed = completed;
+    }
+
+    public boolean getDeleted() { return deleted; }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
+    }
+
+    public @NotNull Date getUpdated() {
+        return updated;
+    }
+
+    public void setUpdated(@NotNull Date updated) {
+        this.updated = updated;
+    }
+
     public boolean hasTempId() {
         return id.startsWith("temp_");
     }
 
-    public String getDue() {
-        mDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-        return mDateFormat.format(due);
-    }
-
     public boolean isBlank() {
         return (title.length() == 0 && notes.length() == 0 && due.getTime() == 0);
-    }
-
-    public void moveToList(String listId) {
-        this.listId = listId;
-        this.id = generateId();
-    }
-
-    public static Task getTask(List<Task> tasks, String id) {
-        Task task = null;
-
-        for(Task t : tasks) {
-            if (t.id.contentEquals(id))
-                task = t;
-        }
-
-        return task;
-    }
-
-    private static String generateId() {
-        Random rand = new Random();
-        long i = rand.nextInt() + (1L << 31);
-        return "temp_" + i;
     }
 }

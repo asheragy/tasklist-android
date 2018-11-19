@@ -26,6 +26,7 @@ import org.cerion.tasklist.dialogs.TaskListDialogFragment;
 import org.cerion.tasklist.dialogs.TaskListsChangedListener;
 import org.cerion.tasklist.sync.OnSyncCompleteListener;
 import org.cerion.tasklist.sync.Sync;
+import org.jetbrains.annotations.Nullable;
 
 import androidx.databinding.DataBindingUtil;
 import androidx.databinding.Observable;
@@ -244,19 +245,12 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
         }
     }
 
-    public void onOpenTask(Task task) {
-        Intent intent = new Intent(this, TaskActivity.class);
+    public void onOpenTask(@Nullable Task task) {
+        TaskList list = vm.getCurrList();
+        if(list.isAllTasks())
+            list = vm.getDefaultList();
 
-        //Send with task or tasklist parameter if new
-        if (task != null)
-            intent.putExtra(TaskActivity.EXTRA_TASK, task);
-        else {
-            TaskList list = vm.getCurrList();
-            if(list.isAllTasks())
-                list = vm.getDefaultList();
-            intent.putExtra(TaskActivity.EXTRA_LIST_ID, list.getId());
-        }
-
+        Intent intent = TaskActivity.getIntent(this, list, task);
         startActivityForResult(intent, EDIT_TASK_REQUEST);
     }
 

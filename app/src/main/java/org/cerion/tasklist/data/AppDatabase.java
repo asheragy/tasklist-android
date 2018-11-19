@@ -7,6 +7,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.Random;
 import java.util.TimeZone;
 
 import androidx.room.Room;
@@ -36,6 +37,12 @@ public abstract class AppDatabase extends RoomDatabase {
         return instance;
     }
 
+    public static String generateTempId() {
+        Random rand = new Random();
+        long i = rand.nextInt() + (1L << 31);
+        return "temp_" + i;
+    }
+
     private static final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
     public void log() {
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -55,9 +62,9 @@ public abstract class AppDatabase extends RoomDatabase {
     private void logTasks(String listId) {
         List<Task> tasks = taskDao().getAllbyList(listId);
         for (Task task : tasks) {
-            String listid = String.format("%1$-" + 43 + "s", task.listId);
-            String id = String.format("%1$-" + 55 + "s", task.id);
-            Log.d(TAG, "\t" + listid + " " + id + " " + task.title);
+            String listid = String.format("%1$-" + 43 + "s", task.getListId());
+            String id = String.format("%1$-" + 55 + "s", task.getId());
+            Log.d(TAG, "\t" + listid + " " + id + " " + task.getTitle());
         }
     }
 

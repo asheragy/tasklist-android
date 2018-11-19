@@ -21,16 +21,23 @@ import androidx.recyclerview.widget.RecyclerView
 import org.cerion.tasklist.R
 import org.cerion.tasklist.common.OnListAnyChangeCallback
 import org.cerion.tasklist.data.Task
+import java.text.SimpleDateFormat
+import java.util.*
 
 internal class TaskListAdapter(private val mActivity: MainActivity, private val vm: TasksViewModel) : RecyclerView.Adapter<TaskListAdapter.ViewHolder>() {
     private var mPrimaryColor: Int = 0
     private var mSecondaryColor: Int = 0
     private var parent: RecyclerView? = null
     private var emptyView: View? = null
+    private val dateFormat = SimpleDateFormat("EEE, MMM d, yyyy", Locale.US)
 
     //Workaround for activity to get context menu position
     var itemPosition: Int = 0
         private set
+
+    init {
+        dateFormat.timeZone = TimeZone.getTimeZone("UTC")
+    }
 
     fun setEmptyView(recyclerView: RecyclerView, emptyView: View) {
         this.parent = recyclerView
@@ -71,7 +78,7 @@ internal class TaskListAdapter(private val mActivity: MainActivity, private val 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val task = vm.tasks[position]
 
-        val sTitle = if (task.title.isBlank()) task.title else "<Blank>"
+        val sTitle = if (!task.title.isBlank()) task.title else "<Blank>"
         holder.title.text = sTitle
         holder.notes.text = task.notes
         holder.completed.isChecked = task.completed
@@ -89,8 +96,8 @@ internal class TaskListAdapter(private val mActivity: MainActivity, private val 
         holder.completed.visibility = if (task.deleted) View.GONE else View.VISIBLE
         holder.undelete.visibility = if (task.deleted) View.VISIBLE else View.GONE
 
-        if (task.due.time != 0L)
-            holder.due.text = task.getDue()
+        if (task.hasDueDate())
+            holder.due.text = dateFormat.format(task.due)
         else
             holder.due.text = ""
     }

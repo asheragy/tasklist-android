@@ -195,7 +195,7 @@ public class GoogleTasksAPI
         @Override
         public boolean delete(Task task)
         {
-            String sURL = parent.getURL("lists/" + task.listId + "/tasks/" + task.id);
+            String sURL = parent.getURL("lists/" + task.getListId() + "/tasks/" + task.getId());
             String result = parent.getInetData(sURL,null,DELETE);
 
             return (result.length() == 0); //Successful delete does not return anything
@@ -204,20 +204,20 @@ public class GoogleTasksAPI
         @Override
         public Task insert(Task task) throws APIException {
             String listId = "@default";
-            if(task.listId != null && task.listId.length() > 0)
-                listId = task.listId;
+            if(task.getListId() != null && task.getListId().length() > 0)
+                listId = task.getListId();
 
             String sURL = parent.getURL("lists/" + listId + "/tasks");
             JSONObject json = new JSONObject();
 
             try
             {
-                json.put(FIELD_TITLE, task.title);
-                json.put(FIELD_NOTES, task.notes);
+                json.put(FIELD_TITLE, task.getTitle());
+                json.put(FIELD_NOTES, task.getNotes());
                 //Only need to set these if non-default value
-                if(task.due.getTime() > 0)
-                    json.put(FIELD_DUE, parent.mDateFormat.format(task.due));
-                if(task.completed)
+                if(task.hasDueDate())
+                    json.put(FIELD_DUE, parent.mDateFormat.format(task.getDue()));
+                if(task.getCompleted())
                     json.put(FIELD_STATUS, "completed");
 
                 JSONObject item = parent.getJSON(sURL,json,POST);
@@ -244,26 +244,26 @@ public class GoogleTasksAPI
 
         @Override
         public boolean update(Task task) throws IGoogleTasksAPI.APIException {
-            String sURL = parent.getURL("lists/" + task.listId + "/tasks/" + task.id);
+            String sURL = parent.getURL("lists/" + task.getListId() + "/tasks/" + task.getId());
             JSONObject json = new JSONObject();
             boolean bResult = false;
 
             try
             {
-                json.put(FIELD_ID, task.id);
-                json.put(FIELD_TITLE, task.title);
-                json.put(FIELD_NOTES, task.notes);
-                json.put(FIELD_STATUS, task.completed ? "completed" : "needsAction" );
+                json.put(FIELD_ID, task.getId());
+                json.put(FIELD_TITLE, task.getTitle());
+                json.put(FIELD_NOTES, task.getNotes());
+                json.put(FIELD_STATUS, task.getCompleted() ? "completed" : "needsAction" );
 
-                if(!task.completed)
+                if(!task.getCompleted())
                     json.put(FIELD_COMPLETED, JSONObject.NULL);
-                if(task.due.getTime() > 0)
-                    json.put(FIELD_DUE, parent.mDateFormat.format(task.due));
+                if(task.hasDueDate())
+                    json.put(FIELD_DUE, parent.mDateFormat.format(task.getDue()));
                 else
                     json.put(FIELD_DUE, JSONObject.NULL);
 
                 JSONObject result = parent.getJSON(sURL,json,PATCH);
-                if(result != null && task.id.contentEquals( result.getString("id") ))
+                if(result != null && task.getId().contentEquals( result.getString("id") ))
                     bResult = true;
             }
             catch (JSONException e)
@@ -319,22 +319,21 @@ public class GoogleTasksAPI
         private Task parseItem(JSONObject item, String listId) throws JSONException {
             try {
                 Task task = new Task(listId, item.getString(FIELD_ID));
-                task.title = item.getString(FIELD_TITLE);
-                task.updated = parent.mDateFormat.parse(item.getString(FIELD_UPDATED));
+                task.setTitle(item.getString(FIELD_TITLE));
+                task.setUpdated(parent.mDateFormat.parse(item.getString(FIELD_UPDATED)));
 
-                if(item.has(FIELD_NOTES)) task.notes = item.getString(FIELD_NOTES);
-                task.completed = (item.getString(FIELD_STATUS).equals("completed"));
+                if(item.has(FIELD_NOTES))
+                    task.setNotes(item.getString(FIELD_NOTES));
+                task.setCompleted(item.getString(FIELD_STATUS).equals("completed"));
 
                 if(item.has(FIELD_DUE)) {
                     String sDue = item.getString(FIELD_DUE);
-                    task.due = parent.mDateFormat.parse(item.getString(FIELD_DUE));
-                    System.out.println(sDue + " = " + task.due);
+                    task.setDue( parent.mDateFormat.parse(item.getString(FIELD_DUE)) );
+                    System.out.println(sDue + " = " + task.getDue());
                 }
-                else
-                    task.due = new Date(0);
 
                 if(item.has(FIELD_DELETED))
-                    task.deleted = item.getBoolean(FIELD_DELETED);
+                    task.setDeleted(item.getBoolean(FIELD_DELETED));
 
                 return task;
             }
