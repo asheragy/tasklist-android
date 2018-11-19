@@ -71,7 +71,7 @@ internal class TaskListAdapter(private val mActivity: MainActivity, private val 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val task = vm.tasks[position]
 
-        val sTitle = if (task.title.length > 0) task.title else "<Blank>"
+        val sTitle = if (task.title.isBlank()) task.title else "<Blank>"
         holder.title.text = sTitle
         holder.notes.text = task.notes
         holder.completed.isChecked = task.completed
@@ -89,7 +89,7 @@ internal class TaskListAdapter(private val mActivity: MainActivity, private val 
         holder.completed.visibility = if (task.deleted) View.GONE else View.VISIBLE
         holder.undelete.visibility = if (task.deleted) View.VISIBLE else View.GONE
 
-        if (task.due != null && task.due.time != 0L)
+        if (task.due.time != 0L)
             holder.due.text = task.getDue()
         else
             holder.due.text = ""

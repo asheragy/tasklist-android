@@ -5,16 +5,14 @@ import android.os.Bundle;
 import org.cerion.tasklist.R;
 import org.cerion.tasklist.data.Prefs;
 import org.cerion.tasklist.data.Task;
-import org.cerion.tasklist.data.TaskList;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 
-public class TaskActivity extends AppCompatActivity
-{
+public class TaskActivity extends AppCompatActivity {
     public static final String EXTRA_TASK = "task";
-    public static final String EXTRA_TASKLIST = "taskList";
+    public static final String EXTRA_LIST_ID = "taskListId";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,7 +22,7 @@ public class TaskActivity extends AppCompatActivity
 
         setContentView(R.layout.activity_task);
 
-        Toolbar toolbar = (Toolbar)findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         if(getSupportActionBar() != null)
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -32,10 +30,10 @@ public class TaskActivity extends AppCompatActivity
         TaskFragment fragment = (TaskFragment)getSupportFragmentManager().findFragmentById(R.id.fragment);
 
         Task task = (Task)getIntent().getSerializableExtra(EXTRA_TASK);
-        TaskList list = (TaskList)getIntent().getSerializableExtra(EXTRA_TASKLIST);
+        String listId = getIntent().getStringExtra(EXTRA_LIST_ID);
 
         if(task == null)
-            fragment.showNewTask(list);
+            fragment.showNewTask(listId);
         else
             fragment.showTask(task);
 

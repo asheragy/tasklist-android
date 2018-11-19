@@ -29,8 +29,8 @@ public class TaskListDialogFragment extends DialogFragment {
         Bundle args = new Bundle();
         args.putInt(TYPE, type);
         if(list != null) {
-            args.putString(LISTID,list.id);
-            args.putString(LISTNAME,list.title);
+            args.putString(LISTID,list.getId());
+            args.putString(LISTNAME,list.getTitle());
         }
         frag.setArguments(args);
 
@@ -72,7 +72,8 @@ public class TaskListDialogFragment extends DialogFragment {
                     String newName = edittext.getText().toString();
                     Log.d(TAG, "Rename " + listName + " to " + newName);
 
-                    TaskList update = new TaskList(listId, newName, true);
+                    TaskList update = new TaskList(listId, newName);
+                    update.setRenamed(true);
                     TaskListDao db = AppDatabase.getInstance(getActivity()).taskListDao();
                     db.update(update);
 

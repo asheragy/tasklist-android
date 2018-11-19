@@ -73,28 +73,28 @@ public class Sync {
 
         //Google->Local (Added or Updated)
         for(TaskList curr : googleLists) {
-            TaskList dbList = TaskList.get(dbLists,curr.id);
+            TaskList dbList = TaskList.Companion.get(dbLists,curr.getId());
             //--- UPDATE
             if(dbList != null) {
-                if(!curr.title.contentEquals(dbList.title)) {
+                if(!curr.getTitle().contentEquals(dbList.getTitle())) {
                     //Name mismatch, update only if local list was not renamed
-                    if(!dbList.isRenamed) {
+                    if(!dbList.isRenamed()) {
                         listDb.update(curr);
                         googleToDb[SYNC_CHANGE_LIST]++;
                     }
                 }
             }
             //--- MERGE default, first sync only
-            else if(curr.isDefault) {
-                dbList = TaskList.getDefault(dbLists);
+            else if(curr.isDefault()) {
+                dbList = TaskList.Companion.getDefault(dbLists);
                 if(dbList != null) {
-                    if(!dbList.isRenamed) {
-                        dbList.title = curr.title;
+                    if(!dbList.isRenamed()) {
+                        dbList.setTitle(curr.getTitle());
                         listDb.update(dbList);
                     }
 
-                    listDb.updateId(dbList.id, curr.id); //assign ID
-                    dbList.id = curr.id;
+                    listDb.updateId(dbList.getId(), curr.getId()); //assign ID
+                    dbList.setId(curr.getId());
                 }
                 else
                     Log.e(TAG,"missing default list");
@@ -110,10 +110,10 @@ public class Sync {
         //--- DELETE
         //Verify database list still exists on web, otherwise it was deleted
         for(TaskList curr : dbLists) {
-            if(curr.hasTempId()) //Temp ids don't exist on web since they have not been created yet
+            if(curr.getHasTempId()) //Temp ids don't exist on web since they have not been created yet
                 continue;
 
-            TaskList googleList = TaskList.get(googleLists,curr.id);
+            TaskList googleList = TaskList.Companion.get(googleLists,curr.getId());
             if(googleList == null) {
                 // TODO this will cascade delete so log tasks count its removing...
                 listDb.delete(curr);
@@ -130,11 +130,11 @@ public class Sync {
         //Local ----> Google
         for(TaskList dbList : dbLists) {
             //--- ADD
-            if(dbList.hasTempId()) {
+            if(dbList.getHasTempId()) {
                 TaskList addedList = mAPI.taskLists.insert(dbList);
                 if(addedList != null) {
-                    listDb.updateId(dbList.id, addedList.id);
-                    dbList.id = addedList.id;
+                    listDb.updateId(dbList.getId(), addedList.getId());
+                    dbList.setId(addedList.getId());
                     googleLists.add(addedList);
                     dbToGoogle[SYNC_ADD_LIST]++;
                 }
@@ -145,13 +145,13 @@ public class Sync {
             }
 
             //--- UPDATE
-            if(dbList.isRenamed) {
-                TaskList googleList = TaskList.get(googleLists,dbList.id);
+            if(dbList.isRenamed()) {
+                TaskList googleList = TaskList.Companion.get(googleLists,dbList.getId());
 
                 if (googleList != null) {
                     if(mAPI.taskLists.update(dbList)) {
                         //Save state in db to indicate rename was successful
-                        dbList.isRenamed = false;
+                        dbList.setRenamed(false);
                         listDb.update(dbList);
                         dbToGoogle[SYNC_CHANGE_LIST]++;
                     }
@@ -170,7 +170,7 @@ public class Sync {
         }
 
         for(TaskList list : googleLists) {
-            TaskList dbList = TaskList.get(dbLists, list.id);
+            TaskList dbList = TaskList.Companion.get(dbLists, list.getId());
             if(dbList != null)
                 syncTasks(list, dbList.getUpdated());
             else
@@ -192,7 +192,7 @@ public class Sync {
 
         Date webUpdated = list.getUpdated();
         //Date dtLastUpdated = null;
-        String listId = list.id;
+        String listId = list.getId();
 
         Log.d(TAG, "syncTasks() " + listId + "\t" + savedUpdatedNEW + "\t" + webUpdated);
 
@@ -308,7 +308,7 @@ public class Sync {
 
         //If this function updated the list, need to retrieve it again to get new updated time
         if (bListUpdated) {
-            TaskList updatedList = mAPI.taskLists.get(list.id);
+            TaskList updatedList = mAPI.taskLists.get(list.getId());
             if (updatedList != null) {
                 Log.d(TAG, "New Updated = " + updatedList.getUpdated());
                 webUpdated = updatedList.getUpdated(); //Updated modified time
@@ -316,7 +316,7 @@ public class Sync {
         }
 
         if(webUpdated.getTime() > savedUpdatedNEW.getTime()) {
-            listDb.setLastUpdated(list.id, webUpdated);
+            listDb.setLastUpdated(list.getId(), webUpdated);
         }
     }
 

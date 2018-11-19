@@ -99,7 +99,7 @@ public class GoogleTasksAPI
                         TaskList list = parseItem(item);
                         if (list != null) {
                             if(i==0)
-                                list.isDefault = true; //first list is default list
+                                list.setDefault(true); //first list is default list
                             result.add(list);
                         }
 
@@ -117,17 +117,17 @@ public class GoogleTasksAPI
 
         @Override
         public boolean update(TaskList list) throws APIException {
-            String sURL = parent.getURL("users/@me/lists/" + list.id);
+            String sURL = parent.getURL("users/@me/lists/" + list.getId());
             JSONObject json = new JSONObject();
             boolean bResult = false;
 
             try
             {
-                json.put(FIELD_ID, list.id);
-                json.put(FIELD_TITLE, list.title);
+                json.put(FIELD_ID, list.getId());
+                json.put(FIELD_TITLE, list.getTitle());
 
                 JSONObject result = parent.getJSON(sURL,json,PUT);
-                if(result != null && list.title.contentEquals( result.getString(FIELD_TITLE) ))
+                if(result != null && list.getTitle().contentEquals( result.getString(FIELD_TITLE) ))
                     bResult = true;
             }
             catch (JSONException e)
@@ -146,7 +146,7 @@ public class GoogleTasksAPI
 
             try
             {
-                json.put(FIELD_TITLE, list.title);
+                json.put(FIELD_TITLE, list.getTitle());
                 JSONObject item = parent.getJSON(sURL, json, POST);
                 if(item != null)
                     result = parseItem(item);

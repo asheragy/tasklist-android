@@ -46,8 +46,8 @@ class DatabaseTest {
         val lists = listDao.getAll()
         assertEquals(2, lists.size)
 
-        assertEquals("123", lists.filter { it.isDefault }.firstOrNull()!!.id)
-        assertEquals("Test List", lists.filter { it.id == "456" }.firstOrNull()!!.title)
+        assertEquals("123", lists.firstOrNull { it.isDefault }!!.id)
+        assertEquals("Test List", lists.firstOrNull { it.id == "456" }!!.title)
     }
 
     @Test

@@ -45,7 +45,7 @@ public abstract class AppDatabase extends RoomDatabase {
 
         for (TaskList list : lists) {
             Log.d(TAG, list.logString(dateFormat));
-            logTasks(list.id);
+            logTasks(list.getId());
         }
 
         Log.d(TAG, "----------------------------------------------------------");

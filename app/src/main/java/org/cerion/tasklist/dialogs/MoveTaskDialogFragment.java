@@ -58,7 +58,7 @@ public class MoveTaskDialogFragment extends DialogFragment {
                     public void onClick(DialogInterface dialog, int which) {
                         if(task != null && listId.length() > 0) {
                             TaskList list = lists.get(which);
-                            if(list.id.contentEquals(listId)) {
+                            if(list.getId().contentEquals(listId)) {
                                 Log.d(TAG,"Ignoring moving since same list");
                             } else {
                                 // Delete task, add to new list and refresh
@@ -66,7 +66,7 @@ public class MoveTaskDialogFragment extends DialogFragment {
                                 taskDb.update(task);
                                 task.setDeleted(false);
 
-                                task.moveToList(list.id);
+                                task.moveToList(list.getId());
                                 taskDb.add(task);
                                 ((TaskListsChangedListener) getActivity()).onTaskListsChanged(list);
                             }

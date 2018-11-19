@@ -141,7 +141,7 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
     @Override
     protected void onPause() {
         //Log.d(TAG,"onPause");
-        mPrefs.setString(Prefs.KEY_LAST_SELECTED_LIST_ID, vm.getCurrList().id);
+        mPrefs.setString(Prefs.KEY_LAST_SELECTED_LIST_ID, vm.getCurrList().getId());
         super.onPause();
     }
 
@@ -254,7 +254,7 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
             TaskList list = vm.getCurrList();
             if(list.isAllTasks())
                 list = vm.getDefaultList();
-            intent.putExtra(TaskActivity.EXTRA_TASKLIST, list);
+            intent.putExtra(TaskActivity.EXTRA_LIST_ID, list.getId());
         }
 
         startActivityForResult(intent, EDIT_TASK_REQUEST);

@@ -6,6 +6,7 @@ import org.cerion.tasklist.R;
 import org.cerion.tasklist.data.AppDatabase;
 import org.cerion.tasklist.data.Task;
 import org.cerion.tasklist.data.TaskDao;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Date;
 
@@ -34,7 +35,7 @@ public class TaskViewModel extends AndroidViewModel {
         super(application);
     }
 
-    public void addTask(String taskListId) {
+    public void addTask(@NotNull String taskListId) {
         if (!isNew) {
             isNew = true;
             Task task = new Task(taskListId);

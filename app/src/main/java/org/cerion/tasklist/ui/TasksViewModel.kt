@@ -36,11 +36,11 @@ class TasksViewModel(context: Context) {
         updateLastSync() //Relative time so update it as much as possible
 
         // TODO filter out blank records here
-        val dbTasks: List<Task>
-        if(currList.isAllTasks)
-            dbTasks = taskDao.getAll()
-        else
-            dbTasks = taskDao.getAllbyList(currList.id)
+        val dbTasks =
+                if(currList.isAllTasks)
+                    taskDao.getAll()
+                else
+                    taskDao.getAllbyList(currList.id)
 
         Collections.sort(dbTasks, Comparator { task, t1 ->
             if (task.deleted != t1.deleted)
@@ -63,22 +63,15 @@ class TasksViewModel(context: Context) {
         db.log()
         updateLastSync() //Relative time so update it as much as possible
 
-        val dbLists = getListsFromDatabase()
+        val dbLists = getListsFromDatabase().sortedBy { it.title }.toMutableList()
+        dbLists.add(0, TaskList.ALL_TASKS)
 
-        //If the current list is not set, try to restore last saved
-        if (currList == null)
-            currList = TaskList.get(dbLists, prefs.getString(Prefs.KEY_LAST_SELECTED_LIST_ID))
-
-        //If nothing valid is saved default to "all tasks" list
-        if (currList == null)
-            currList = TaskList.ALL_TASKS
+        val lastId = prefs.getString(Prefs.KEY_LAST_SELECTED_LIST_ID)
+        val lastSaved = dbLists.firstOrNull { it.id == lastId }
+        currList = lastSaved ?: TaskList.ALL_TASKS //If nothing valid is saved default to "all tasks" list
 
         lists.clear()
         lists.addAll(dbLists)
-
-        Collections.sort(lists, { taskList, t1 -> taskList.title.compareTo(t1.title, ignoreCase = true) })
-
-        lists.add(0, TaskList.ALL_TASKS)
 
         refreshTasks()
     }

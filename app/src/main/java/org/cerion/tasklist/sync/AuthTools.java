@@ -120,7 +120,7 @@ public class AuthTools {
 
         //Move un-synced task to this default list
         List<TaskList> lists = listDb.getAll();
-        TaskList defaultList = TaskList.getDefault(lists);
+        TaskList defaultList = TaskList.Companion.getDefault(lists);
 
         //Delete all non-temp Id records, also remove records marked as deleted
         List<Task> tasks = taskDb.getAll();
@@ -130,21 +130,21 @@ public class AuthTools {
             else {
                 //Since we are also removing synced lists, check if we need to move this task to an un-synced list
                 TaskList list = new TaskList(task.listId, "");
-                if (!list.hasTempId() && defaultList != null) {
+                if (!list.getHasTempId() && defaultList != null) {
                     //Move this task to default list
                     taskDb.delete(task);
-                    task.listId = defaultList.id;
+                    task.listId = defaultList.getId();
                     taskDb.add(task);
                 }
             }
         }
 
         for (TaskList list : lists) {
-            if (!list.hasTempId()) //don't delete un-synced lists
+            if (!list.getHasTempId()) //don't delete un-synced lists
             {
-                if (list.isDefault) { //Keep default but assign temp id
-                    listDb.setLastUpdated(list.id, new Date(0));
-                    listDb.updateId(list.id, TaskList.generateId());
+                if (list.isDefault()) { //Keep default but assign temp id
+                    listDb.setLastUpdated(list.getId(), new Date(0));
+                    listDb.updateId(list.getId(), TaskList.Companion.generateId());
                 } else
                     listDb.delete(list);
             }
