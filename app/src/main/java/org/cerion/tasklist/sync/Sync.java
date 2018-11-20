@@ -5,9 +5,11 @@ import android.app.Activity;
 import android.content.Context;
 import android.util.Log;
 
+import org.cerion.tasklist.data.GoogleApiException;
 import org.cerion.tasklist.data.AppDatabase;
-import org.cerion.tasklist.data.GoogleTasksAPI;
-import org.cerion.tasklist.data.IGoogleTasksAPI;
+import org.cerion.tasklist.data.GoogleApi;
+import org.cerion.tasklist.data.GoogleTasklistsApi;
+import org.cerion.tasklist.data.GoogleTasksApi;
 import org.cerion.tasklist.data.Task;
 import org.cerion.tasklist.data.TaskDao;
 import org.cerion.tasklist.data.TaskList;
@@ -31,10 +33,13 @@ public class Sync {
     private static final boolean RESYNC_WEB = false;
 
     //Instance variables
-    private GoogleTasksAPI mAPI = null;
+    private GoogleApi mAPI = null;
+    private GoogleTasklistsApi listApi;
+    private GoogleTasksApi taskApi;
+
     private TaskDao taskDb;
     private TaskListDao listDb;
-    final int[] googleToDb = { 0, 0, 0, 0, 0, 0 }; //Add Change Delete Lists / Tasks
+    final int[] googleToDb = { 0, 0, 0, 0, 0, 0 }; //Add Change Delete Lists / GoogleTasksApi_Impl
     final int[] dbToGoogle = { 0, 0, 0, 0, 0, 0 };
 
 
@@ -61,11 +66,13 @@ public class Sync {
         AppDatabase db = AppDatabase.Companion.getInstance(context);
         taskDb = db.taskDao();
         listDb = db.taskListDao();
-        mAPI = new GoogleTasksAPI(sAuthKey);
+        mAPI = new GoogleApi(sAuthKey);
+        listApi = mAPI.getTaskListsApi();
+        taskApi = mAPI.getTasksApi();
     }
 
-    boolean run() throws IGoogleTasksAPI.APIException {
-        List<TaskList> googleLists = mAPI.taskLists.list();
+    boolean run() throws GoogleApiException {
+        List<TaskList> googleLists = listApi.list();
         if(googleLists.size() == 0)
             return false;
 
@@ -131,7 +138,7 @@ public class Sync {
         for(TaskList dbList : dbLists) {
             //--- ADD
             if(dbList.getHasTempId()) {
-                TaskList addedList = mAPI.taskLists.insert(dbList);
+                TaskList addedList = listApi.insert(dbList);
                 if(addedList != null) {
                     listDb.updateId(dbList.getId(), addedList.getId());
                     dbList.setId(addedList.getId());
@@ -149,7 +156,7 @@ public class Sync {
                 TaskList googleList = TaskList.Companion.get(googleLists,dbList.getId());
 
                 if (googleList != null) {
-                    if(mAPI.taskLists.update(dbList)) {
+                    if(listApi.update(dbList)) {
                         //Save state in db to indicate rename was successful
                         dbList.setRenamed(false);
                         listDb.update(dbList);
@@ -177,13 +184,13 @@ public class Sync {
                 Log.e(TAG,"Unable to find database list"); //TODO throw exception
         }
 
-        Log.d(TAG, "Google to DB: Lists (" + googleToDb[0] + "," + googleToDb[1] + "," + googleToDb[2] + ") Tasks (" + googleToDb[3] + "," + googleToDb[4] + "," + googleToDb[5] + ")");
-        Log.d(TAG, "DB to Google: Lists (" + dbToGoogle[0] + "," + dbToGoogle[1] + "," + dbToGoogle[2] + ") Tasks (" + dbToGoogle[3] + "," + dbToGoogle[4] + "," + dbToGoogle[5] + ")");
+        Log.d(TAG, "Google to DB: Lists (" + googleToDb[0] + "," + googleToDb[1] + "," + googleToDb[2] + ") GoogleTasksApi_Impl (" + googleToDb[3] + "," + googleToDb[4] + "," + googleToDb[5] + ")");
+        Log.d(TAG, "DB to Google: Lists (" + dbToGoogle[0] + "," + dbToGoogle[1] + "," + dbToGoogle[2] + ") GoogleTasksApi_Impl (" + dbToGoogle[3] + "," + dbToGoogle[4] + "," + dbToGoogle[5] + ")");
 
         return true;
     }
 
-    private void syncTasks(TaskList list, Date savedUpdatedNEW) throws IGoogleTasksAPI.APIException {
+    private void syncTasks(TaskList list, Date savedUpdatedNEW) throws GoogleApiException {
 
         if(list.getUpdated().getTime() == 0) {
             Log.e(TAG,"invalid updated time"); //TODO, need new exception for this class
@@ -199,19 +206,19 @@ public class Sync {
         List<Task> webTasks = null;
         if (savedUpdatedNEW.getTime() == 0) {
             Log.d(TAG, "New list, getting all");
-            webTasks = mAPI.tasks.list(listId, null);
+            webTasks = taskApi.list(listId, null);
         } else if(RESYNC_WEB) {
             Log.d(TAG, "Re-syncing web, getting all");
-            webTasks = mAPI.tasks.list(listId, null);
+            webTasks = taskApi.list(listId, null);
         }
         else if (webUpdated.after(savedUpdatedNEW)) {
             //The default list can get its modified time updated without having any new tasks, we'll get 0 tasks here sometimes but not much we can do about it
-            Log.d(TAG, "Getting updated Tasks");
+            Log.d(TAG, "Getting updated GoogleTasksApi_Impl");
             Log.d(TAG, "Web   = " + webUpdated);
             Log.d(TAG, "Saved = " + savedUpdatedNEW);
 
             //Increase by 1 second to avoid getting previous updated record which already synced
-            webTasks = mAPI.tasks.list(listId, new Date(savedUpdatedNEW.getTime() + 1000)  );
+            webTasks = taskApi.list(listId, new Date(savedUpdatedNEW.getTime() + 1000)  );
         }
 
         /**************
@@ -273,7 +280,7 @@ public class Sync {
                 {
                     taskDb.delete(task);
                 }
-                else if (mAPI.tasks.delete(task))
+                else if (taskApi.delete(task))
                 {
                     taskDb.delete(task);
                     dbToGoogle[SYNC_DELETE_TASK]++;
@@ -282,7 +289,7 @@ public class Sync {
             }
             else if(task.getHasTempId())
             {
-                Task updated = mAPI.tasks.insert(task);
+                Task updated = taskApi.insert(task);
                 if(updated != null) {
                     taskDb.delete(task);
                     task.setId(updated.getId());
@@ -298,7 +305,7 @@ public class Sync {
             }
             else if(bModified)
             {
-                if(mAPI.tasks.update(task)) {
+                if(taskApi.update(task)) {
                     dbToGoogle[SYNC_CHANGE_TASK]++;
                     bListUpdated = true;
                 }
@@ -308,7 +315,7 @@ public class Sync {
 
         //If this function updated the list, need to retrieve it again to get new updated time
         if (bListUpdated) {
-            TaskList updatedList = mAPI.taskLists.get(list.getId());
+            TaskList updatedList = listApi.get(list.getId());
             if (updatedList != null) {
                 Log.d(TAG, "New Updated = " + updatedList.getUpdated());
                 webUpdated = updatedList.getUpdated(); //Updated modified time

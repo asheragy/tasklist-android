@@ -38,7 +38,7 @@ class TaskList(@field:PrimaryKey var id: String, var title: String, var updated:
         internal const val TABLE_NAME = "tasklists"
 
         // Special list to represent a list containing tasks from all available lists
-        val ALL_TASKS = TaskList("", "All Tasks")
+        val ALL_TASKS = TaskList("", "All GoogleTasksApi_Impl")
 
         // TODO remove this and just use kotlin lambdas to get the list we want
         operator fun get(lists: List<TaskList>, sId: String): TaskList? {

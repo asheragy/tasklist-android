@@ -268,7 +268,7 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        menu.findItem(R.id.action_rename).setVisible(!vm.getCurrList().isAllTasks()); //Hide rename if "All Tasks" list
+        menu.findItem(R.id.action_rename).setVisible(!vm.getCurrList().isAllTasks()); //Hide rename if "All GoogleTasksApi_Impl" list
         menu.findItem(R.id.action_delete).setVisible(mTaskListAdapter.getItemCount() == 0);
 
         return super.onPrepareOptionsMenu(menu);
