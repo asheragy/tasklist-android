@@ -14,9 +14,8 @@ import java.util.*
 
 class TasksViewModel(context: Context) {
 
-    private val TAG = TasksViewModel::class.qualifiedName
     private val prefs = Prefs.getInstance(context)
-    private val db = AppDatabase.getInstance(context)
+    private val db = AppDatabase.getInstance(context)!!
     private val taskDao = db.taskDao()
     private val listDao = db.taskListDao()
 
@@ -128,10 +127,12 @@ class TasksViewModel(context: Context) {
             sText += "Never"
         else {
             val now = Date().time
-            if (now - lastSyncTime.time < 60 * 1000)
-                sText += "Less than 1 minute ago"
-            else
-                sText += DateUtils.getRelativeTimeSpanString(lastSyncTime.time, now, DateUtils.SECOND_IN_MILLIS).toString()
+
+            sText +=
+                    if (now - lastSyncTime.time < 60 * 1000)
+                        "Less than 1 minute ago"
+                    else
+                        DateUtils.getRelativeTimeSpanString(lastSyncTime.time, now, DateUtils.SECOND_IN_MILLIS).toString()
 
             if (now - lastSyncTime.time > 24 * 60 * 60 * 1000)
                 isOutOfSync.set(true)
@@ -146,5 +147,8 @@ class TasksViewModel(context: Context) {
         return TaskList.getDefault(lists)!!
     }
 
+    companion object {
+        private val TAG = TasksViewModel::class.qualifiedName
+    }
 
 }

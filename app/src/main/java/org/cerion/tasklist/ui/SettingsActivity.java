@@ -5,13 +5,10 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.app.TaskStackBuilder;
-import android.os.Bundle;
-import androidx.core.content.ContextCompat;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -20,6 +17,10 @@ import com.google.android.gms.common.AccountPicker;
 import org.cerion.tasklist.R;
 import org.cerion.tasklist.data.Prefs;
 import org.cerion.tasklist.sync.AuthTools;
+
+import androidx.core.app.ActivityCompat;
+import androidx.core.app.TaskStackBuilder;
+import androidx.core.content.ContextCompat;
 
 public class SettingsActivity extends PreferenceActivity {
 
@@ -37,7 +38,7 @@ public class SettingsActivity extends PreferenceActivity {
             setTheme(R.style.AppTheme_Dark);
 
         super.onCreate(savedInstanceState);
-        addPreferencesFromResource(R.xml.preferences);
+        //addPreferencesFromResource(R.xml.preferences);
         mPrefs = Prefs.getInstance(this);
 
         mLogout = get("logout");
@@ -110,7 +111,7 @@ public class SettingsActivity extends PreferenceActivity {
 
     //Temp to reduce warnings to 1 location
     private Preference get(CharSequence key) {
-        return findPreference(key);
+        return null;//findPreference(key);
     }
 
     private boolean checkAndVerifyPermission() {

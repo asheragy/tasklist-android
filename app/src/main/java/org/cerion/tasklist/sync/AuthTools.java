@@ -114,7 +114,7 @@ public class AuthTools {
     public static void logout(Context context) {
         Log.d(TAG, "onLogout");
 
-        AppDatabase db = AppDatabase.getInstance(context);
+        AppDatabase db = AppDatabase.Companion.getInstance(context);
         TaskDao taskDb = db.taskDao();
         TaskListDao listDb = db.taskListDao();
 
@@ -144,7 +144,7 @@ public class AuthTools {
             {
                 if (list.isDefault()) { //Keep default but assign temp id
                     listDb.setLastUpdated(list.getId(), new Date(0));
-                    listDb.updateId(list.getId(), AppDatabase.generateTempId());
+                    listDb.updateId(list.getId(), AppDatabase.Companion.generateTempId());
                 } else
                     listDb.delete(list);
             }

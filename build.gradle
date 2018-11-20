@@ -24,4 +24,8 @@ allprojects {
         jcenter()
         google()
     }
+
+/*    tasks.withType(JavaCompile) {
+        options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+    }*/
 }

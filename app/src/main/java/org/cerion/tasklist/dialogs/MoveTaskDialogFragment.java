@@ -39,7 +39,7 @@ public class MoveTaskDialogFragment extends DialogFragment {
 
         ArrayAdapter<TaskList> adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_spinner_dropdown_item);
 
-        final AppDatabase db = AppDatabase.getInstance(getActivity());
+        final AppDatabase db = AppDatabase.Companion.getInstance(getActivity());
         final TaskDao taskDb = db.taskDao();
         final List<TaskList> lists = db.taskListDao().getAll();
 
@@ -67,7 +67,7 @@ public class MoveTaskDialogFragment extends DialogFragment {
 
                                 task.setDeleted(false);
                                 task.setListId(list.getId());
-                                task.setId(AppDatabase.generateTempId());
+                                task.setId(AppDatabase.Companion.generateTempId());
                                 taskDb.add(task);
                                 ((TaskListsChangedListener) getActivity()).onTaskListsChanged(list);
                             }

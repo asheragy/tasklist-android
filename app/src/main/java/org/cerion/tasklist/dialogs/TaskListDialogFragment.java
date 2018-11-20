@@ -53,7 +53,7 @@ public class TaskListDialogFragment extends DialogFragment {
                 public void onClick(DialogInterface dialog, int whichButton) {
                     String name = edittext.getText().toString();
 
-                    TaskListDao db = AppDatabase.getInstance(getActivity()).taskListDao();
+                    TaskListDao db = AppDatabase.Companion.getInstance(getActivity()).taskListDao();
                     TaskList update = new TaskList(name);
                     db.add(update);
 
@@ -74,7 +74,7 @@ public class TaskListDialogFragment extends DialogFragment {
 
                     TaskList update = new TaskList(listId, newName);
                     update.setRenamed(true);
-                    TaskListDao db = AppDatabase.getInstance(getActivity()).taskListDao();
+                    TaskListDao db = AppDatabase.Companion.getInstance(getActivity()).taskListDao();
                     db.update(update);
 
                     ((TaskListsChangedListener) getActivity()).onTaskListsChanged(update);

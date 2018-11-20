@@ -41,7 +41,7 @@ public class TaskViewModel extends AndroidViewModel {
 
     public TaskViewModel(@NonNull Application application) {
         super(application);
-        db = AppDatabase.getInstance(getApplication()).taskDao();
+        db = AppDatabase.Companion.getInstance(getApplication()).taskDao();
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
 

@@ -58,7 +58,7 @@ public class Sync {
     }
 
     Sync(Context context, String sAuthKey) {
-        AppDatabase db = AppDatabase.getInstance(context);
+        AppDatabase db = AppDatabase.Companion.getInstance(context);
         taskDb = db.taskDao();
         listDb = db.taskListDao();
         mAPI = new GoogleTasksAPI(sAuthKey);
