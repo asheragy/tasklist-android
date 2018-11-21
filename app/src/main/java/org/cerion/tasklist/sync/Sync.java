@@ -72,7 +72,7 @@ public class Sync {
     }
 
     boolean run() throws GoogleApiException {
-        List<TaskList> googleLists = listApi.list();
+        List<TaskList> googleLists = listApi.getAll();
         if(googleLists.size() == 0)
             return false;
 

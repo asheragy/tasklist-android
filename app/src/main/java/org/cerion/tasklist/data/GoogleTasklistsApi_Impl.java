@@ -43,7 +43,7 @@ public class GoogleTasklistsApi_Impl extends GoogleApiBase implements GoogleTask
     }
 
     @Override
-    public List<TaskList> list() throws GoogleApiException {
+    public List<TaskList> getAll() throws GoogleApiException {
         String sURL = getURL("users/@me/lists");
         JSONObject json = getJSON(sURL);
         ArrayList<TaskList> result = new ArrayList<>();

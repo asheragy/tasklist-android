@@ -3,6 +3,7 @@ package org.cerion.tasklist.data;
 
 import android.util.Log;
 
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -32,7 +33,7 @@ public class GoogleTasksApi_Impl extends GoogleApiBase implements GoogleTasksApi
     private static final String FIELD_COMPLETED = "completed";
 
     @Override
-    public boolean delete(Task task)
+    public boolean delete(@NotNull Task task)
     {
         String sURL = getURL("lists/" + task.getListId() + "/tasks/" + task.getId());
         String result = getInetData(sURL,null, DELETE);
@@ -41,10 +42,11 @@ public class GoogleTasksApi_Impl extends GoogleApiBase implements GoogleTasksApi
     }
 
     @Override
-    public Task insert(Task task) throws GoogleApiException {
-        String listId = "@default";
-        if(task.getListId() != null && task.getListId().length() > 0)
-            listId = task.getListId();
+    public Task insert(@NotNull Task task) throws GoogleApiException {
+        String listId = task.getListId();
+        //String listId = "@default";
+        //if(task.getListId() != null && task.getListId().length() > 0)
+        //    listId = task.getListId();
 
         String sURL = getURL("lists/" + listId + "/tasks");
         JSONObject json = new JSONObject();
@@ -82,7 +84,7 @@ public class GoogleTasksApi_Impl extends GoogleApiBase implements GoogleTasksApi
     }
 
     @Override
-    public boolean update(Task task) throws GoogleApiException {
+    public boolean update(@NotNull Task task) throws GoogleApiException {
         String sURL = getURL("lists/" + task.getListId() + "/tasks/" + task.getId());
         JSONObject json = new JSONObject();
         boolean bResult = false;
@@ -114,7 +116,7 @@ public class GoogleTasksApi_Impl extends GoogleApiBase implements GoogleTasksApi
     }
 
     @Override
-    public List<Task> list(String listId, @Nullable Date dtUpdatedMin) throws GoogleApiException {
+    public List<Task> list(@NotNull String listId, @Nullable Date dtUpdatedMin) throws GoogleApiException {
         String sURL = getURL("lists/" + listId + "/tasks");
         if(dtUpdatedMin != null)
         {
