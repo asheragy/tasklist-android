@@ -31,9 +31,7 @@ abstract class AppDatabase : RoomDatabase() {
     private fun logTasks(listId: String) {
         val tasks = taskDao().getAllbyList(listId)
         for (task in tasks) {
-            val listid = String.format("%1$-" + 43 + "s", task.listId)
-            val id = String.format("%1$-" + 55 + "s", task.id)
-            Log.d(TAG, "\t" + listid + " " + id + " " + task.title)
+            Log.d(TAG, "    " + task.logString(dateFormat))
         }
     }
 

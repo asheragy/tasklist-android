@@ -36,10 +36,16 @@ class TaskListsToolbar(context: Context, attrs: AttributeSet?, defStyleAttr: Int
         mSpinnerAdapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, vm.lists)
         mSpinner.adapter = mSpinnerAdapter
 
+
         mSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            private var init = false
             override fun onItemSelected(parent: AdapterView<*>, view: View, position: Int, id: Long) {
-                Log.d(TAG, "onNavigationItemSelected: " + position + " index = " + mSpinner.selectedItemPosition)
-                vm.setList(vm.lists[position])
+                if (!init)
+                    init = true
+                else {
+                    Log.d(TAG, "onNavigationItemSelected: " + position + " index = " + mSpinner.selectedItemPosition)
+                    vm.setList(vm.lists[position])
+                }
             }
 
             override fun onNothingSelected(parent: AdapterView<*>) {

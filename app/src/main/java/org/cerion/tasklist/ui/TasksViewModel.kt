@@ -3,6 +3,7 @@ package org.cerion.tasklist.ui
 import android.content.Context
 import android.text.format.DateUtils
 import android.util.Log
+import android.widget.Toast
 import androidx.databinding.ObservableArrayList
 import androidx.databinding.ObservableField
 import androidx.databinding.ObservableList
@@ -12,7 +13,7 @@ import org.cerion.tasklist.data.Task
 import org.cerion.tasklist.data.TaskList
 import java.util.*
 
-class TasksViewModel(context: Context) {
+class TasksViewModel(var context: Context) {
 
     private val prefs = Prefs.getInstance(context)
     private val db = AppDatabase.getInstance(context)!!
@@ -52,9 +53,8 @@ class TasksViewModel(context: Context) {
     }
 
     fun setList(list: TaskList) {
-        // TODO reload tasks here the list may have just been added via dialog
-        currList = list
-        refreshTasks()
+        prefs.setString(Prefs.KEY_LAST_SELECTED_LIST_ID, list.id)
+        load()
     }
 
     fun load() {
@@ -62,7 +62,7 @@ class TasksViewModel(context: Context) {
         db.log()
         updateLastSync() //Relative time so update it as much as possible
 
-        val dbLists = getListsFromDatabase().sortedBy { it.title }.toMutableList()
+        val dbLists = getListsFromDatabase().sortedBy { it.title.toLowerCase() }.toMutableList()
         dbLists.add(0, TaskList.ALL_TASKS)
 
         val lastId = prefs.getString(Prefs.KEY_LAST_SELECTED_LIST_ID)
@@ -78,11 +78,17 @@ class TasksViewModel(context: Context) {
     fun clearCompleted() {
         Log.d(TAG, "onClearCompleted")
 
-        val tasks = taskDao.getAllbyList(currList.id).filter { it.completed && !it.deleted }
+        val tasks = (if(currList.isAllTasks) taskDao.getAll() else taskDao.getAllbyList(currList.id))
+                .filter { it.completed && !it.deleted }
+
         for (task in tasks) {
-            task.setModified()
-            task.deleted = true
-            taskDao.update(task)
+            if (task.hasTempId)
+                taskDao.delete(task)
+            else {
+                task.setModified()
+                task.deleted = true
+                taskDao.update(task)
+            }
         }
 
         refreshTasks()
@@ -96,15 +102,30 @@ class TasksViewModel(context: Context) {
     }
 
     fun toggleDeleted(task: Task) {
-        task.setModified()
-        task.deleted = !task.deleted
-        taskDao.update(task)
+        if (task.hasTempId && !task.deleted) {
+            taskDao.delete(task)
+        }
+        else {
+            task.setModified()
+            task.deleted = !task.deleted
+            taskDao.update(task)
+        }
+
         refreshTasks()
     }
 
     fun logDatabase() {
-        //db.log()
-        //prefs.log()
+        db.log()
+    }
+
+    fun deleteCurrentList() {
+        if (currList.hasTempId &&  taskDao.getAllbyList(currList.id).isEmpty()) {
+            listDao.delete(currList)
+            Toast.makeText(context, "Deleted list " + currList.title, Toast.LENGTH_SHORT).show()
+            load()
+        }
+        else
+            Toast.makeText(context, "List must be empty and not synced", Toast.LENGTH_SHORT).show()
     }
 
     private fun getListsFromDatabase(): List<TaskList> {

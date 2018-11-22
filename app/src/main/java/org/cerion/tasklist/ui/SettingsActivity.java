@@ -38,7 +38,7 @@ public class SettingsActivity extends PreferenceActivity {
             setTheme(R.style.AppTheme_Dark);
 
         super.onCreate(savedInstanceState);
-        //addPreferencesFromResource(R.xml.preferences);
+        addPreferencesFromResource(R.xml.preferences);
         mPrefs = Prefs.getInstance(this);
 
         mLogout = get("logout");
@@ -111,7 +111,7 @@ public class SettingsActivity extends PreferenceActivity {
 
     //Temp to reduce warnings to 1 location
     private Preference get(CharSequence key) {
-        return null;//findPreference(key);
+        return findPreference(key);
     }
 
     private boolean checkAndVerifyPermission() {

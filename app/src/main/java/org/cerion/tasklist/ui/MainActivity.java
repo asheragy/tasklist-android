@@ -43,7 +43,6 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
     private static final int EDIT_TASK_REQUEST = 0;
 
     private SwipeRefreshLayout mSwipeRefresh;
-    private Prefs mPrefs;
     private TaskListsToolbar mTaskListsToolbar;
     private TaskListAdapter mTaskListAdapter;
     private TasksViewModel vm;
@@ -51,8 +50,7 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate " + (savedInstanceState == null ? "null" : "saveState"));
-        mPrefs = Prefs.getInstance(this);
-        if (mPrefs.isDarkTheme())
+        if (Prefs.getInstance(this).isDarkTheme())
             setTheme(R.style.AppTheme_Dark);
 
         super.onCreate(savedInstanceState);
@@ -115,9 +113,7 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
                 }
             });
 
-        View logdb = findViewById(R.id.logdb);
-        if(logdb != null)
-            logdb.setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.logdb).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     vm.logDatabase();
@@ -138,33 +134,6 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
         vm.updateLastSync();
         super.onResume();
     }
-
-    @Override
-    protected void onPause() {
-        //Log.d(TAG,"onPause");
-        mPrefs.setString(Prefs.KEY_LAST_SELECTED_LIST_ID, vm.getCurrList().getId());
-        super.onPause();
-    }
-
-    /*
-    @Override
-    protected void onStop() {
-        Log.d(TAG,"onStop");
-        super.onStop();
-    }
-
-    @Override
-    protected void onRestart() {
-        Log.d(TAG,"onRestart");
-        super.onRestart();
-    }
-
-    @Override
-    protected void onDestroy() {
-        Log.d(TAG,"onDestroy");
-        super.onDestroy();
-    }
-    */
 
     private void onSync() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -250,7 +219,7 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
         if(list.isAllTasks())
             list = vm.getDefaultList();
 
-        Intent intent = TaskActivity.getIntent(this, list, task);
+        Intent intent = TaskActivity.getIntent(this, task != null ? task.getListId() : list.getId(), task);
         startActivityForResult(intent, EDIT_TASK_REQUEST);
     }
 
@@ -268,7 +237,7 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        menu.findItem(R.id.action_rename).setVisible(!vm.getCurrList().isAllTasks()); //Hide rename if "All GoogleTasksApi_Impl" list
+        menu.findItem(R.id.action_rename).setVisible(!vm.getCurrList().isAllTasks()); //Hide rename if "All Tasks" list
         menu.findItem(R.id.action_delete).setVisible(mTaskListAdapter.getItemCount() == 0);
 
         return super.onPrepareOptionsMenu(menu);
@@ -296,7 +265,7 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
                 dialog.show(getSupportFragmentManager(), "dialog");
                 break;
             case R.id.action_delete:
-                Toast.makeText(this, "not implemented", Toast.LENGTH_SHORT).show();
+                vm.deleteCurrentList();
                 break;
         }
 

@@ -7,7 +7,6 @@ import android.os.Bundle;
 import org.cerion.tasklist.R;
 import org.cerion.tasklist.data.Prefs;
 import org.cerion.tasklist.data.Task;
-import org.cerion.tasklist.data.TaskList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -19,9 +18,9 @@ public class TaskActivity extends AppCompatActivity {
     private static final String EXTRA_TASK_ID = "taskId";
     private static final String EXTRA_LIST_ID = "taskListId";
 
-    public static Intent getIntent(Context context, @NotNull TaskList list, @Nullable Task task) {
+    public static Intent getIntent(Context context, @NotNull String listId, @Nullable Task task) {
         Intent intent = new Intent(context, TaskActivity.class);
-        intent.putExtra(TaskActivity.EXTRA_LIST_ID, list.getId());
+        intent.putExtra(TaskActivity.EXTRA_LIST_ID, listId);
         intent.putExtra(TaskActivity.EXTRA_TASK_ID, task != null ? task.getId() : "");
 
         return intent;

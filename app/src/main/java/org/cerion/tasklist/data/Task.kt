@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Ignore
 import androidx.room.Index
+import java.text.DateFormat
 import java.util.*
 
 @Entity(tableName = Task.TABLE_NAME,
@@ -29,6 +30,22 @@ class Task(var listId: String, var id: String, var title: String, var notes: Str
 
     fun setModified() {
         updated = Date()
+    }
+
+    fun logString(dateFormat: DateFormat): String {
+        var result = String.format("Task(id=%s, updated='%s', title='%s'", id, dateFormat.format(updated), title)
+        if (!notes.isEmpty())
+            result += ", notes=" + notes.length
+        if (hasDueDate)
+            result += ", due=" + dateFormat.format(updated)
+        if (completed)
+            result += ", *completed"
+        if (deleted)
+            result += ", *deleted"
+
+        result += ")"
+
+        return result
     }
 
     companion object {

@@ -39,7 +39,7 @@ public class Sync {
 
     private TaskDao taskDb;
     private TaskListDao listDb;
-    final int[] googleToDb = { 0, 0, 0, 0, 0, 0 }; //Add Change Delete Lists / GoogleTasksApi_Impl
+    final int[] googleToDb = { 0, 0, 0, 0, 0, 0 }; //Add Change Delete Lists / Tasks
     final int[] dbToGoogle = { 0, 0, 0, 0, 0, 0 };
 
 
@@ -111,6 +111,8 @@ public class Sync {
                 listDb.add(curr);
                 googleToDb[SYNC_ADD_LIST]++;
 
+                // Then add all its tasks
+                syncTasks(curr, new Date(0));
             }
         }
 
@@ -142,6 +144,7 @@ public class Sync {
                 if(addedList != null) {
                     listDb.updateId(dbList.getId(), addedList.getId());
                     dbList.setId(addedList.getId());
+
                     googleLists.add(addedList);
                     dbToGoogle[SYNC_ADD_LIST]++;
                 }
@@ -184,8 +187,8 @@ public class Sync {
                 Log.e(TAG,"Unable to find database list"); //TODO throw exception
         }
 
-        Log.d(TAG, "Google to DB: Lists (" + googleToDb[0] + "," + googleToDb[1] + "," + googleToDb[2] + ") GoogleTasksApi_Impl (" + googleToDb[3] + "," + googleToDb[4] + "," + googleToDb[5] + ")");
-        Log.d(TAG, "DB to Google: Lists (" + dbToGoogle[0] + "," + dbToGoogle[1] + "," + dbToGoogle[2] + ") GoogleTasksApi_Impl (" + dbToGoogle[3] + "," + dbToGoogle[4] + "," + dbToGoogle[5] + ")");
+        Log.d(TAG, "Google to DB: Lists (" + googleToDb[0] + "," + googleToDb[1] + "," + googleToDb[2] + ") Tasks (" + googleToDb[3] + "," + googleToDb[4] + "," + googleToDb[5] + ")");
+        Log.d(TAG, "DB to Google: Lists (" + dbToGoogle[0] + "," + dbToGoogle[1] + "," + dbToGoogle[2] + ") Tasks (" + dbToGoogle[3] + "," + dbToGoogle[4] + "," + dbToGoogle[5] + ")");
 
         return true;
     }
@@ -213,7 +216,7 @@ public class Sync {
         }
         else if (webUpdated.after(savedUpdatedNEW)) {
             //The default list can get its modified time updated without having any new tasks, we'll get 0 tasks here sometimes but not much we can do about it
-            Log.d(TAG, "Getting updated GoogleTasksApi_Impl");
+            Log.d(TAG, "Getting updated Tasks");
             Log.d(TAG, "Web   = " + webUpdated);
             Log.d(TAG, "Saved = " + savedUpdatedNEW);
 

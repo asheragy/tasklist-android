@@ -132,19 +132,21 @@ internal class TaskListAdapter(private val mActivity: MainActivity, private val 
             mActivity.onOpenTask(task)
         }
 
-        override fun onCreateContextMenu(menu: ContextMenu, v: View, menuInfo: ContextMenu.ContextMenuInfo) {
+        override fun onCreateContextMenu(menu: ContextMenu?, v: View?, menuInfo: ContextMenu.ContextMenuInfo?) {
             val inflater = mActivity.menuInflater
             inflater.inflate(R.menu.main_context, menu)
 
-            itemPosition = layoutPosition
-            val task = vm.tasks[itemPosition]
-            if (task.completed) {
-                val item = menu.findItem(R.id.complete)
-                item.title = "Un-Complete"
-            }
-            if (task.deleted) {
-                val item = menu.findItem(R.id.delete)
-                item.title = "Un-Delete"
+            if (menu != null) {
+                itemPosition = layoutPosition
+                val task = vm.tasks[itemPosition]
+                if (task.completed) {
+                    val item = menu.findItem(R.id.complete)
+                    item.title = "Un-Complete"
+                }
+                if (task.deleted) {
+                    val item = menu.findItem(R.id.delete)
+                    item.title = "Un-Delete"
+                }
             }
         }
 

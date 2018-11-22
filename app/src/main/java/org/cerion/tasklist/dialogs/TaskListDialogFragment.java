@@ -60,7 +60,6 @@ public class TaskListDialogFragment extends DialogFragment {
                     ((TaskListsChangedListener) getActivity()).onTaskListsChanged(update);
                 }
             });
-
         }
         else if(type == TYPE_RENAME) {
             final String listId = bundle.getString(LISTID);
@@ -72,6 +71,7 @@ public class TaskListDialogFragment extends DialogFragment {
                     String newName = edittext.getText().toString();
                     Log.d(TAG, "Rename " + listName + " to " + newName);
 
+                    // TODO if list has a tempId we should NOT set the renamed flag
                     TaskList update = new TaskList(listId, newName);
                     update.setRenamed(true);
                     TaskListDao db = AppDatabase.Companion.getInstance(getActivity()).taskListDao();

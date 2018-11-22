@@ -158,7 +158,7 @@ public class AuthTools {
         prefs.remove(Prefs.KEY_AUTHTOKEN_DATE);
 
         //Log data which should be empty except for un-synced records
-        //db.log();
+        db.log();
         prefs.log();
     }
 
