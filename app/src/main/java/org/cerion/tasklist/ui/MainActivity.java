@@ -32,6 +32,7 @@ import androidx.databinding.DataBindingUtil;
 import androidx.databinding.Observable;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.FragmentActivity;
+import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
@@ -54,7 +55,9 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
             setTheme(R.style.AppTheme_Dark);
 
         super.onCreate(savedInstanceState);
-        vm = new TasksViewModel(this);
+
+        ViewModelFactory factory = new ViewModelFactory(getApplication());
+        vm = ViewModelProviders.of(this, factory).get(TasksViewModel.class);
 
         mTaskListAdapter = new TaskListAdapter(this, vm);
 

@@ -1,24 +1,23 @@
 package org.cerion.tasklist.ui
 
-import android.content.Context
+import android.app.Application
 import android.text.format.DateUtils
 import android.util.Log
 import android.widget.Toast
 import androidx.databinding.ObservableArrayList
 import androidx.databinding.ObservableField
 import androidx.databinding.ObservableList
-import org.cerion.tasklist.data.AppDatabase
-import org.cerion.tasklist.data.Prefs
-import org.cerion.tasklist.data.Task
-import org.cerion.tasklist.data.TaskList
+import androidx.lifecycle.ViewModel
+import org.cerion.tasklist.data.*
 import java.util.*
 
-class TasksViewModel(var context: Context) {
+class TasksViewModel(private var context: Application,
+                     private val prefs: Prefs,
+                     private val db: AppDatabase,
+                     private val taskDao: TaskDao, private val listDao: TaskListDao) : ViewModel() {
 
-    private val prefs = Prefs.getInstance(context)
-    private val db = AppDatabase.getInstance(context)!!
-    private val taskDao = db.taskDao()
-    private val listDao = db.taskListDao()
+    //private val prefs = Prefs.getInstance(context)
+    //private val db = AppDatabase.getInstance(context)!!
 
     val lists: ObservableList<TaskList> = ObservableArrayList()
     val tasks: ObservableList<Task> = ObservableArrayList()

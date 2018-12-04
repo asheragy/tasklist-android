@@ -20,8 +20,10 @@ public class Prefs
     public static final String KEY_AUTHTOKEN = "authToken";
     public static final String KEY_AUTHTOKEN_DATE = "authTokenDate";
 
+    private static Prefs instance;
     private final SharedPreferences mPrefs;
     private final Context mContext;
+    private static Object LOCK = new Object();
 
     private Prefs(Context context) {
         mContext = context;
@@ -29,7 +31,15 @@ public class Prefs
     }
 
     public static Prefs getInstance(Context context) {
-        return new Prefs(context);
+        if (instance == null) {
+            synchronized(LOCK) {
+                if (instance == null) {
+                    instance = new Prefs(context);
+                }
+            }
+        }
+
+        return instance;
     }
 
     public Prefs setString(String key, String value)

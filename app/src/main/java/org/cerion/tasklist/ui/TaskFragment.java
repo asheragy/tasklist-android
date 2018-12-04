@@ -40,7 +40,8 @@ public class TaskFragment extends Fragment implements DatePickerFragment.DatePic
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
 
-        vm = ViewModelProviders.of(this).get(TaskViewModel.class);
+        ViewModelFactory factory = new ViewModelFactory(getActivity().getApplication());
+        vm = ViewModelProviders.of(this, factory).get(TaskViewModel.class);
     }
 
     @Override
@@ -48,18 +49,18 @@ public class TaskFragment extends Fragment implements DatePickerFragment.DatePic
         binding = FragmentTaskBinding.inflate(inflater, container, false);
         binding.setViewModel(vm);
 
-        vm.isDirty.addOnPropertyChangedCallback(new Observable.OnPropertyChangedCallback() {
+        vm.isDirty().addOnPropertyChangedCallback(new Observable.OnPropertyChangedCallback() {
             @Override
             public void onPropertyChanged(Observable observable, int i) {
                 if(menuSave != null)
-                    menuSave.setVisible(vm.isDirty.get());
+                    menuSave.setVisible(vm.isDirty().get());
             }
         });
 
-        vm.windowTitle.addOnPropertyChangedCallback(new Observable.OnPropertyChangedCallback() {
+        vm.getWindowTitle().addOnPropertyChangedCallback(new Observable.OnPropertyChangedCallback() {
             @Override
             public void onPropertyChanged(Observable observable, int i) {
-                getActivity().setTitle(vm.windowTitle.get());
+                getActivity().setTitle(vm.getWindowTitle().get());
             }
         });
 
@@ -112,7 +113,7 @@ public class TaskFragment extends Fragment implements DatePickerFragment.DatePic
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.task, menu);
         menuSave = menu.getItem(0);
-        menuSave.setVisible(vm.isDirty.get());
+        menuSave.setVisible(vm.isDirty().get());
         super.onCreateOptionsMenu(menu, inflater);
     }
 
