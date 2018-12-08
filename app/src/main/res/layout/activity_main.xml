@@ -50,6 +50,7 @@
                 android:layout_height="wrap_content"
                 android:text="Log Database"
                 style="?android:attr/buttonBarButtonStyle"
+                android:onClick="@{() -> viewModel.logDatabase()}"
                 android:id="@+id/logdb" />
 
         </LinearLayout>
@@ -89,6 +90,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:src="@drawable/fab_add"
+                android:onClick="onAddTask"
                 android:layout_margin="16dp"
                 android:layout_alignParentBottom="true"
                 android:layout_alignParentEnd="true" />

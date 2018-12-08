@@ -13,8 +13,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-
 import org.cerion.tasklist.R;
 import org.cerion.tasklist.data.Prefs;
 import org.cerion.tasklist.data.Task;
@@ -44,7 +42,6 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
     private static final int EDIT_TASK_REQUEST = 0;
 
     private SwipeRefreshLayout mSwipeRefresh;
-    private TaskListsToolbar mTaskListsToolbar;
     private TaskListAdapter mTaskListAdapter;
     private TasksViewModel vm;
 
@@ -63,7 +60,6 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
 
         final ActivityMainBinding binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
         binding.layoutDebug.setVisibility(View.GONE);
-
         binding.setViewModel(vm);
 
         final int defaultTextColor = binding.status.getTextColors().getDefaultColor();
@@ -78,11 +74,11 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
         });
 
         //Toolbar
-        mTaskListsToolbar = findViewById(R.id.toolbar);
-        setActionBar(mTaskListsToolbar);
+        final TaskListsToolbar toolbar = findViewById(R.id.toolbar);
+        setActionBar(toolbar);
         if(getActionBar() != null)
             getActionBar().setDisplayShowTitleEnabled(false); //Hide app name, task lists replace title on actionbar
-        mTaskListsToolbar.setViewModel(vm);
+        toolbar.setViewModel(vm);
 
         binding.recyclerView.setLayoutManager(new LinearLayoutManager(this));
         binding.recyclerView.setAdapter(mTaskListAdapter);
@@ -91,37 +87,23 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
         binding.recyclerView.setOnTouchListener(new OnSwipeTouchListener(this) {
             @Override
             public void onSwipeLeft() {
-                mTaskListsToolbar.moveLeft();
+                toolbar.moveLeft();
             }
 
             @Override
             public void onSwipeRight() {
-                mTaskListsToolbar.moveRight();
+                toolbar.moveRight();
             }
         });
 
         mSwipeRefresh = findViewById(R.id.swipeRefresh);
-        mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                onSync();
-            }
-        });
+        mSwipeRefresh.setOnRefreshListener(this::onSync);
 
-        FloatingActionButton fab = findViewById(R.id.fab);
-        if(fab != null)
-            fab.setOnClickListener(new View.OnClickListener() {
-                public void onClick(View v) {
-                    onOpenTask(null);
-                }
-            });
+        initViewModel();
+    }
 
-        findViewById(R.id.logdb).setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    vm.logDatabase();
-                }
-            });
+    private void initViewModel() {
+        vm.getMessage().observe(this, s -> Toast.makeText(MainActivity.this, s, Toast.LENGTH_SHORT).show());
 
         vm.load();
     }
@@ -215,6 +197,10 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
             }
             */
         }
+    }
+
+    public void onAddTask(View view) {
+        onOpenTask(null); // For FAB onClick
     }
 
     public void onOpenTask(@Nullable Task task) {

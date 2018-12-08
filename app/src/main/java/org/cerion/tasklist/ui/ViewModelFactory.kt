@@ -27,7 +27,7 @@ class ViewModelFactory(private val app: Application) : ViewModelProvider.Factory
             return TaskViewModel(ResourceProvider_Impl(app), db.taskDao()) as T
 
         if (modelClass.isAssignableFrom(TasksViewModel::class.java))
-            return TasksViewModel(app, prefs, db, db.taskDao(), db.taskListDao()) as T
+            return TasksViewModel(resources, prefs, db, db.taskDao(), db.taskListDao()) as T
 
         throw IllegalArgumentException("Unknown ViewModel class")
     }

@@ -1,26 +1,25 @@
 package org.cerion.tasklist.ui
 
-import android.app.Application
 import android.text.format.DateUtils
 import android.util.Log
-import android.widget.Toast
 import androidx.databinding.ObservableArrayList
 import androidx.databinding.ObservableField
 import androidx.databinding.ObservableList
 import androidx.lifecycle.ViewModel
+import org.cerion.tasklist.R
+import org.cerion.tasklist.common.ResourceProvider
+import org.cerion.tasklist.common.SingleLiveEvent
 import org.cerion.tasklist.data.*
 import java.util.*
 
-class TasksViewModel(private var context: Application,
+class TasksViewModel(private val resources: ResourceProvider,
                      private val prefs: Prefs,
                      private val db: AppDatabase,
                      private val taskDao: TaskDao, private val listDao: TaskListDao) : ViewModel() {
 
-    //private val prefs = Prefs.getInstance(context)
-    //private val db = AppDatabase.getInstance(context)!!
-
     val lists: ObservableList<TaskList> = ObservableArrayList()
     val tasks: ObservableList<Task> = ObservableArrayList()
+    val message: SingleLiveEvent<String> = SingleLiveEvent()
 
     var currList: TaskList = TaskList.ALL_TASKS
         private set(value) {
@@ -120,11 +119,12 @@ class TasksViewModel(private var context: Application,
     fun deleteCurrentList() {
         if (currList.hasTempId &&  taskDao.getAllbyList(currList.id).isEmpty()) {
             listDao.delete(currList)
-            Toast.makeText(context, "Deleted list " + currList.title, Toast.LENGTH_SHORT).show()
+            message.value = resources.getString(R.string.message_deleted_list, currList.title)
             load()
         }
-        else
-            Toast.makeText(context, "List must be empty and not synced", Toast.LENGTH_SHORT).show()
+        else {
+            message.value = resources.getString(R.string.warning_delete_nonEmpty_list)
+        }
     }
 
     private fun getListsFromDatabase(): List<TaskList> {
