@@ -208,7 +208,7 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
         if(list.isAllTasks())
             list = vm.getDefaultList();
 
-        Intent intent = TaskActivity.getIntent(this, task != null ? task.getListId() : list.getId(), task);
+        Intent intent = TaskActivity.Companion.getIntent(this, task != null ? task.getListId() : list.getId(), task);
         startActivityForResult(intent, EDIT_TASK_REQUEST);
     }
 
