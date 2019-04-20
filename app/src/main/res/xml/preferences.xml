@@ -1,25 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <Preference
-        android:key="@string/pref_key_accountName"
-        android:title="Google Account" />
+    <PreferenceCategory android:title="General">
 
-    <ListPreference
-        android:key="@string/pref_key_background"
-        android:title="@string/background"
-        android:summary="%s"
-        android:dialogTitle="@string/background"
-        android:entries="@array/pref_background_entries"
-        android:entryValues="@array/pref_background_values"
-        android:defaultValue="0"/>
+        <Preference
+            android:key="@string/pref_key_accountName"
+            android:title="Google Account" />
 
-    <Preference
-        android:title="@string/action_view_log"
-        android:key="viewlog"/>
+        <ListPreference
+            android:key="@string/pref_key_background"
+            android:title="@string/background"
+            android:summary="%s"
+            android:dialogTitle="@string/background"
+            android:entries="@array/pref_background_entries"
+            android:entryValues="@array/pref_background_values"
+            android:defaultValue="0"/>
 
-    <Preference
-        android:title="@string/action_logout"
-        android:key="logout"/>
+        <Preference
+            android:title="@string/action_view_log"
+            android:key="viewlog"/>
+
+        <Preference
+            android:title="@string/action_logout"
+            android:key="logout"/>
+    </PreferenceCategory>
+
 
 </PreferenceScreen>
