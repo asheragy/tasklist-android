@@ -61,12 +61,14 @@ class TaskViewModel(private val resources: ResourceProvider, private val db: Tas
         completed.set(task.completed)
         setDue(task.due)
 
-        // TODO this seems to be detecting the set() from above when it should not
-        // If that can be fixed the notifyChange() inside can be removed
         val onPropertyChangedCallback = object : Observable.OnPropertyChangedCallback() {
+            // The set above seems to trigger this so ignore first call
+            private var init = 0
             override fun onPropertyChanged(observable: Observable, i: Int) {
-                isDirty.set(true)
-                isDirty.notifyChange()
+                if (init > 0)
+                    isDirty.set(true)
+
+                init++
             }
         }
 
@@ -117,5 +119,6 @@ class TaskViewModel(private val resources: ResourceProvider, private val db: Tas
 
     companion object {
         private val dateFormat = SimpleDateFormat("EEE, MMM d, yyyy", Locale.US)
+        private val TAG = TaskViewModel::class.simpleName
     }
 }

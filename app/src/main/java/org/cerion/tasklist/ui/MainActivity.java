@@ -66,8 +66,10 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
         vm.isOutOfSync().addOnPropertyChangedCallback(new Observable.OnPropertyChangedCallback() {
             @Override
             public void onPropertyChanged(Observable observable, int i) {
-                if(vm.isOutOfSync().get())
+                if(vm.isOutOfSync().get()) {
                     binding.status.setTextColor(Color.RED);
+                    onSync();
+                }
                 else
                     binding.status.setTextColor(defaultTextColor);
             }
@@ -84,7 +86,7 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
         binding.recyclerView.setAdapter(mTaskListAdapter);
         mTaskListAdapter.setEmptyView(binding.recyclerView, findViewById(R.id.empty_view));
 
-        binding.recyclerView.setOnTouchListener(new OnSwipeTouchListener(this) {
+        OnSwipeTouchListener touchListener = new OnSwipeTouchListener(this) {
             @Override
             public void onSwipeLeft() {
                 toolbar.moveLeft();
@@ -94,7 +96,10 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
             public void onSwipeRight() {
                 toolbar.moveRight();
             }
-        });
+        };
+
+        binding.emptyView.setOnTouchListener(touchListener);
+        binding.recyclerView.setOnTouchListener(touchListener);
 
         mSwipeRefresh = findViewById(R.id.swipeRefresh);
         mSwipeRefresh.setOnRefreshListener(this::onSync);
@@ -175,28 +180,35 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
     private void setInSync(boolean bSyncing) {
         if (!bSyncing && mSwipeRefresh.isRefreshing())
             mSwipeRefresh.setRefreshing(false);
+        else if (bSyncing && !mSwipeRefresh.isRefreshing())
+            mSwipeRefresh.setRefreshing(true);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         Log.d(TAG, "onActivityResult: " + resultCode);
 
-        if (resultCode == RESULT_OK) {
-            if (requestCode == EDIT_TASK_REQUEST)
+        if  (requestCode == EDIT_TASK_REQUEST) {
+            if (resultCode == RESULT_OK) {
                 vm.refreshTasks();
-            /*
-            else if (requestCode == PICK_ACCOUNT_REQUEST) {
-                String currentAccount = mPrefs.getString(Prefs.KEY_ACCOUNT_NAME);
-                String accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
-
-                //If current account is set and different than selected account, logout first
-                if (currentAccount.length() > 0 && !currentAccount.contentEquals(accountName))
-                    AuthTools.logout(this);
-
-                mPrefs.setString(Prefs.KEY_ACCOUNT_NAME, accountName);
+                onSync();
             }
-            */
         }
+
+        /*
+        else if (requestCode == PICK_ACCOUNT_REQUEST) {
+            check resultCode too
+            String currentAccount = mPrefs.getString(Prefs.KEY_ACCOUNT_NAME);
+            String accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
+
+            //If current account is set and different than selected account, logout first
+            if (currentAccount.length() > 0 && !currentAccount.contentEquals(accountName))
+                AuthTools.logout(this);
+
+            mPrefs.setString(Prefs.KEY_ACCOUNT_NAME, accountName);
+        }
+        */
+
     }
 
     public void onAddTask(View view) {
