@@ -5,11 +5,12 @@ import android.app.Activity;
 import android.content.Context;
 import android.util.Log;
 
-import org.cerion.tasklist.data.GoogleApiException;
 import org.cerion.tasklist.data.AppDatabase;
 import org.cerion.tasklist.data.GoogleApi;
+import org.cerion.tasklist.data.GoogleApiException;
 import org.cerion.tasklist.data.GoogleTasklistsApi;
 import org.cerion.tasklist.data.GoogleTasksApi;
+import org.cerion.tasklist.data.Prefs;
 import org.cerion.tasklist.data.Task;
 import org.cerion.tasklist.data.TaskDao;
 import org.cerion.tasklist.data.TaskList;
@@ -36,6 +37,7 @@ public class Sync {
     private GoogleApi mAPI = null;
     private GoogleTasklistsApi listApi;
     private GoogleTasksApi taskApi;
+    private Prefs prefs;
 
     private TaskDao taskDb;
     private TaskListDao listDb;
@@ -69,6 +71,7 @@ public class Sync {
         mAPI = new GoogleApi(sAuthKey);
         listApi = mAPI.getTaskListsApi();
         taskApi = mAPI.getTasksApi();
+        prefs = Prefs.getInstance(context);
     }
 
     boolean run() throws GoogleApiException {
@@ -142,6 +145,11 @@ public class Sync {
             if(dbList.getHasTempId()) {
                 TaskList addedList = listApi.insert(dbList);
                 if(addedList != null) {
+                    // If current displayed list is this one update the ID so it reloads with this list active
+                    String lastId = prefs.getString(Prefs.KEY_LAST_SELECTED_LIST_ID);
+                    if (lastId.contentEquals(dbList.getId()))
+                        prefs.setString(Prefs.KEY_LAST_SELECTED_LIST_ID, addedList.getId());
+
                     listDb.updateId(dbList.getId(), addedList.getId());
                     dbList.setId(addedList.getId());
 
