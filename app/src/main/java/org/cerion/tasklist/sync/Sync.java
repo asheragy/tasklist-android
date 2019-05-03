@@ -187,6 +187,22 @@ public class Sync {
                 Log.e(TAG,"Unable to find database list"); //TODO throw exception
         }
 
+        // If any local lists are empty and marked for deletion, delete from web
+        for(TaskList list : dbLists) {
+            if(list.getDeleted()) {
+                List<Task> tasks = taskDb.getAllbyList(list.getId());
+                if (tasks.size() == 0) {
+                    if (listApi.delete(list)) {
+                        listDb.delete(list);
+                        dbToGoogle[SYNC_DELETE_LIST]++;
+                    }
+                }
+                else {
+                    // TODO this means a deleted list had tasks added on web which may invalidate the delete, consider marking as not deleted
+                }
+            }
+        }
+
         Log.d(TAG, "Google to DB: Lists (" + googleToDb[0] + "," + googleToDb[1] + "," + googleToDb[2] + ") Tasks (" + googleToDb[3] + "," + googleToDb[4] + "," + googleToDb[5] + ")");
         Log.d(TAG, "DB to Google: Lists (" + dbToGoogle[0] + "," + dbToGoogle[1] + "," + dbToGoogle[2] + ") Tasks (" + dbToGoogle[3] + "," + dbToGoogle[4] + "," + dbToGoogle[5] + ")");
 

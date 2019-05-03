@@ -7,7 +7,7 @@ import java.text.DateFormat
 import java.util.*
 
 @Entity(tableName = TaskList.TABLE_NAME)
-class TaskList(@field:PrimaryKey var id: String, var title: String, var updated: Date, var isRenamed: Boolean, var isDefault: Boolean) {
+class TaskList(@field:PrimaryKey var id: String, var title: String, var updated: Date, var isRenamed: Boolean, var isDefault: Boolean, var deleted: Boolean) {
 
     val isAllTasks: Boolean
         get() = id.isEmpty()
@@ -19,7 +19,7 @@ class TaskList(@field:PrimaryKey var id: String, var title: String, var updated:
     constructor(title: String) : this(AppDatabase.generateTempId(), title)
 
     @Ignore
-    constructor(id: String, title: String) : this(id, title, Date(0), false, false)
+    constructor(id: String, title: String) : this(id, title, Date(0), false, false, false)
 
     override fun toString(): String = title
 
@@ -29,6 +29,8 @@ class TaskList(@field:PrimaryKey var id: String, var title: String, var updated:
             result += ", **default"
         if (isRenamed)
             result += ", **renamed"
+        if (deleted)
+            result += ", **deleted"
         result += ")"
 
         return result

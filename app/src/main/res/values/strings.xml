@@ -26,6 +26,6 @@
     <string name="action_move">Move</string>
 
     <string name="warning_delete_nonEmpty_list">List must be empty and not synced</string>
-    <string name="message_deleted_list">Deleted list %1</string>
+    <string name="message_deleted_list">Deleted list %1$s</string>
 
 </resources>

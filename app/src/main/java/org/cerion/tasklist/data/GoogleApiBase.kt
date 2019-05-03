@@ -42,6 +42,7 @@ open class GoogleApiBase internal constructor(private val mAuthKey: String, priv
         return mBaseUrl + endpoint + "?key=" + GoogleApi.API_KEY
     }
 
+    // TODO change to return struct with response code too
     internal fun getInetData(sURL: String, sRequestBody: String?, method: Int): String {
         val command =
         when (method) {

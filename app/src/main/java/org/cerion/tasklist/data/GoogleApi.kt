@@ -17,6 +17,8 @@ interface GoogleTasklistsApi {
 
     @Throws(GoogleApiException::class)
     fun update(list: TaskList): Boolean
+
+    fun delete(list: TaskList): Boolean
 }
 
 interface GoogleTasksApi {

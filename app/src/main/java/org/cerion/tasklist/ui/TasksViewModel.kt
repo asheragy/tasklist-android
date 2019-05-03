@@ -117,14 +117,24 @@ class TasksViewModel(private val resources: ResourceProvider,
     }
 
     fun deleteCurrentList() {
-        if (currList.hasTempId &&  taskDao.getAllbyList(currList.id).isEmpty()) {
-            listDao.delete(currList)
-            message.value = resources.getString(R.string.message_deleted_list, currList.title)
-            load()
+        // Only take action if list is empty
+        if (taskDao.getAllbyList(currList.id).isEmpty()) {
+            if (currList.hasTempId) {
+                listDao.delete(currList)
+                message.value = resources.getString(R.string.message_deleted_list, currList.title)
+                load()
+            }
+            else {
+                currList.deleted = true
+                listDao.update(currList)
+                message.value = "Deleting list on next sync"
+            }
         }
         else {
             message.value = resources.getString(R.string.warning_delete_nonEmpty_list)
         }
+
+        db.log()
     }
 
     private fun getListsFromDatabase(): List<TaskList> {

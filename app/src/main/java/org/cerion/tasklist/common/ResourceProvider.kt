@@ -12,7 +12,7 @@ interface ResourceProvider {
 class ResourceProvider_Impl(private val context: Context) : ResourceProvider {
 
     override fun getString(resId: Int, vararg formatArgs: Any): String {
-        return context.getString(resId, formatArgs)
+        return context.getString(resId, *formatArgs)
     }
 
     override fun getString(@StringRes resId: Int): String {

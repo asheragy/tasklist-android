@@ -9,6 +9,13 @@ import java.util.*
 
 class GoogleTasklistsApi_Impl internal constructor(authKey: String) : GoogleApiBase(authKey, GoogleApi.TASKS_BASE_URL), GoogleTasklistsApi {
 
+    override fun delete(list: TaskList): Boolean {
+        val sURL = getURL("users/@me/lists/" + list.id)
+        val result = getInetData(sURL, null, DELETE)
+
+        return result.isEmpty() //Successful delete does not return anything
+    }
+
     @Throws(GoogleApiException::class)
     override operator fun get(id: String): TaskList? {
         val sURL = getURL("users/@me/lists/$id")
