@@ -1,7 +1,6 @@
 package org.cerion.tasklist.sync;
 
 
-import android.app.Activity;
 import android.content.Context;
 import android.util.Log;
 
@@ -19,9 +18,7 @@ import org.cerion.tasklist.data.TaskListDao;
 import java.util.Date;
 import java.util.List;
 
-import androidx.annotation.Nullable;
-
-public class Sync {
+class Sync {
 
     private static final String TAG = Sync.class.getSimpleName();
     private static final int SYNC_ADD_LIST = 0;
@@ -34,7 +31,7 @@ public class Sync {
     private static final boolean RESYNC_WEB = false;
 
     //Instance variables
-    private GoogleApi mAPI = null;
+    //private GoogleApi mAPI = null;
     private GoogleTasklistsApi listApi;
     private GoogleTasksApi taskApi;
     private Prefs prefs;
@@ -44,37 +41,22 @@ public class Sync {
     final int[] googleToDb = { 0, 0, 0, 0, 0, 0 }; //Add Change Delete Lists / Tasks
     final int[] dbToGoogle = { 0, 0, 0, 0, 0, 0 };
 
-
-    /**
-     * Get token and run sync process in background
-     * @param context Context
-     * @param activity Use for permissions prompt if starting from activity
-     * @param callback Listener for when sync completes
-     */
-    public static void run(Context context, @Nullable Activity activity, OnSyncCompleteListener callback)
-    {
-        String token = AuthTools.getSavedToken(context);
-
-        if(token != null) {
-            SyncTask task = new SyncTask(context, token, callback);
-            task.execute();
-        } else {
-            //Get new token then run sync
-            AuthTools.getTokenAndSync(context, activity, callback);
-        }
-    }
-
-    Sync(Context context, String sAuthKey) {
+    public static Sync getInstance(Context context, String sAuthKey) {
         AppDatabase db = AppDatabase.Companion.getInstance(context);
-        taskDb = db.taskDao();
-        listDb = db.taskListDao();
-        mAPI = new GoogleApi(sAuthKey);
-        listApi = mAPI.getTaskListsApi();
-        taskApi = mAPI.getTasksApi();
-        prefs = Prefs.getInstance(context);
+        GoogleApi api = new GoogleApi(sAuthKey);
+
+        return new Sync(db.taskListDao(), db.taskDao(), api.getTaskListsApi(), api.getTasksApi(), Prefs.getInstance(context));
     }
 
-    boolean run() throws GoogleApiException {
+    Sync(TaskListDao taskListDao, TaskDao taskDao, GoogleTasklistsApi tasklistsApi, GoogleTasksApi tasksApi, Prefs prefs) {
+        this.listDb = taskListDao;
+        this.taskDb = taskDao;
+        this.listApi = tasklistsApi;
+        this.taskApi = tasksApi;
+        this.prefs = prefs;
+    }
+
+    public boolean run() throws GoogleApiException {
         List<TaskList> googleLists = listApi.getAll();
         if(googleLists.size() == 0)
             return false;

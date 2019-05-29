@@ -2,14 +2,14 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <data>
-        <variable name="viewModel" type="org.cerion.tasklist.ui.TaskViewModel"/>
+        <variable name="viewModel" type="org.cerion.tasklist.ui.TaskDetailViewModel"/>
         <import type="android.view.View"/>
     </data>
 
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context="org.cerion.tasklist.ui.TaskFragment">
+        tools:context="org.cerion.tasklist.ui.TaskDetailFragment">
 
         <LinearLayout
             android:layout_width="match_parent"

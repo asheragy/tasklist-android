@@ -11,7 +11,7 @@ import org.cerion.tasklist.data.TaskDao
 import java.text.SimpleDateFormat
 import java.util.*
 
-class TaskViewModel(private val resources: ResourceProvider, private val db: TaskDao) : ViewModel() {
+class TaskDetailViewModel(private val resources: ResourceProvider, private val db: TaskDao) : ViewModel() {
 
     // TODO remove double due fields and use binding converter for dateFormat
     // https://mlsdev.com/blog/57-android-data-binding
@@ -119,6 +119,6 @@ class TaskViewModel(private val resources: ResourceProvider, private val db: Tas
 
     companion object {
         private val dateFormat = SimpleDateFormat("EEE, MMM d, yyyy", Locale.US)
-        private val TAG = TaskViewModel::class.simpleName
+        private val TAG = TaskDetailViewModel::class.simpleName
     }
 }

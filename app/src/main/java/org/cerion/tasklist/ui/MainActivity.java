@@ -13,6 +13,14 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.databinding.DataBindingUtil;
+import androidx.databinding.Observable;
+import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.FragmentActivity;
+import androidx.lifecycle.ViewModelProviders;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+
 import org.cerion.tasklist.R;
 import org.cerion.tasklist.data.Prefs;
 import org.cerion.tasklist.data.Task;
@@ -23,16 +31,8 @@ import org.cerion.tasklist.dialogs.MoveTaskDialogFragment;
 import org.cerion.tasklist.dialogs.TaskListDialogFragment;
 import org.cerion.tasklist.dialogs.TaskListsChangedListener;
 import org.cerion.tasklist.sync.OnSyncCompleteListener;
-import org.cerion.tasklist.sync.Sync;
+import org.cerion.tasklist.sync.SyncTask;
 import org.jetbrains.annotations.Nullable;
-
-import androidx.databinding.DataBindingUtil;
-import androidx.databinding.Observable;
-import androidx.fragment.app.DialogFragment;
-import androidx.fragment.app.FragmentActivity;
-import androidx.lifecycle.ViewModelProviders;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 //TODO verify network is available and toast message
 
@@ -133,7 +133,7 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
         if (isConnected) {
             setInSync(true);
 
-            Sync.run(this, this, new OnSyncCompleteListener() {
+            SyncTask.run(this, this, new OnSyncCompleteListener() {
                 @Override
                 public void onAuthError(Exception e) {
                     setInSync(false);
@@ -220,7 +220,7 @@ public class MainActivity extends FragmentActivity implements TaskListsChangedLi
         if(list.isAllTasks())
             list = vm.getDefaultList();
 
-        Intent intent = TaskActivity.Companion.getIntent(this, task != null ? task.getListId() : list.getId(), task);
+        Intent intent = TaskDetailActivity.Companion.getIntent(this, task != null ? task.getListId() : list.getId(), task);
         startActivityForResult(intent, EDIT_TASK_REQUEST);
     }
 

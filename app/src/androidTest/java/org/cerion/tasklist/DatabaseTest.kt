@@ -26,8 +26,8 @@ class DatabaseTest {
         listDao = db.taskListDao()
         taskDao = db.taskDao()
 
-        listDao.add( TaskList("123", "Default List", Date(), false, true))
-        listDao.add( TaskList("456", "Test List", Date(), false, false))
+        listDao.add( TaskList("123", "Default List", Date(), false, true, false))
+        listDao.add( TaskList("456", "Test List", Date(), false, false, false))
 
         var task = Task("123", "ABC")
         task.title = "Task 1"

@@ -10,7 +10,7 @@ import org.cerion.tasklist.data.Prefs
 import org.cerion.tasklist.data.Task
 
 
-class TaskActivity : AppCompatActivity() {
+class TaskDetailActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         if (Prefs.getInstance(this).isDarkTheme)
@@ -23,7 +23,7 @@ class TaskActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        val fragment = supportFragmentManager.findFragmentById(R.id.fragment) as TaskFragment
+        val fragment = supportFragmentManager.findFragmentById(R.id.fragment) as TaskDetailFragment
 
         val id = intent.getStringExtra(EXTRA_TASK_ID)
         val listId = intent.getStringExtra(EXTRA_LIST_ID)
@@ -40,9 +40,9 @@ class TaskActivity : AppCompatActivity() {
         private const val EXTRA_LIST_ID = "taskListId"
 
         fun getIntent(context: Context, listId: String, task: Task?): Intent {
-            val intent = Intent(context, TaskActivity::class.java)
-            intent.putExtra(TaskActivity.EXTRA_LIST_ID, listId)
-            intent.putExtra(TaskActivity.EXTRA_TASK_ID, task?.id ?: "")
+            val intent = Intent(context, TaskDetailActivity::class.java)
+            intent.putExtra(TaskDetailActivity.EXTRA_LIST_ID, listId)
+            intent.putExtra(TaskDetailActivity.EXTRA_TASK_ID, task?.id ?: "")
 
             return intent
         }

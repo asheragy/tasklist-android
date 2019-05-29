@@ -15,17 +15,17 @@ import org.cerion.tasklist.databinding.FragmentTaskBinding
 import org.cerion.tasklist.dialogs.DatePickerFragment
 import java.util.*
 
-class TaskFragment : Fragment(), DatePickerFragment.DatePickerListener {
+class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
     private var binding: FragmentTaskBinding? = null
     private var menuSave: MenuItem? = null
-    private lateinit var vm: TaskViewModel
+    private lateinit var vm: TaskDetailViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
 
         val factory = ViewModelFactory(requireActivity().application)
-        vm = ViewModelProviders.of(this, factory).get(TaskViewModel::class.java)
+        vm = ViewModelProviders.of(this, factory).get(TaskDetailViewModel::class.java)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -99,6 +99,6 @@ class TaskFragment : Fragment(), DatePickerFragment.DatePickerListener {
     }
 
     companion object {
-        private val TAG = TaskFragment::class.java.simpleName
+        private val TAG = TaskDetailFragment::class.java.simpleName
     }
 }

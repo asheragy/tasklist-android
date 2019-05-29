@@ -11,7 +11,7 @@
         android:background="?attr/colorPrimary">
     </androidx.appcompat.widget.Toolbar>
 
-    <fragment android:name="org.cerion.tasklist.ui.TaskFragment"
+    <fragment android:name="org.cerion.tasklist.ui.TaskDetailFragment"
         android:id="@+id/fragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

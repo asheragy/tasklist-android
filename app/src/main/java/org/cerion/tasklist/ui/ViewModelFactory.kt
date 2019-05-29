@@ -23,8 +23,8 @@ class ViewModelFactory(private val app: Application) : ViewModelProvider.Factory
     @NonNull
     override fun <T : ViewModel> create(@NonNull modelClass: Class<T>): T {
 
-        if (modelClass.isAssignableFrom(TaskViewModel::class.java))
-            return TaskViewModel(ResourceProvider_Impl(app), db.taskDao()) as T
+        if (modelClass.isAssignableFrom(TaskDetailViewModel::class.java))
+            return TaskDetailViewModel(ResourceProvider_Impl(app), db.taskDao()) as T
 
         if (modelClass.isAssignableFrom(TasksViewModel::class.java))
             return TasksViewModel(resources, prefs, db, db.taskDao(), db.taskListDao()) as T

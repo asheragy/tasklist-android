@@ -23,7 +23,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ui.TaskActivity"
+            android:name=".ui.TaskDetailActivity"
             android:label="@string/title_activity_task"
             android:parentActivityName=".ui.MainActivity">
             >

@@ -1,9 +1,12 @@
 package org.cerion.tasklist.sync;
 
 
+import android.app.Activity;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
 
 import org.cerion.tasklist.data.GoogleApiException;
 import org.cerion.tasklist.data.Prefs;
@@ -11,7 +14,7 @@ import org.cerion.tasklist.data.Prefs;
 import java.net.HttpURLConnection;
 import java.util.Date;
 
-class SyncTask extends AsyncTask<Void, Void, Boolean> {
+public class SyncTask extends AsyncTask<Void, Void, Boolean> {
 
     private static final String TAG = SyncTask.class.getSimpleName();
     private final Context mContext;
@@ -21,8 +24,25 @@ class SyncTask extends AsyncTask<Void, Void, Boolean> {
     private int mChanges = 0;
     private Exception mError = null;
 
-    public SyncTask(Context context, String sAuth, OnSyncCompleteListener callback)
-    {
+    /**
+     * Get token and run sync process in background
+     * @param context Context
+     * @param activity Use for permissions prompt if starting from activity
+     * @param callback Listener for when sync completes
+     */
+    public static void run(Context context, @Nullable Activity activity, OnSyncCompleteListener callback) {
+        String token = AuthTools.getSavedToken(context);
+
+        if(token != null) {
+            SyncTask task = new SyncTask(context, token, callback);
+            task.execute();
+        } else {
+            //Get new token then run sync
+            AuthTools.getTokenAndSync(context, activity, callback);
+        }
+    }
+
+    SyncTask(Context context, String sAuth, OnSyncCompleteListener callback) {
         mContext = context;
         mAuthToken = sAuth;
         mCallback = callback;
@@ -30,7 +50,7 @@ class SyncTask extends AsyncTask<Void, Void, Boolean> {
 
     @Override
     protected Boolean doInBackground(Void... params) {
-        Sync sync = new Sync(mContext,mAuthToken);
+        Sync sync = Sync.getInstance(mContext,mAuthToken);
         boolean result;
 
         try {
