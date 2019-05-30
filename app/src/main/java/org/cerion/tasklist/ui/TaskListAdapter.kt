@@ -24,7 +24,7 @@ import org.cerion.tasklist.data.Task
 import java.text.SimpleDateFormat
 import java.util.*
 
-internal class TaskListAdapter(private val mActivity: MainActivity, private val vm: TasksViewModel) : RecyclerView.Adapter<TaskListAdapter.ViewHolder>() {
+internal class TaskListAdapter(private val mFragment: TaskListFragment, private val vm: TasksViewModel) : RecyclerView.Adapter<TaskListAdapter.ViewHolder>() {
     private var mPrimaryColor: Int = 0
     private var mSecondaryColor: Int = 0
     private var parent: RecyclerView? = null
@@ -49,11 +49,11 @@ internal class TaskListAdapter(private val mActivity: MainActivity, private val 
 
         //Programmatically set color based on completion, need to know current theme
         val typedValue = TypedValue()
-        val theme = mActivity.theme
+        val theme = mFragment.requireActivity().theme
         theme.resolveAttribute(android.R.attr.textColorPrimary, typedValue, true)
-        mPrimaryColor = ContextCompat.getColor(mActivity, typedValue.resourceId)
+        mPrimaryColor = ContextCompat.getColor(mFragment.requireContext(), typedValue.resourceId)
         theme.resolveAttribute(android.R.attr.textColorSecondary, typedValue, true)
-        mSecondaryColor = ContextCompat.getColor(mActivity, typedValue.resourceId)
+        mSecondaryColor = ContextCompat.getColor(mFragment.requireContext(), typedValue.resourceId)
 
         vm.tasks.addOnListChangedCallback(object : OnListAnyChangeCallback<ObservableList<Task>>() {
             override fun onAnyChange(sender: ObservableList<*>) {
@@ -129,11 +129,11 @@ internal class TaskListAdapter(private val mActivity: MainActivity, private val 
 
         override fun onClick(v: View) {
             val task = vm.tasks[layoutPosition]
-            mActivity.onOpenTask(task)
+            mFragment.onOpenTask(task)
         }
 
         override fun onCreateContextMenu(menu: ContextMenu?, v: View?, menuInfo: ContextMenu.ContextMenuInfo?) {
-            val inflater = mActivity.menuInflater
+            val inflater = mFragment.requireActivity().menuInflater
             inflater.inflate(R.menu.main_context, menu)
 
             if (menu != null) {

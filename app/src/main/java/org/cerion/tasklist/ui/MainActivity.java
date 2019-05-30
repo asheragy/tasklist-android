@@ -1,305 +1,34 @@
 package org.cerion.tasklist.ui;
 
-import android.accounts.OperationCanceledException;
-import android.content.Context;
-import android.content.Intent;
-import android.graphics.Color;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
-import android.widget.Toast;
 
-import androidx.databinding.DataBindingUtil;
-import androidx.databinding.Observable;
-import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.FragmentActivity;
-import androidx.lifecycle.ViewModelProviders;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import org.cerion.tasklist.R;
 import org.cerion.tasklist.data.Prefs;
-import org.cerion.tasklist.data.Task;
-import org.cerion.tasklist.data.TaskList;
-import org.cerion.tasklist.databinding.ActivityMainBinding;
-import org.cerion.tasklist.dialogs.AlertDialogFragment;
-import org.cerion.tasklist.dialogs.MoveTaskDialogFragment;
-import org.cerion.tasklist.dialogs.TaskListDialogFragment;
-import org.cerion.tasklist.dialogs.TaskListsChangedListener;
-import org.cerion.tasklist.sync.OnSyncCompleteListener;
-import org.cerion.tasklist.sync.SyncTask;
-import org.jetbrains.annotations.Nullable;
 
 //TODO verify network is available and toast message
 
-public class MainActivity extends FragmentActivity implements TaskListsChangedListener {
-
-    private static final String TAG = MainActivity.class.getSimpleName();
-    private static final int EDIT_TASK_REQUEST = 0;
-
-    private SwipeRefreshLayout mSwipeRefresh;
-    private TaskListAdapter mTaskListAdapter;
-    private TasksViewModel vm;
-
+public class MainActivity extends FragmentActivity
+{
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.d(TAG, "onCreate " + (savedInstanceState == null ? "null" : "saveState"));
         if (Prefs.getInstance(this).isDarkTheme())
             setTheme(R.style.AppTheme_Dark);
 
         super.onCreate(savedInstanceState);
 
-        ViewModelFactory factory = new ViewModelFactory(getApplication());
-        vm = ViewModelProviders.of(this, factory).get(TasksViewModel.class);
+        setContentView(R.layout.activity_main);
 
-        mTaskListAdapter = new TaskListAdapter(this, vm);
+        this.getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragment, new TaskListFragment())
+                .commit();
 
-        final ActivityMainBinding binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
-        binding.layoutDebug.setVisibility(View.GONE);
-        binding.setViewModel(vm);
-
-        final int defaultTextColor = binding.status.getTextColors().getDefaultColor();
-        vm.isOutOfSync().addOnPropertyChangedCallback(new Observable.OnPropertyChangedCallback() {
-            @Override
-            public void onPropertyChanged(Observable observable, int i) {
-                if(vm.isOutOfSync().get()) {
-                    binding.status.setTextColor(Color.RED);
-                    onSync();
-                }
-                else
-                    binding.status.setTextColor(defaultTextColor);
-            }
-        });
-
-        //Toolbar
-        final TaskListsToolbar toolbar = findViewById(R.id.toolbar);
-        setActionBar(toolbar);
-        if(getActionBar() != null)
-            getActionBar().setDisplayShowTitleEnabled(false); //Hide app name, task lists replace title on actionbar
-        toolbar.setViewModel(vm);
-
-        binding.recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        binding.recyclerView.setAdapter(mTaskListAdapter);
-        mTaskListAdapter.setEmptyView(binding.recyclerView, findViewById(R.id.empty_view));
-
-        OnSwipeTouchListener touchListener = new OnSwipeTouchListener(this) {
-            @Override
-            public void onSwipeLeft() {
-                toolbar.moveLeft();
-            }
-
-            @Override
-            public void onSwipeRight() {
-                toolbar.moveRight();
-            }
-        };
-
-        binding.emptyView.setOnTouchListener(touchListener);
-        binding.recyclerView.setOnTouchListener(touchListener);
-
-        mSwipeRefresh = findViewById(R.id.swipeRefresh);
-        mSwipeRefresh.setOnRefreshListener(this::onSync);
-
-        initViewModel();
-    }
-
-    private void initViewModel() {
-        vm.getMessage().observe(this, s -> Toast.makeText(MainActivity.this, s, Toast.LENGTH_SHORT).show());
-
-        vm.load();
     }
 
     @Override
     public void onBackPressed() {
         finish();
-    }
-
-    @Override
-    protected void onResume() {
-        //Log.d(TAG,"onResume");
-        vm.updateLastSync();
-        super.onResume();
-    }
-
-    private void onSync() {
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo networkInfo = cm.getActiveNetworkInfo();
-        boolean isConnected = networkInfo != null && networkInfo.isConnected();
-
-        if (isConnected) {
-            setInSync(true);
-
-            SyncTask.run(this, this, new OnSyncCompleteListener() {
-                @Override
-                public void onAuthError(Exception e) {
-                    setInSync(false);
-
-                    if (e == null) {
-                        //TODO do automatically
-                        Toast.makeText(MainActivity.this, "Open settings and select account", Toast.LENGTH_LONG).show();
-                    } else if (e instanceof OperationCanceledException) {
-                        Log.d(TAG, "User denied auth prompt");
-                        //For some reason showing an AlertDialog here causes a crash
-                    } else {
-                        DialogFragment dialog = AlertDialogFragment.newInstance("Auth Error", e.getMessage());
-                        dialog.show(getSupportFragmentManager(), "dialog");
-                    }
-                }
-
-                @Override
-                public void onSyncFinish(boolean bSuccess, Exception e) {
-                    setInSync(false);
-
-                    if (bSuccess) {
-                        vm.updateLastSync(); //Update last sync time only if successful
-                    } else {
-                        String message = "Sync Failed, unknown error";
-                        if (e != null)
-                            message = e.getMessage();
-
-                        DialogFragment dialog = AlertDialogFragment.newInstance("Sync failed", message);
-                        dialog.show(getSupportFragmentManager(), "dialog");
-                    }
-
-                    vm.load(); //refresh since data may have changed
-                }
-
-            });
-        } else {
-            DialogFragment dialog = AlertDialogFragment.newInstance("Error", "Internet not available");
-            dialog.show(getSupportFragmentManager(), "dialog");
-            if (mSwipeRefresh.isRefreshing())
-                mSwipeRefresh.setRefreshing(false);
-        }
-    }
-
-    private void setInSync(boolean bSyncing) {
-        if (!bSyncing && mSwipeRefresh.isRefreshing())
-            mSwipeRefresh.setRefreshing(false);
-        else if (bSyncing && !mSwipeRefresh.isRefreshing())
-            mSwipeRefresh.setRefreshing(true);
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        Log.d(TAG, "onActivityResult: " + resultCode);
-
-        if  (requestCode == EDIT_TASK_REQUEST) {
-            if (resultCode == RESULT_OK) {
-                vm.refreshTasks();
-                onSync();
-            }
-        }
-
-        /*
-        else if (requestCode == PICK_ACCOUNT_REQUEST) {
-            check resultCode too
-            String currentAccount = mPrefs.getString(Prefs.KEY_ACCOUNT_NAME);
-            String accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
-
-            //If current account is set and different than selected account, logout first
-            if (currentAccount.length() > 0 && !currentAccount.contentEquals(accountName))
-                AuthTools.logout(this);
-
-            mPrefs.setString(Prefs.KEY_ACCOUNT_NAME, accountName);
-        }
-        */
-
-    }
-
-    public void onAddTask(View view) {
-        onOpenTask(null); // For FAB onClick
-    }
-
-    public void onOpenTask(@Nullable Task task) {
-        TaskList list = vm.getCurrList();
-        if(list.isAllTasks())
-            list = vm.getDefaultList();
-
-        Intent intent = TaskDetailActivity.Companion.getIntent(this, task != null ? task.getListId() : list.getId(), task);
-        startActivityForResult(intent, EDIT_TASK_REQUEST);
-    }
-
-    @Override
-    public void onTaskListsChanged(TaskList current) {
-        vm.setList(current); //This list was added or updated
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onPrepareOptionsMenu(Menu menu) {
-        menu.findItem(R.id.action_rename).setVisible(!vm.getCurrList().isAllTasks()); //Hide rename if "All Tasks" list
-        menu.findItem(R.id.action_delete).setVisible(mTaskListAdapter.getItemCount() == 0);
-
-        return super.onPrepareOptionsMenu(menu);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        switch(id) {
-            case R.id.action_add: onAddTaskList(); break;
-            case R.id.action_settings: {
-                Intent intent = new Intent(this, SettingsActivity.class);
-                startActivity(intent);
-                break;
-            }
-            case R.id.action_clear_completed:
-                vm.clearCompleted();
-                break;
-            case R.id.action_rename:
-                TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME, vm.getCurrList());
-                dialog.show(getSupportFragmentManager(), "dialog");
-                break;
-            case R.id.action_delete:
-                vm.deleteCurrentList();
-                break;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
-    private void onAddTaskList() {
-        TaskListDialogFragment dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_ADD, null);
-        dialog.show(getSupportFragmentManager(), "dialog");
-    }
-
-    public boolean onContextItemSelected(MenuItem item) {
-        int id = item.getItemId();
-        Task task = mTaskListAdapter.getItem(mTaskListAdapter.getItemPosition());
-
-        if (id == R.id.complete || id == R.id.delete) {
-            if (id == R.id.complete)
-                vm.toggleCompleted(task);
-            else
-                vm.toggleDeleted(task);
-
-            return true;
-        }
-
-        if(id == R.id.move) {
-            Log.d(TAG,"onMove");
-
-            DialogFragment newFragment = MoveTaskDialogFragment.newInstance(task);
-            newFragment.show(getSupportFragmentManager(), "moveTask");
-
-            return true;
-        }
-
-        return super.onContextItemSelected(item);
     }
 }

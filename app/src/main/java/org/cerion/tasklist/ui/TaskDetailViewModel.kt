@@ -65,7 +65,8 @@ class TaskDetailViewModel(private val resources: ResourceProvider, private val d
             // The set above seems to trigger this so ignore first call
             private var init = 0
             override fun onPropertyChanged(observable: Observable, i: Int) {
-                if (init > 0)
+                // New tasks we want to call this even the first time, existing tasks set this field when initializing so ignore it
+                if (init > 0 || isNew)
                     isDirty.set(true)
 
                 init++
