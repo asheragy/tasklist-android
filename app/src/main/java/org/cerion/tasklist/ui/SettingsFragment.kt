@@ -9,31 +9,33 @@ import android.app.TaskStackBuilder
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.preference.ListPreference
-import android.preference.Preference
-import android.preference.PreferenceFragment
 import android.util.Log
 import android.widget.Toast
-import androidx.annotation.Nullable
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.preference.ListPreference
+import androidx.preference.Preference
+import androidx.preference.PreferenceFragmentCompat
 import com.google.android.gms.common.AccountPicker
 import org.cerion.tasklist.R
 import org.cerion.tasklist.data.Prefs
 import org.cerion.tasklist.sync.AuthTools
 
-class SettingsFragment : PreferenceFragment() {
-    private var mAccountList: Preference? = null
-    private var mLogout: Preference? = null
-    private var mBackground: ListPreference? = null
-    private var mPrefs: Prefs? = null
+class SettingsFragment : PreferenceFragmentCompat() {
 
-    override fun onActivityCreated(@Nullable savedInstanceState: Bundle) {
+    private lateinit var mAccountList: Preference
+    private lateinit var mLogout: Preference
+    private lateinit var mBackground: ListPreference
+    private lateinit var mPrefs: Prefs
+
+    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+        addPreferencesFromResource(R.xml.preferences)
+    }
+
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
-        addPreferencesFromResource(R.xml.preferences)
         mPrefs = Prefs.getInstance(activity)
-
         mLogout = findPreference("logout")
         mAccountList = findPreference(getString(R.string.pref_key_accountName))
         mBackground = findPreference(getString(R.string.pref_key_background)) as ListPreference
@@ -43,17 +45,17 @@ class SettingsFragment : PreferenceFragment() {
 
     private fun init() {
         //Accounts
-        val currentAccount = mPrefs!!.getString(mAccountList!!.key)
-        mAccountList!!.summary = currentAccount
-        mAccountList!!.setOnPreferenceClickListener { preference ->
+        val currentAccount = mPrefs.getString(mAccountList.key)
+        mAccountList.summary = currentAccount
+        mAccountList.setOnPreferenceClickListener { preference ->
             onChooseAccount()
             true
         }
 
         //Logout button
-        val acct = mPrefs!!.getString(mAccountList!!.key)
-        mLogout!!.isEnabled = acct != null && acct.length > 0
-        mLogout!!.setOnPreferenceClickListener { preference ->
+        val acct = mPrefs.getString(mAccountList.key)
+        mLogout.isEnabled = acct != null && acct.length > 0
+        mLogout.setOnPreferenceClickListener { preference ->
             //TODO, progress indicator and async
             AuthTools.logout(activity)
 
@@ -64,7 +66,7 @@ class SettingsFragment : PreferenceFragment() {
             true
         }
 
-        mBackground!!.setOnPreferenceChangeListener { preference, o ->
+        mBackground.setOnPreferenceChangeListener { preference, o ->
             val curr = (preference as ListPreference).value
 
             //If setting was changed
@@ -76,14 +78,14 @@ class SettingsFragment : PreferenceFragment() {
                 //Recreate main activity followed by this one
                 TaskStackBuilder.create(activity)
                         .addNextIntent(Intent(activity, MainActivity::class.java))
-                        .addNextIntent(activity.intent)
+                        .addNextIntent(requireActivity().intent)
                         .startActivities()
             }
 
             true
         }
 
-        findPreference("viewlog").setOnPreferenceClickListener { preference ->
+        findPreference("viewlog").setOnPreferenceClickListener {
             val intent = Intent(activity, LogViewActivity::class.java)
             startActivity(intent)
             true
@@ -97,7 +99,7 @@ class SettingsFragment : PreferenceFragment() {
         //Find current account
         val accountManager = AccountManager.get(activity)
         val accounts = accountManager.getAccountsByType("com.google")
-        val accountName = mPrefs!!.getString(Prefs.KEY_ACCOUNT_NAME)
+        val accountName = mPrefs.getString(Prefs.KEY_ACCOUNT_NAME)
         var account: Account? = null
         for (tmpAccount in accounts) {
             if (tmpAccount.name.contentEquals(accountName))
@@ -118,7 +120,7 @@ class SettingsFragment : PreferenceFragment() {
 
     private fun checkAndVerifyPermission(): Boolean {
 
-        val permission = ContextCompat.checkSelfPermission(activity, Manifest.permission.GET_ACCOUNTS)
+        val permission = ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.GET_ACCOUNTS)
         if (permission != PackageManager.PERMISSION_GRANTED) {
             // Should we show an explanation?
             // TODO add this
@@ -129,7 +131,7 @@ class SettingsFragment : PreferenceFragment() {
                 // this thread waiting for the user's response! After the user
                 // sees the explanation, try again to request the permission.
             } else {
-                ActivityCompat.requestPermissions(activity,
+                ActivityCompat.requestPermissions(requireActivity(),
                         arrayOf(Manifest.permission.GET_ACCOUNTS),
                         PERMISSIONS_REQUEST_GET_ACCOUNTS)
             }
@@ -160,16 +162,16 @@ class SettingsFragment : PreferenceFragment() {
 
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == PICK_ACCOUNT_REQUEST) {
-                val currentAccount = mPrefs!!.getString(Prefs.KEY_ACCOUNT_NAME)
+                val currentAccount = mPrefs.getString(Prefs.KEY_ACCOUNT_NAME)
                 val accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
 
                 //If current account is set and different than selected account, logout first
                 if (currentAccount.isNotEmpty() && !currentAccount.contentEquals(accountName))
                     AuthTools.logout(activity)
 
-                mAccountList!!.summary = accountName
-                mPrefs!!.setString(mAccountList!!.key, accountName)
-                mLogout!!.isEnabled = true
+                mAccountList.summary = accountName
+                mPrefs.setString(mAccountList.key, accountName)
+                mLogout.isEnabled = true
             }
         }
     }

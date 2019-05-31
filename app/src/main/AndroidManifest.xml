@@ -26,7 +26,7 @@
             android:name=".ui.TaskDetailActivity"
             android:label="@string/title_activity_task"
             android:parentActivityName=".ui.MainActivity">
-            >
+
         </activity>
         <activity
             android:name=".ui.LogViewActivity"

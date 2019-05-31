@@ -13,6 +13,7 @@ import android.widget.Toast
 import androidx.databinding.Observable
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
+import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import org.cerion.tasklist.R
@@ -25,6 +26,8 @@ import org.cerion.tasklist.dialogs.TaskListDialogFragment
 import org.cerion.tasklist.dialogs.TaskListsChangedListener
 import org.cerion.tasklist.sync.OnSyncCompleteListener
 import org.cerion.tasklist.sync.SyncTask
+
+//TODO verify network is available and toast message
 
 class TaskListFragment : Fragment(), TaskListsChangedListener {
 
@@ -46,6 +49,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
 
         binding.recyclerView.layoutManager = LinearLayoutManager(context)
         binding.recyclerView.adapter = mTaskListAdapter
+        binding.recyclerView.addItemDecoration(DividerItemDecoration(context, DividerItemDecoration.VERTICAL))
         mTaskListAdapter.setEmptyView(binding.recyclerView, binding.emptyView)
 
         binding.layoutDebug.visibility = View.GONE
