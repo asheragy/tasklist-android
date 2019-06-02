@@ -18,8 +18,8 @@ class TaskDetailViewModel(private val resources: ResourceProvider, private val d
 
     private lateinit var task: Task
 
-    // TODO base this field on the fact if task has an ID or not
-    private var isNew = false
+    private val isNew
+        get() = task.hasTempId
 
     var dueDate = Date(0)
         private set
@@ -38,17 +38,13 @@ class TaskDetailViewModel(private val resources: ResourceProvider, private val d
     }
 
     fun addTask(taskListId: String) {
-        if (!isNew) {
-            isNew = true
-            val task = Task(taskListId)
-            windowTitle.set("Add new task")
-            loadTaskFields(task)
-        }
+        windowTitle.set("Add new task")
+        val task = Task(taskListId)
+        loadTaskFields(task)
     }
 
     fun setTask(listId: String, id: String) {
         windowTitle.set("Edit task")
-
         val task = db.get(listId, id)
         loadTaskFields(task)
     }
@@ -98,8 +94,6 @@ class TaskDetailViewModel(private val resources: ResourceProvider, private val d
             db.add(task)
         else
             db.update(task)
-
-        isNew = false
     }
 
     fun removeDueDate() {

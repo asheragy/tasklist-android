@@ -3,11 +3,8 @@ package org.cerion.tasklist.ui
 import android.graphics.Paint
 import android.util.Log
 import android.util.TypedValue
-import android.view.ContextMenu
-import android.view.LayoutInflater
-import android.view.View
+import android.view.*
 import android.view.View.OnClickListener
-import android.view.ViewGroup
 import android.view.animation.AlphaAnimation
 import android.view.animation.Animation
 import android.widget.CheckBox
@@ -24,7 +21,14 @@ import org.cerion.tasklist.data.Task
 import java.text.SimpleDateFormat
 import java.util.*
 
-internal class TaskListAdapter(private val mFragment: TaskListFragment, private val vm: TasksViewModel) : RecyclerView.Adapter<TaskListAdapter.ViewHolder>() {
+interface TaskListener {
+    fun open(task: Task)
+    fun toggleComplete(task: Task)
+    fun toggleDeleted(task: Task)
+}
+
+internal class TaskListAdapter(private val tasks: ObservableList<Task>,
+                               private val taskListener: TaskListener) : RecyclerView.Adapter<TaskListAdapter.ViewHolder>() {
     private var mPrimaryColor: Int = 0
     private var mSecondaryColor: Int = 0
     private var parent: RecyclerView? = null
@@ -47,22 +51,23 @@ internal class TaskListAdapter(private val mFragment: TaskListFragment, private 
     override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
         super.onAttachedToRecyclerView(recyclerView)
 
+        val context = recyclerView.context
         //Programmatically set color based on completion, need to know current theme
         val typedValue = TypedValue()
-        val theme = mFragment.requireActivity().theme
+        val theme = context.theme
         theme.resolveAttribute(android.R.attr.textColorPrimary, typedValue, true)
-        mPrimaryColor = ContextCompat.getColor(mFragment.requireContext(), typedValue.resourceId)
+        mPrimaryColor = ContextCompat.getColor(context, typedValue.resourceId)
         theme.resolveAttribute(android.R.attr.textColorSecondary, typedValue, true)
-        mSecondaryColor = ContextCompat.getColor(mFragment.requireContext(), typedValue.resourceId)
+        mSecondaryColor = ContextCompat.getColor(context, typedValue.resourceId)
 
-        vm.tasks.addOnListChangedCallback(object : OnListAnyChangeCallback<ObservableList<Task>>() {
+        tasks.addOnListChangedCallback(object : OnListAnyChangeCallback<ObservableList<Task>>() {
             override fun onAnyChange(sender: ObservableList<*>) {
-                if (vm.tasks.size > 0) {
-                    parent!!.visibility = View.VISIBLE
-                    emptyView!!.visibility = View.GONE
+                if (tasks.size > 0) {
+                    parent?.visibility = View.VISIBLE
+                    emptyView?.visibility = View.GONE
                 } else {
-                    parent!!.visibility = View.GONE
-                    emptyView!!.visibility = View.VISIBLE
+                    parent?.visibility = View.GONE
+                    emptyView?.visibility = View.VISIBLE
                 }
 
                 notifyDataSetChanged()
@@ -76,7 +81,9 @@ internal class TaskListAdapter(private val mFragment: TaskListFragment, private 
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val task = vm.tasks[position]
+        val task = tasks[position]
+
+        holder.itemView.setOnClickListener { taskListener.open(task) }
 
         val sTitle = if (!task.title.isBlank()) task.title else "<Blank>"
         holder.title.text = sTitle
@@ -102,13 +109,13 @@ internal class TaskListAdapter(private val mFragment: TaskListFragment, private 
             holder.due.text = ""
     }
 
-    override fun getItemCount(): Int = vm.tasks.size
+    override fun getItemCount(): Int = tasks.size
 
     fun getItem(position: Int): Task {
-        return vm.tasks[position]
+        return tasks[position]
     }
 
-    inner class ViewHolder internal constructor(view: View) : RecyclerView.ViewHolder(view), OnClickListener, View.OnCreateContextMenuListener, OnCheckedChangeListener {
+    inner class ViewHolder internal constructor(view: View) : RecyclerView.ViewHolder(view), View.OnCreateContextMenuListener, OnCheckedChangeListener {
         internal val title: TextView = view.findViewById(R.id.title)
         internal val due: TextView = view.findViewById(R.id.dueDate)
         internal val notes: TextView = view.findViewById(R.id.notes)
@@ -116,42 +123,27 @@ internal class TaskListAdapter(private val mFragment: TaskListFragment, private 
         internal val undelete: ImageButton = view.findViewById(R.id.undelete)
 
         private val mOnUnDeleteListener = OnClickListener {
-            val task = vm.tasks[layoutPosition]
-            vm.toggleDeleted(task)
+            val task = tasks[layoutPosition]
+            taskListener.toggleDeleted(task)
         }
 
         init {
-            view.setOnClickListener(this)
             view.setOnCreateContextMenuListener(this)
             completed.setOnCheckedChangeListener(this)
             undelete.setOnClickListener(mOnUnDeleteListener)
         }
 
-        override fun onClick(v: View) {
-            val task = vm.tasks[layoutPosition]
-            mFragment.onOpenTask(task)
-        }
-
         override fun onCreateContextMenu(menu: ContextMenu?, v: View?, menuInfo: ContextMenu.ContextMenuInfo?) {
-            val inflater = mFragment.requireActivity().menuInflater
-            inflater.inflate(R.menu.main_context, menu)
+            itemPosition = layoutPosition
+            val task = tasks[itemPosition]
 
-            if (menu != null) {
-                itemPosition = layoutPosition
-                val task = vm.tasks[itemPosition]
-                if (task.completed) {
-                    val item = menu.findItem(R.id.complete)
-                    item.title = "Un-Complete"
-                }
-                if (task.deleted) {
-                    val item = menu.findItem(R.id.delete)
-                    item.title = "Un-Delete"
-                }
-            }
+            menu?.add(Menu.NONE, R.id.complete, Menu.NONE, if(!task.completed) "Complete" else "Un-Complete")
+            menu?.add(Menu.NONE, R.id.delete, Menu.NONE, if(!task.deleted) "Delete" else "Un-Delete")
+            menu?.add(Menu.NONE, R.id.move, Menu.NONE, "Move")
         }
 
         override fun onCheckedChanged(buttonView: CompoundButton, isChecked: Boolean) {
-            val task = vm.tasks[layoutPosition]
+            val task = tasks[layoutPosition]
             if (task.completed != isChecked) { //checkbox was manually changed
 
                 val anim = AlphaAnimation(1.0f, 0.0f)
@@ -163,7 +155,7 @@ internal class TaskListAdapter(private val mFragment: TaskListFragment, private 
                     override fun onAnimationEnd(animation: Animation) {
                         //Update record in database and refresh list
                         Log.d(TAG, "Toggle completed checkbox")
-                        vm.toggleCompleted(task)
+                        taskListener.toggleComplete(task)
                     }
 
                     override fun onAnimationRepeat(animation: Animation) {

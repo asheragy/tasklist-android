@@ -45,7 +45,14 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val binding = FragmentTasklistBinding.inflate(inflater, container, false)
 
-        mTaskListAdapter = TaskListAdapter(this, viewModel)
+        mTaskListAdapter = TaskListAdapter(
+                viewModel.tasks,
+                object : TaskListener {
+                    override fun toggleComplete(task: Task) = viewModel.toggleCompleted(task)
+                    override fun toggleDeleted(task: Task) = viewModel.toggleDeleted(task)
+                    override fun open(task: Task) = onOpenTask(task)
+                }
+        )
 
         binding.recyclerView.layoutManager = LinearLayoutManager(context)
         binding.recyclerView.adapter = mTaskListAdapter
@@ -207,16 +214,16 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
         } else {
             val dialog = AlertDialogFragment.newInstance("Error", "Internet not available")
             dialog.show(fragmentManager, "dialog")
-            if (mSwipeRefresh.isRefreshing())
-                mSwipeRefresh.setRefreshing(false)
+            if (mSwipeRefresh.isRefreshing)
+                mSwipeRefresh.isRefreshing = false
         }
     }
 
     private fun setInSync(bSyncing: Boolean) {
-        if (!bSyncing && mSwipeRefresh.isRefreshing())
-            mSwipeRefresh.setRefreshing(false)
-        else if (bSyncing && !mSwipeRefresh.isRefreshing())
-            mSwipeRefresh.setRefreshing(true)
+        if (!bSyncing && mSwipeRefresh.isRefreshing)
+            mSwipeRefresh.isRefreshing = false
+        else if (bSyncing && !mSwipeRefresh.isRefreshing)
+            mSwipeRefresh.isRefreshing = true
     }
 
 
