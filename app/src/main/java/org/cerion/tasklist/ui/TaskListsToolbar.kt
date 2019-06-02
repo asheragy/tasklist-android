@@ -8,7 +8,7 @@ import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Spinner
-import android.widget.Toolbar
+import androidx.appcompat.widget.Toolbar
 import androidx.databinding.ObservableList
 import org.cerion.tasklist.R
 import org.cerion.tasklist.common.OnListAnyChangeCallback
@@ -39,7 +39,8 @@ class TaskListsToolbar(context: Context, attrs: AttributeSet?, defStyleAttr: Int
 
         mSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             private var init = false
-            override fun onItemSelected(parent: AdapterView<*>, view: View, position: Int, id: Long) {
+
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 if (!init)
                     init = true
                 else {

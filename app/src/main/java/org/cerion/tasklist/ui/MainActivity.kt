@@ -1,13 +1,12 @@
 package org.cerion.tasklist.ui
 
 import android.os.Bundle
-
-import androidx.fragment.app.FragmentActivity
-
+import androidx.appcompat.app.AppCompatActivity
 import org.cerion.tasklist.R
 import org.cerion.tasklist.data.Prefs
 
-class MainActivity : FragmentActivity() {
+
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         if (Prefs.getInstance(this).isDarkTheme)
             setTheme(R.style.AppTheme_Dark)
@@ -15,14 +14,24 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
-
         supportFragmentManager
                 .beginTransaction()
-                .replace(R.id.fragment, TaskListFragment())
+                .add(R.id.fragment, TaskListFragment())
                 .commit()
     }
 
+    /*
     override fun onBackPressed() {
         finish()
     }
+    */
+
+    override fun onBackPressed() {
+        if (supportFragmentManager.backStackEntryCount > 0) {
+            supportFragmentManager.popBackStackImmediate()
+        } else {
+            super.onBackPressed()
+        }
+    }
+
 }

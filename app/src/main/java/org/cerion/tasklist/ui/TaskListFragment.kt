@@ -12,6 +12,7 @@ import android.view.*
 import android.widget.Toast
 import androidx.databinding.Observable
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentTransaction
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -76,8 +77,8 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
         //Toolbar
         setHasOptionsMenu(true)
         val toolbar = binding.toolbar
-        requireActivity().setActionBar(toolbar)
-        requireActivity().actionBar?.setDisplayShowTitleEnabled(false) //Hide app name, task lists replace title on actionbar
+        //requireActivity().setActionBar(toolbar)
+        //().actionBar?.setDisplayShowTitleEnabled(false) //Hide app name, task lists replace title on actionbar
         toolbar.setViewModel(viewModel)
 
         val touchListener = object : OnSwipeTouchListener(requireContext()) {
@@ -114,8 +115,17 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
         if (list.isAllTasks)
             list = viewModel.getDefaultList()
 
-        val intent = TaskDetailActivity.getIntent(requireContext(), task?.listId ?: list.id, task)
-        startActivityForResult(intent, EDIT_TASK_REQUEST)
+        //val intent = TaskDetailActivity.getIntent(requireContext(), task?.listId ?: list.id, task)
+        //startActivityForResult(intent, EDIT_TASK_REQUEST)
+
+        val fragment = TaskDetailFragment.getInstance(list.id, task?.id ?: "")
+
+        activity!!.supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment, fragment)
+                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+                .addToBackStack(null)
+                .commit()
+
     }
 
     override fun onTaskListsChanged(current: TaskList) {

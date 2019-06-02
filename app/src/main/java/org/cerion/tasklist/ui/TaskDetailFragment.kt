@@ -10,7 +10,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.Observable
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
-import org.cerion.tasklist.R
 import org.cerion.tasklist.databinding.FragmentTaskBinding
 import org.cerion.tasklist.dialogs.DatePickerFragment
 import java.util.*
@@ -42,9 +41,6 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
         ViewModelProviders.of(this, factory).get(TaskDetailViewModel::class.java)
     }
 
-    private val activity: AppCompatActivity
-        get() = requireActivity() as AppCompatActivity
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
@@ -55,8 +51,9 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
         binding.viewModel = viewModel
 
         val toolbar = binding.toolbar
-        activity.setSupportActionBar(toolbar)
-        activity.supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        (requireActivity() as AppCompatActivity).setSupportActionBar(toolbar)
+        (requireActivity() as AppCompatActivity).supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        toolbar.setNavigationOnClickListener { requireActivity().onBackPressed() }
 
         viewModel.isDirty.addOnPropertyChangedCallback(object : Observable.OnPropertyChangedCallback() {
             override fun onPropertyChanged(observable: Observable, i: Int) {
@@ -88,7 +85,7 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
         if (id!!.isEmpty())
             showNewTask(listId!!)
         else
-            showTask(listId!!, id!!)
+            showTask(listId!!, id)
 
         return binding.root
     }
@@ -96,21 +93,19 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
     private fun onEditDueDate() {
         val newFragment = DatePickerFragment.newInstance(viewModel.dueDate)
         newFragment.setTargetFragment(this, 0)
-        newFragment.show(activity!!.supportFragmentManager, "datePicker")
+        newFragment.show(requireActivity().supportFragmentManager, "datePicker")
     }
 
     private fun saveAndFinish() {
         viewModel.save()
-
-        activity?.setResult(AppCompatActivity.RESULT_OK)
-        activity?.finish()
+        requireActivity().onBackPressed()
     }
 
-    fun showNewTask(listId: String) {
+    private fun showNewTask(listId: String) {
         viewModel.addTask(listId)
     }
 
-    fun showTask(listId: String, id: String) {
+    private fun showTask(listId: String, id: String) {
         viewModel.setTask(listId, id)
     }
 
@@ -119,7 +114,7 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
     }
 
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
-        inflater!!.inflate(R.menu.task, menu)
+        inflater!!.inflate(org.cerion.tasklist.R.menu.task, menu)
         menuSave = menu!!.getItem(0)
         menuSave!!.isVisible = viewModel.isDirty.get()!!
         super.onCreateOptionsMenu(menu, inflater)
@@ -127,7 +122,7 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         val id = item!!.itemId
-        if (id == R.id.action_save)
+        if (id == org.cerion.tasklist.R.id.action_save)
             saveAndFinish()
 
         return super.onOptionsItemSelected(item)
