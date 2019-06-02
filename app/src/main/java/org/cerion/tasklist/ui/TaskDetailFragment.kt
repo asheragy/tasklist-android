@@ -1,12 +1,12 @@
 package org.cerion.tasklist.ui
 
 
-import android.app.Activity
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.text.util.Linkify
 import android.view.*
+import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.Observable
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
@@ -15,13 +15,35 @@ import org.cerion.tasklist.databinding.FragmentTaskBinding
 import org.cerion.tasklist.dialogs.DatePickerFragment
 import java.util.*
 
+
 class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
+
+    companion object {
+        private val TAG = TaskDetailFragment::class.java.simpleName
+
+        const val EXTRA_TASK_ID = "taskId"
+        const val EXTRA_LIST_ID = "taskListId"
+
+        fun getInstance(listId: String, id: String): TaskDetailFragment {
+            val fragment = TaskDetailFragment()
+            val args = Bundle()
+            args.putString(EXTRA_LIST_ID, listId)
+            args.putString(EXTRA_TASK_ID, id)
+            fragment.arguments = args
+
+            return fragment
+        }
+    }
+
     private lateinit var binding: FragmentTaskBinding
     private var menuSave: MenuItem? = null
     private val viewModel: TaskDetailViewModel by lazy {
         val factory = ViewModelFactory(requireActivity().application)
         ViewModelProviders.of(this, factory).get(TaskDetailViewModel::class.java)
     }
+
+    private val activity: AppCompatActivity
+        get() = requireActivity() as AppCompatActivity
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,6 +53,10 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = FragmentTaskBinding.inflate(inflater, container, false)
         binding.viewModel = viewModel
+
+        val toolbar = binding.toolbar
+        activity.setSupportActionBar(toolbar)
+        activity.supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         viewModel.isDirty.addOnPropertyChangedCallback(object : Observable.OnPropertyChangedCallback() {
             override fun onPropertyChanged(observable: Observable, i: Int) {
@@ -55,6 +81,15 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
         })
 
         binding.due.setOnClickListener { onEditDueDate() }
+
+        val id = arguments?.getString(EXTRA_TASK_ID)
+        val listId = arguments?.getString(EXTRA_LIST_ID)
+
+        if (id!!.isEmpty())
+            showNewTask(listId!!)
+        else
+            showTask(listId!!, id!!)
+
         return binding.root
     }
 
@@ -67,7 +102,7 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
     private fun saveAndFinish() {
         viewModel.save()
 
-        activity?.setResult(Activity.RESULT_OK)
+        activity?.setResult(AppCompatActivity.RESULT_OK)
         activity?.finish()
     }
 
@@ -96,9 +131,5 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
             saveAndFinish()
 
         return super.onOptionsItemSelected(item)
-    }
-
-    companion object {
-        private val TAG = TaskDetailFragment::class.java.simpleName
     }
 }

@@ -4,17 +4,9 @@
     android:orientation="vertical"
     android:layout_height="match_parent">
 
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
-        android:layout_height="?attr/actionBarSize"
-        android:layout_width="match_parent"
-        android:background="?attr/colorPrimary">
-    </androidx.appcompat.widget.Toolbar>
-
-    <fragment android:name="org.cerion.tasklist.ui.TaskDetailFragment"
+    <FrameLayout
         android:id="@+id/fragment"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        tools:layout="@layout/fragment_task" />
+        android:layout_height="match_parent" />
 
 </LinearLayout>
