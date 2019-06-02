@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.*
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.Observable
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
@@ -77,8 +78,8 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
         //Toolbar
         setHasOptionsMenu(true)
         val toolbar = binding.toolbar
-        //requireActivity().setActionBar(toolbar)
-        //().actionBar?.setDisplayShowTitleEnabled(false) //Hide app name, task lists replace title on actionbar
+        (requireActivity() as AppCompatActivity).setSupportActionBar(toolbar)
+        (requireActivity() as AppCompatActivity).supportActionBar?.setDisplayShowTitleEnabled(false) //Hide app name, task lists replace title on actionbar
         toolbar.setViewModel(viewModel)
 
         val touchListener = object : OnSwipeTouchListener(requireContext()) {
@@ -115,9 +116,6 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
         if (list.isAllTasks)
             list = viewModel.getDefaultList()
 
-        //val intent = TaskDetailActivity.getIntent(requireContext(), task?.listId ?: list.id, task)
-        //startActivityForResult(intent, EDIT_TASK_REQUEST)
-
         val fragment = TaskDetailFragment.getInstance(list.id, task?.id ?: "")
 
         activity!!.supportFragmentManager.beginTransaction()
@@ -125,15 +123,14 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
                 .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                 .addToBackStack(null)
                 .commit()
-
     }
 
     override fun onTaskListsChanged(current: TaskList) {
         viewModel.setList(current) //This list was added or updated
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
-        inflater?.inflate(R.menu.main, menu)
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.main, menu)
     }
 
     /* TODO need to convert
@@ -160,7 +157,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
             R.id.action_clear_completed -> viewModel.clearCompleted()
             R.id.action_rename -> {
                 val dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME, viewModel.currList)
-                dialog.show(fragmentManager, "dialog")
+                dialog.show(requireFragmentManager(), "dialog")
             }
             R.id.action_delete -> viewModel.deleteCurrentList()
         }
@@ -170,7 +167,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
 
     private fun onAddTaskList() {
         val dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_ADD, null)
-        dialog.show(fragmentManager, "dialog")
+        dialog.show(requireFragmentManager(), "dialog")
     }
 
     private fun initViewModel() {
@@ -199,7 +196,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
                         //For some reason showing an AlertDialog here causes a crash
                     } else {
                         val dialog = AlertDialogFragment.newInstance("Auth Error", e.message)
-                        dialog.show(fragmentManager, "dialog")
+                        dialog.show(requireFragmentManager(), "dialog")
                     }
                 }
 
@@ -214,7 +211,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
                             message = e.message!!
 
                         val dialog = AlertDialogFragment.newInstance("Sync failed", message)
-                        dialog.show(fragmentManager, "dialog")
+                        dialog.show(requireFragmentManager(), "dialog")
                     }
 
                     viewModel.load() //refresh since data may have changed
@@ -223,7 +220,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
             })
         } else {
             val dialog = AlertDialogFragment.newInstance("Error", "Internet not available")
-            dialog.show(fragmentManager, "dialog")
+            dialog.show(requireFragmentManager(), "dialog")
             if (mSwipeRefresh.isRefreshing)
                 mSwipeRefresh.isRefreshing = false
         }
@@ -279,7 +276,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
             Log.d(TAG, "onMove")
 
             val newFragment = MoveTaskDialogFragment.newInstance(task)
-            newFragment.show(fragmentManager, "moveTask")
+            newFragment.show(requireFragmentManager(), "moveTask")
 
             return true
         }

@@ -20,17 +20,11 @@ class MainActivity : AppCompatActivity() {
                 .commit()
     }
 
-    /*
-    override fun onBackPressed() {
-        finish()
-    }
-    */
-
     override fun onBackPressed() {
         if (supportFragmentManager.backStackEntryCount > 0) {
             supportFragmentManager.popBackStackImmediate()
         } else {
-            super.onBackPressed()
+            finish()
         }
     }
 

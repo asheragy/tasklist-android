@@ -113,15 +113,15 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
         viewModel.setDue(date)
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
-        inflater!!.inflate(org.cerion.tasklist.R.menu.task, menu)
-        menuSave = menu!!.getItem(0)
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(org.cerion.tasklist.R.menu.task, menu)
+        menuSave = menu.getItem(0)
         menuSave!!.isVisible = viewModel.isDirty.get()!!
         super.onCreateOptionsMenu(menu, inflater)
     }
 
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        val id = item!!.itemId
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        val id = item.itemId
         if (id == org.cerion.tasklist.R.id.action_save)
             saveAndFinish()
 

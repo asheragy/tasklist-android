@@ -47,7 +47,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         //Accounts
         val currentAccount = mPrefs.getString(mAccountList.key)
         mAccountList.summary = currentAccount
-        mAccountList.setOnPreferenceClickListener { preference ->
+        mAccountList.setOnPreferenceClickListener { _ ->
             onChooseAccount()
             true
         }
@@ -55,7 +55,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         //Logout button
         val acct = mPrefs.getString(mAccountList.key)
         mLogout.isEnabled = acct != null && acct.length > 0
-        mLogout.setOnPreferenceClickListener { preference ->
+        mLogout.setOnPreferenceClickListener { _ ->
             //TODO, progress indicator and async
             AuthTools.logout(activity)
 
@@ -157,11 +157,11 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         Log.d(TAG, "onActivityResult: $resultCode")
 
         if (resultCode == Activity.RESULT_OK) {
-            if (requestCode == PICK_ACCOUNT_REQUEST) {
+            if (requestCode == PICK_ACCOUNT_REQUEST && data != null) {
                 val currentAccount = mPrefs.getString(Prefs.KEY_ACCOUNT_NAME)
                 val accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
 
