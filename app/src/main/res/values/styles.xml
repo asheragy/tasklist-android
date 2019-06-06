@@ -8,6 +8,7 @@
 
         <item name="menuSaveDrawable">@drawable/ic_save_black</item>
         <item name="iconUnDeleteDrawable">@drawable/undelete</item>
+        <item name="iconBackArrow">@drawable/ic_arrow_back_black_24dp</item>
     </style>
 
       <!-- Secondary dark theme -->
@@ -18,6 +19,7 @@
 
         <item name="menuSaveDrawable">@drawable/ic_save_white</item>
         <item name="iconUnDeleteDrawable">@drawable/ic_delete_forever_white</item>
+        <item name="iconBackArrow">@drawable/ic_arrow_back_white_24dp</item>
     </style>
 
 </resources>

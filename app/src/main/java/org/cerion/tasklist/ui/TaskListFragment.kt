@@ -1,7 +1,6 @@
 package org.cerion.tasklist.ui
 
 import android.accounts.OperationCanceledException
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -32,16 +31,14 @@ import org.cerion.tasklist.sync.SyncTask
 //TODO verify network is available and toast message
 
 class TaskListFragment : Fragment(), TaskListsChangedListener {
-
     private val TAG = MainActivity::class.java.simpleName
-    private val EDIT_TASK_REQUEST = 0
 
     private lateinit var mSwipeRefresh: SwipeRefreshLayout
     private lateinit var mTaskListAdapter: TaskListAdapter
 
     private val viewModel: TasksViewModel by lazy {
         val factory = ViewModelFactory(requireActivity().application)
-        ViewModelProviders.of(this, factory).get(TasksViewModel::class.java)
+        ViewModelProviders.of(requireActivity(), factory).get(TasksViewModel::class.java)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -75,6 +72,16 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
             }
         })
 
+        viewModel.hasLocalChanges.addOnPropertyChangedCallback(object : Observable.OnPropertyChangedCallback() {
+            override fun onPropertyChanged(sender: Observable?, propertyId: Int) {
+                if(viewModel.hasLocalChanges.get() == true) {
+                    viewModel.refreshTasks()
+                    onSync()
+                }
+            }
+
+        })
+
         //Toolbar
         setHasOptionsMenu(true)
         val toolbar = binding.toolbar
@@ -99,7 +106,6 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
         mSwipeRefresh = binding.swipeRefresh
         mSwipeRefresh.setOnRefreshListener(this::onSync)
 
-        initViewModel()
         return binding.root
     }
 
@@ -111,14 +117,14 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
     }
     */
 
-    fun onOpenTask(task: Task?) {
+    private fun onOpenTask(task: Task?) {
         var list = viewModel.currList
         if (list.isAllTasks)
             list = viewModel.getDefaultList()
 
         val fragment = TaskDetailFragment.getInstance(list.id, task?.id ?: "")
 
-        activity!!.supportFragmentManager.beginTransaction()
+        requireActivity().supportFragmentManager.beginTransaction()
                 .replace(R.id.fragment, fragment)
                 .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                 .addToBackStack(null)
@@ -142,6 +148,18 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
     }
     */
 
+    private fun navigateSettings() {
+        val intent = Intent(requireActivity(), SettingsActivity::class.java)
+        startActivity(intent)
+        /*
+        requireActivity().supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment, SettingsFragment())
+                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+                .addToBackStack(null)
+                .commit()
+                */
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
@@ -150,10 +168,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
 
         when (id) {
             R.id.action_add -> onAddTaskList()
-            R.id.action_settings -> {
-                val intent = Intent(requireActivity(), SettingsActivity::class.java)
-                startActivity(intent)
-            }
+            R.id.action_settings -> navigateSettings()
             R.id.action_clear_completed -> viewModel.clearCompleted()
             R.id.action_rename -> {
                 val dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME, viewModel.currList)
@@ -168,12 +183,6 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
     private fun onAddTaskList() {
         val dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_ADD, null)
         dialog.show(requireFragmentManager(), "dialog")
-    }
-
-    private fun initViewModel() {
-        //viewModel.message.observe(this, { s -> Toast.makeText(this@MainActivity, s, Toast.LENGTH_SHORT).show() })
-
-        viewModel.load()
     }
 
     private fun onSync() {
@@ -205,6 +214,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
 
                     if (bSuccess) {
                         viewModel.updateLastSync() //Update last sync time only if successful
+                        viewModel.hasLocalChanges.set(false)
                     } else {
                         var message = "Sync Failed, unknown error"
                         if (e != null)
@@ -236,13 +246,6 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         Log.d(TAG, "onActivityResult: $resultCode")
-
-        if (requestCode == EDIT_TASK_REQUEST) {
-            if (resultCode == Activity.RESULT_OK) {
-                viewModel.refreshTasks()
-                onSync()
-            }
-        }
 
         /*
         else if (requestCode == PICK_ACCOUNT_REQUEST) {

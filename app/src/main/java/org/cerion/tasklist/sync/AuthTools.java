@@ -3,12 +3,12 @@ package org.cerion.tasklist.sync;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
-import android.accounts.AccountManagerFuture;
 import android.app.Activity;
 import android.content.Context;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
 
 import org.cerion.tasklist.data.AppDatabase;
 import org.cerion.tasklist.data.Prefs;
@@ -20,21 +20,13 @@ import org.cerion.tasklist.data.TaskListDao;
 import java.util.Date;
 import java.util.List;
 
-import androidx.annotation.Nullable;
-
 public class AuthTools {
 
     private static final String TAG = AuthTools.class.getSimpleName();
     private static final String AUTH_TOKEN_TYPE = "Manage your tasks"; //human readable version
     //private static final String AUTH_TOKEN_TYPE = "https://www.googleapis.com/auth/tasks";
 
-    protected static String getSavedToken(Context context) {
-
-        //When using emulator bypass usual auth methods so it doesn't need a google play account
-        Log.d(TAG, Build.FINGERPRINT + "\t" + Build.PRODUCT);
-        if(Build.FINGERPRINT.contains("vbox") || Build.PRODUCT.contentEquals("Genymotion")) {
-            return "ya29.ZAJDI9hiP1QTGutoj9eGs4-SKkkg-wh_ZFGsxRUy7Gz5SV4XB5hu6tvGZVfPAnqqq8BbqYo";
-        }
+    static String getSavedToken(Context context) {
 
         //If we have a valid key use it instead of getting a new one
         Prefs prefs = Prefs.getInstance(context);
@@ -50,13 +42,13 @@ public class AuthTools {
         return null;
     }
 
-    protected static void clearSavedToken(Context context) {
+    static void clearSavedToken(Context context) {
         Prefs.getInstance(context)
                 .remove(Prefs.KEY_AUTHTOKEN)
                 .remove(Prefs.KEY_AUTHTOKEN_DATE);
     }
 
-    protected static void getTokenAndSync(final Context context, @Nullable Activity activity, final OnSyncCompleteListener callback)
+    static void getTokenAndSync(final Context context, @Nullable Activity activity, final OnSyncCompleteListener callback)
     {
         // TODO handle permission on first time use with new emulator
         Log.d(TAG, "Getting Token");
@@ -70,29 +62,25 @@ public class AuthTools {
                 account = tmpAccount;
         }
 
-
         if(account != null) {
 
             //What to run after getting a key
-            AccountManagerCallback<Bundle> accountManagerCallback = new AccountManagerCallback<Bundle>() {
-                @Override
-                public void run(AccountManagerFuture<Bundle> future) {
-                    try {
-                        // If the user has authorized your application to use the tasks API a token is available.
-                        Bundle bundle = future.getResult();
-                        String token = bundle.getString(AccountManager.KEY_AUTHTOKEN);
+            AccountManagerCallback<Bundle> accountManagerCallback = future -> {
+                try {
+                    // If the user has authorized your application to use the tasks API a token is available.
+                    Bundle bundle = future.getResult();
+                    String token = bundle.getString(AccountManager.KEY_AUTHTOKEN);
 
-                        Prefs.getInstance(context)
-                                .setString(Prefs.KEY_AUTHTOKEN, token)
-                                .setDate(Prefs.KEY_AUTHTOKEN_DATE,new Date());
+                    Prefs.getInstance(context)
+                            .setString(Prefs.KEY_AUTHTOKEN, token)
+                            .setDate(Prefs.KEY_AUTHTOKEN_DATE,new Date());
 
-                        Log.d(TAG,"Starting SyncTask");
-                        SyncTask task = new SyncTask(context,token,callback);
-                        task.execute();
-                    }
-                    catch (Exception e) {
-                        callback.onAuthError(e);
-                    }
+                    Log.d(TAG,"Starting SyncTask");
+                    SyncTask task = new SyncTask(context,token,callback);
+                    task.execute();
+                }
+                catch (Exception e) {
+                    callback.onAuthError(e);
                 }
             };
 

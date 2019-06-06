@@ -2,4 +2,5 @@
 <resources>
     <attr name="menuSaveDrawable" format="reference"/>
     <attr name="iconUnDeleteDrawable" format="reference"/>
+    <attr name="iconBackArrow" format="reference" />
 </resources>

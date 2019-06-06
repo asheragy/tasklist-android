@@ -5,11 +5,14 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.text.util.Linkify
-import android.view.*
-import androidx.appcompat.app.AppCompatActivity
+import android.view.LayoutInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import androidx.databinding.Observable
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
+import org.cerion.tasklist.R
 import org.cerion.tasklist.databinding.FragmentTaskBinding
 import org.cerion.tasklist.dialogs.DatePickerFragment
 import java.util.*
@@ -41,9 +44,9 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
         ViewModelProviders.of(this, factory).get(TaskDetailViewModel::class.java)
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setHasOptionsMenu(true)
+    private val tasksViewModel: TasksViewModel by lazy {
+        val factory = ViewModelFactory(requireActivity().application)
+        ViewModelProviders.of(requireActivity(), factory).get(TasksViewModel::class.java)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -51,20 +54,22 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
         binding.viewModel = viewModel
 
         val toolbar = binding.toolbar
-        (requireActivity() as AppCompatActivity).setSupportActionBar(toolbar)
-        (requireActivity() as AppCompatActivity).supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        toolbar.inflateMenu(R.menu.task)
+        menuSave = toolbar.menu.getItem(0)
+        toolbar.setOnMenuItemClickListener { item ->
+            if (item?.itemId == R.id.action_save)
+                saveAndFinish()
+
+            false
+        }
+
+        //toolbar.setNavigationIcon(android.R.drawable.btn_plus)
         toolbar.setNavigationOnClickListener { requireActivity().onBackPressed() }
 
         viewModel.isDirty.addOnPropertyChangedCallback(object : Observable.OnPropertyChangedCallback() {
             override fun onPropertyChanged(observable: Observable, i: Int) {
                 if (menuSave != null)
                     menuSave!!.isVisible = viewModel.isDirty.get()!!
-            }
-        })
-
-        viewModel.windowTitle.addOnPropertyChangedCallback(object : Observable.OnPropertyChangedCallback() {
-            override fun onPropertyChanged(observable: Observable, i: Int) {
-                requireActivity().title = viewModel.windowTitle.get()
             }
         })
 
@@ -80,12 +85,12 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
         binding.due.setOnClickListener { onEditDueDate() }
 
         val id = arguments?.getString(EXTRA_TASK_ID)
-        val listId = arguments?.getString(EXTRA_LIST_ID)
+        val listId: String = arguments?.getString(EXTRA_LIST_ID)!!
 
         if (id!!.isEmpty())
-            showNewTask(listId!!)
+            viewModel.addTask(listId)
         else
-            showTask(listId!!, id)
+            viewModel.setTask(listId, id)
 
         return binding.root
     }
@@ -98,33 +103,11 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
 
     private fun saveAndFinish() {
         viewModel.save()
+        tasksViewModel.hasLocalChanges.set(true)
         requireActivity().onBackPressed()
-    }
-
-    private fun showNewTask(listId: String) {
-        viewModel.addTask(listId)
-    }
-
-    private fun showTask(listId: String, id: String) {
-        viewModel.setTask(listId, id)
     }
 
     override fun onSelectDate(date: Date) {
         viewModel.setDue(date)
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        inflater.inflate(org.cerion.tasklist.R.menu.task, menu)
-        menuSave = menu.getItem(0)
-        menuSave!!.isVisible = viewModel.isDirty.get()!!
-        super.onCreateOptionsMenu(menu, inflater)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        val id = item.itemId
-        if (id == org.cerion.tasklist.R.id.action_save)
-            saveAndFinish()
-
-        return super.onOptionsItemSelected(item)
     }
 }

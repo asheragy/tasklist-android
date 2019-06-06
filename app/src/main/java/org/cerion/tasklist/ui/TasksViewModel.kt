@@ -20,6 +20,7 @@ class TasksViewModel(private val resources: ResourceProvider,
     val lists: ObservableList<TaskList> = ObservableArrayList()
     val tasks: ObservableList<Task> = ObservableArrayList()
     val message: SingleLiveEvent<String> = SingleLiveEvent()
+    val hasLocalChanges: ObservableField<Boolean> = ObservableField()
 
     var currList: TaskList = TaskList.ALL_TASKS
         private set(value) {
@@ -28,6 +29,10 @@ class TasksViewModel(private val resources: ResourceProvider,
 
     val lastSync = ObservableField("")
     val isOutOfSync = ObservableField(false)
+
+    init {
+        load()
+    }
 
     // TODO make private, should be based on actions that change it which only this class does
     fun refreshTasks() {
