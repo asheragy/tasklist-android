@@ -151,13 +151,6 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
     private fun navigateSettings() {
         val intent = Intent(requireActivity(), SettingsActivity::class.java)
         startActivity(intent)
-        /*
-        requireActivity().supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment, SettingsFragment())
-                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
-                .addToBackStack(null)
-                .commit()
-                */
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

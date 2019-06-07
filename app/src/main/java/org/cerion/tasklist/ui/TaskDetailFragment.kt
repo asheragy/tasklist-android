@@ -56,15 +56,13 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
         val toolbar = binding.toolbar
         toolbar.inflateMenu(R.menu.task)
         menuSave = toolbar.menu.getItem(0)
+        toolbar.setNavigationOnClickListener { requireActivity().onBackPressed() }
         toolbar.setOnMenuItemClickListener { item ->
             if (item?.itemId == R.id.action_save)
                 saveAndFinish()
 
             false
         }
-
-        //toolbar.setNavigationIcon(android.R.drawable.btn_plus)
-        toolbar.setNavigationOnClickListener { requireActivity().onBackPressed() }
 
         viewModel.isDirty.addOnPropertyChangedCallback(object : Observable.OnPropertyChangedCallback() {
             override fun onPropertyChanged(observable: Observable, i: Int) {
