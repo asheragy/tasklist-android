@@ -26,14 +26,11 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
         const val EXTRA_TASK_ID = "taskId"
         const val EXTRA_LIST_ID = "taskListId"
 
-        fun getInstance(listId: String, id: String): TaskDetailFragment {
-            val fragment = TaskDetailFragment()
+        fun getBundle(listId: String, id: String): Bundle {
             val args = Bundle()
             args.putString(EXTRA_LIST_ID, listId)
             args.putString(EXTRA_TASK_ID, id)
-            fragment.arguments = args
-
-            return fragment
+            return args
         }
     }
 

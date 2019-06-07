@@ -14,12 +14,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
-        supportFragmentManager
-                .beginTransaction()
-                .add(R.id.fragment, TaskListFragment())
-                .commit()
     }
 
+    /*
     override fun onBackPressed() {
         if (supportFragmentManager.backStackEntryCount > 0) {
             supportFragmentManager.popBackStackImmediate()
@@ -27,5 +24,6 @@ class MainActivity : AppCompatActivity() {
             finish()
         }
     }
+    */
 
 }

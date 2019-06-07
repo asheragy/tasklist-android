@@ -12,8 +12,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.Observable
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentTransaction
 import androidx.lifecycle.ViewModelProviders
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -122,13 +122,8 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
         if (list.isAllTasks)
             list = viewModel.getDefaultList()
 
-        val fragment = TaskDetailFragment.getInstance(list.id, task?.id ?: "")
-
-        requireActivity().supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment, fragment)
-                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
-                .addToBackStack(null)
-                .commit()
+        val bundle = TaskDetailFragment.getBundle(list.id, task?.id ?: "")
+        findNavController().navigate(R.id.action_taskListFragment_to_taskDetailFragment, bundle)
     }
 
     override fun onTaskListsChanged(current: TaskList) {
