@@ -27,6 +27,7 @@ import org.cerion.tasklist.dialogs.TaskListDialogFragment
 import org.cerion.tasklist.dialogs.TaskListsChangedListener
 import org.cerion.tasklist.sync.OnSyncCompleteListener
 import org.cerion.tasklist.sync.SyncTask
+import org.cerion.tasklist.ui.settings.SettingsActivity
 
 //TODO verify network is available and toast message
 

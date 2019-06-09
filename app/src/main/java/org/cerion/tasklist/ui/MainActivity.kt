@@ -2,6 +2,7 @@ package org.cerion.tasklist.ui
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.navigation.findNavController
 import org.cerion.tasklist.R
 import org.cerion.tasklist.data.Prefs
 
@@ -16,14 +17,11 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
     }
 
-    /*
     override fun onBackPressed() {
-        if (supportFragmentManager.backStackEntryCount > 0) {
-            supportFragmentManager.popBackStackImmediate()
-        } else {
-            finish()
-        }
+        if(findNavController(R.id.nav_host_fragment).currentDestination?.id == R.id.taskListFragment)
+            finishAndRemoveTask()
+        else
+            super.onBackPressed()
     }
-    */
 
 }

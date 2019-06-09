@@ -1,4 +1,4 @@
-package org.cerion.tasklist.ui
+package org.cerion.tasklist.ui.settings
 
 
 import android.Manifest
@@ -20,6 +20,7 @@ import com.google.android.gms.common.AccountPicker
 import org.cerion.tasklist.R
 import org.cerion.tasklist.data.Prefs
 import org.cerion.tasklist.sync.AuthTools
+import org.cerion.tasklist.ui.MainActivity
 
 class SettingsFragment : PreferenceFragmentCompat() {
 
@@ -47,15 +48,15 @@ class SettingsFragment : PreferenceFragmentCompat() {
         //Accounts
         val currentAccount = mPrefs.getString(mAccountList.key)
         mAccountList.summary = currentAccount
-        mAccountList.setOnPreferenceClickListener { _ ->
+        mAccountList.setOnPreferenceClickListener {
             onChooseAccount()
             true
         }
 
         //Logout button
         val acct = mPrefs.getString(mAccountList.key)
-        mLogout.isEnabled = acct != null && acct.length > 0
-        mLogout.setOnPreferenceClickListener { _ ->
+        mLogout.isEnabled = acct != null && acct.isNotEmpty()
+        mLogout.setOnPreferenceClickListener {
             //TODO, progress indicator and async
             AuthTools.logout(activity)
 
@@ -102,7 +103,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val accountName = mPrefs.getString(Prefs.KEY_ACCOUNT_NAME)
         var account: Account? = null
         for (tmpAccount in accounts) {
-            if (tmpAccount.name.contentEquals(accountName))
+            if (tmpAccount.name!!.contentEquals(accountName))
                 account = tmpAccount
         }
 
@@ -146,7 +147,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         when (requestCode) {
             PERMISSIONS_REQUEST_GET_ACCOUNTS -> {
                 // If request is cancelled, the result arrays are empty.
-                if (grantResults.size > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     onChooseAccount()
                 } else {
                     Toast.makeText(activity, "Account permission needed to sync", Toast.LENGTH_LONG).show()
@@ -166,7 +167,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 val accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
 
                 //If current account is set and different than selected account, logout first
-                if (currentAccount.isNotEmpty() && !currentAccount.contentEquals(accountName))
+                if (!currentAccount.isNullOrEmpty() && !currentAccount.contentEquals(accountName))
                     AuthTools.logout(activity)
 
                 mAccountList.summary = accountName

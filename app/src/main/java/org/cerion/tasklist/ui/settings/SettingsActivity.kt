@@ -1,4 +1,4 @@
-package org.cerion.tasklist.ui
+package org.cerion.tasklist.ui.settings
 
 
 import android.os.Bundle

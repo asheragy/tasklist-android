@@ -1,4 +1,4 @@
-package org.cerion.tasklist.ui;
+package org.cerion.tasklist.ui.settings;
 
 import android.os.Bundle;
 import android.util.Log;
@@ -6,6 +6,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ScrollView;
 import android.widget.TextView;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 import org.cerion.tasklist.R;
 import org.cerion.tasklist.data.Prefs;
@@ -15,9 +18,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 
 public class LogViewActivity extends AppCompatActivity {
 
@@ -81,12 +81,7 @@ public class LogViewActivity extends AppCompatActivity {
         }
 
         // Scroll to end
-        mScroll.post(new Runnable() {
-            @Override
-            public void run() {
-                mScroll.fullScroll(View.FOCUS_DOWN);
-            }
-        });
+        mScroll.post(() -> mScroll.fullScroll(View.FOCUS_DOWN));
     }
 
     private String parseLine(String line) {
