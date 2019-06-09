@@ -93,7 +93,7 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
     private fun onEditDueDate() {
         val newFragment = DatePickerFragment.newInstance(viewModel.dueDate)
         newFragment.setTargetFragment(this, 0)
-        newFragment.show(requireActivity().supportFragmentManager, "datePicker")
+        newFragment.show(requireFragmentManager(), "datePicker")
     }
 
     private fun saveAndFinish() {

@@ -160,7 +160,8 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
             R.id.action_settings -> navigateSettings()
             R.id.action_clear_completed -> viewModel.clearCompleted()
             R.id.action_rename -> {
-                val dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_RENAME, viewModel.currList)
+                val dialog = TaskListDialogFragment.getRenameInstance(viewModel.currList)
+                dialog.setTargetFragment(this, 0)
                 dialog.show(requireFragmentManager(), "dialog")
             }
             R.id.action_delete -> viewModel.deleteCurrentList()
@@ -170,7 +171,8 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
     }
 
     private fun onAddTaskList() {
-        val dialog = TaskListDialogFragment.newInstance(TaskListDialogFragment.TYPE_ADD, null)
+        val dialog = TaskListDialogFragment.getAddInstance()
+        dialog.setTargetFragment(this, 0)
         dialog.show(requireFragmentManager(), "dialog")
     }
 
@@ -212,7 +214,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
                         Toast.makeText(requireContext(), "Open settings and select account", Toast.LENGTH_LONG).show()
                     }
                     else {
-                        val dialog = AlertDialogFragment.newInstance("Auth Error", e.message)
+                        val dialog = AlertDialogFragment.newInstance("Auth Error", e.message!!)
                         dialog.show(requireFragmentManager(), "dialog")
                     }
                 }
