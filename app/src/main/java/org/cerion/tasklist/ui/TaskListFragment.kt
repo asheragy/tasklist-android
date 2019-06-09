@@ -1,6 +1,5 @@
 package org.cerion.tasklist.ui
 
-import android.accounts.OperationCanceledException
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -25,6 +24,7 @@ import org.cerion.tasklist.dialogs.AlertDialogFragment
 import org.cerion.tasklist.dialogs.MoveTaskDialogFragment
 import org.cerion.tasklist.dialogs.TaskListDialogFragment
 import org.cerion.tasklist.dialogs.TaskListsChangedListener
+import org.cerion.tasklist.sync.AuthTools
 import org.cerion.tasklist.sync.OnSyncCompleteListener
 import org.cerion.tasklist.sync.SyncTask
 import org.cerion.tasklist.ui.settings.SettingsActivity
@@ -182,38 +182,39 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
         if (isConnected) {
             setInSync(true)
 
-            SyncTask.run(requireContext(), requireActivity(), object : OnSyncCompleteListener {
-                override fun onAuthError(e: Exception?) {
-                    setInSync(false)
+            AuthTools.getAuthToken(requireContext(), requireActivity(), object : AuthTools.AuthTokenCallback {
+                override fun onSuccess(token: String) {
 
+                    val task = SyncTask(context, token, OnSyncCompleteListener { bSuccess, e ->
+                        setInSync(false)
+
+                        if (bSuccess) {
+                            viewModel.updateLastSync() //Update last sync time only if successful
+                            viewModel.hasLocalChanges.set(false)
+                        } else {
+                            var message = "Sync Failed, unknown error"
+                            if (e != null)
+                                message = e.message!!
+
+                            val dialog = AlertDialogFragment.newInstance("Sync failed", message)
+                            dialog.show(requireFragmentManager(), "dialog")
+                        }
+
+                        viewModel.load() //refresh since data may have changed
+                    })
+
+                    task.execute()
+                }
+
+                override fun onError(e: Exception?) {
                     if (e == null) {
                         //TODO do automatically
                         Toast.makeText(requireContext(), "Open settings and select account", Toast.LENGTH_LONG).show()
-                    } else if (e is OperationCanceledException) {
-                        Log.d(TAG, "User denied auth prompt")
-                        //For some reason showing an AlertDialog here causes a crash
-                    } else {
+                    }
+                    else {
                         val dialog = AlertDialogFragment.newInstance("Auth Error", e.message)
                         dialog.show(requireFragmentManager(), "dialog")
                     }
-                }
-
-                override fun onSyncFinish(bSuccess: Boolean, e: Exception?) {
-                    setInSync(false)
-
-                    if (bSuccess) {
-                        viewModel.updateLastSync() //Update last sync time only if successful
-                        viewModel.hasLocalChanges.set(false)
-                    } else {
-                        var message = "Sync Failed, unknown error"
-                        if (e != null)
-                            message = e.message!!
-
-                        val dialog = AlertDialogFragment.newInstance("Sync failed", message)
-                        dialog.show(requireFragmentManager(), "dialog")
-                    }
-
-                    viewModel.load() //refresh since data may have changed
                 }
 
             })

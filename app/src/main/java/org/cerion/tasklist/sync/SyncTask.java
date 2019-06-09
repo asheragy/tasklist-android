@@ -1,12 +1,9 @@
 package org.cerion.tasklist.sync;
 
 
-import android.app.Activity;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
-
-import androidx.annotation.Nullable;
 
 import org.cerion.tasklist.data.GoogleApiException;
 import org.cerion.tasklist.data.Prefs;
@@ -30,6 +27,7 @@ public class SyncTask extends AsyncTask<Void, Void, Boolean> {
      * @param activity Use for permissions prompt if starting from activity
      * @param callback Listener for when sync completes
      */
+    /*
     public static void run(Context context, @Nullable Activity activity, OnSyncCompleteListener callback) {
         String token = AuthTools.getSavedToken(context);
 
@@ -41,8 +39,9 @@ public class SyncTask extends AsyncTask<Void, Void, Boolean> {
             AuthTools.getTokenAndSync(context, activity, callback);
         }
     }
+    */
 
-    SyncTask(Context context, String sAuth, OnSyncCompleteListener callback) {
+    public SyncTask(Context context, String sAuth, OnSyncCompleteListener callback) {
         mContext = context;
         mAuthToken = sAuth;
         mCallback = callback;

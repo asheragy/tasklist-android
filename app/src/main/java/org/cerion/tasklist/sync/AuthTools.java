@@ -16,6 +16,7 @@ import org.cerion.tasklist.data.Task;
 import org.cerion.tasklist.data.TaskDao;
 import org.cerion.tasklist.data.TaskList;
 import org.cerion.tasklist.data.TaskListDao;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Date;
 import java.util.List;
@@ -26,7 +27,23 @@ public class AuthTools {
     private static final String AUTH_TOKEN_TYPE = "Manage your tasks"; //human readable version
     //private static final String AUTH_TOKEN_TYPE = "https://www.googleapis.com/auth/tasks";
 
-    static String getSavedToken(Context context) {
+    public interface AuthTokenCallback {
+        void onSuccess(@NotNull String token);
+        void onError(@Nullable Exception e);
+    }
+
+    public static void getAuthToken(Context context, @Nullable Activity activity, AuthTokenCallback callback) {
+        String token = AuthTools.getSavedToken(context);
+
+        if(token != null) {
+            callback.onSuccess(token);
+        } else {
+            //Get new token
+            AuthTools.getNewToken(context, activity, callback);
+        }
+    }
+
+    private static String getSavedToken(Context context) {
 
         //If we have a valid key use it instead of getting a new one
         Prefs prefs = Prefs.getInstance(context);
@@ -48,7 +65,7 @@ public class AuthTools {
                 .remove(Prefs.KEY_AUTHTOKEN_DATE);
     }
 
-    static void getTokenAndSync(final Context context, @Nullable Activity activity, final OnSyncCompleteListener callback)
+    private static void getNewToken(final Context context, @Nullable Activity activity, final AuthTokenCallback callback)
     {
         // TODO handle permission on first time use with new emulator
         Log.d(TAG, "Getting Token");
@@ -75,12 +92,10 @@ public class AuthTools {
                             .setString(Prefs.KEY_AUTHTOKEN, token)
                             .setDate(Prefs.KEY_AUTHTOKEN_DATE,new Date());
 
-                    Log.d(TAG,"Starting SyncTask");
-                    SyncTask task = new SyncTask(context,token,callback);
-                    task.execute();
+                    callback.onSuccess(token);
                 }
                 catch (Exception e) {
-                    callback.onAuthError(e);
+                    callback.onError(e);
                 }
             };
 
@@ -92,7 +107,7 @@ public class AuthTools {
 
         }
         else
-            callback.onAuthError(null);
+            callback.onError(null);
 
         Log.d(TAG, "Getting Token END");
     }
