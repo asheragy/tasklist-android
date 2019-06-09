@@ -1,4 +1,4 @@
-package org.cerion.tasklist.dialogs
+package org.cerion.tasklist.ui.dialogs
 
 import org.cerion.tasklist.data.TaskList
 

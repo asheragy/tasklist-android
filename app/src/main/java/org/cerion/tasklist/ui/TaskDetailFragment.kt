@@ -14,7 +14,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import org.cerion.tasklist.R
 import org.cerion.tasklist.databinding.FragmentTaskBinding
-import org.cerion.tasklist.dialogs.DatePickerFragment
+import org.cerion.tasklist.ui.dialogs.DatePickerFragment
 import java.util.*
 
 

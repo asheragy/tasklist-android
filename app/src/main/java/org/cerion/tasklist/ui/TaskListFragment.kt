@@ -20,13 +20,13 @@ import org.cerion.tasklist.R
 import org.cerion.tasklist.data.Task
 import org.cerion.tasklist.data.TaskList
 import org.cerion.tasklist.databinding.FragmentTasklistBinding
-import org.cerion.tasklist.dialogs.AlertDialogFragment
-import org.cerion.tasklist.dialogs.MoveTaskDialogFragment
-import org.cerion.tasklist.dialogs.TaskListDialogFragment
-import org.cerion.tasklist.dialogs.TaskListsChangedListener
 import org.cerion.tasklist.sync.AuthTools
 import org.cerion.tasklist.sync.OnSyncCompleteListener
 import org.cerion.tasklist.sync.SyncTask
+import org.cerion.tasklist.ui.dialogs.AlertDialogFragment
+import org.cerion.tasklist.ui.dialogs.MoveTaskDialogFragment
+import org.cerion.tasklist.ui.dialogs.TaskListDialogFragment
+import org.cerion.tasklist.ui.dialogs.TaskListsChangedListener
 import org.cerion.tasklist.ui.settings.SettingsActivity
 
 //TODO verify network is available and toast message
