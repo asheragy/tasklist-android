@@ -7,6 +7,7 @@ import android.net.ConnectivityManager
 import android.os.Bundle
 import android.util.Log
 import android.view.*
+import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.Observable
@@ -29,6 +30,8 @@ import org.cerion.tasklist.ui.dialogs.TaskListDialogFragment
 import org.cerion.tasklist.ui.dialogs.TaskListsChangedListener
 import org.cerion.tasklist.ui.settings.SettingsActivity
 
+
+
 //TODO verify network is available and toast message
 
 class TaskListFragment : Fragment(), TaskListsChangedListener {
@@ -43,7 +46,11 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        val view = inflater.inflate(R.layout.fragment_tasklist_single, container, false)
+        val content = view.findViewById<FrameLayout>(R.id.listContent)
         val binding = FragmentTasklistBinding.inflate(inflater, container, false)
+        content.removeAllViews()
+        content.addView(binding.root, 0)
 
         mTaskListAdapter = TaskListAdapter(
                 viewModel.tasks,
@@ -55,9 +62,9 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
         )
 
         binding.recyclerView.layoutManager = LinearLayoutManager(context)
+        mTaskListAdapter.setEmptyView(binding.recyclerView, binding.emptyView)
         binding.recyclerView.adapter = mTaskListAdapter
         binding.recyclerView.addItemDecoration(DividerItemDecoration(context, DividerItemDecoration.VERTICAL))
-        mTaskListAdapter.setEmptyView(binding.recyclerView, binding.emptyView)
 
         binding.layoutDebug.visibility = View.GONE
         binding.viewModel = viewModel
@@ -107,7 +114,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
         mSwipeRefresh = binding.swipeRefresh
         mSwipeRefresh.setOnRefreshListener(this::onSync)
 
-        return binding.root
+        return view
     }
 
     /*
@@ -127,8 +134,8 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
         findNavController().navigate(R.id.action_taskListFragment_to_taskDetailFragment, bundle)
     }
 
-    override fun onTaskListsChanged(current: TaskList) {
-        viewModel.setList(current) //This list was added or updated
+    override fun onTaskListsChanged(currList: TaskList) {
+        viewModel.setList(currList) //This list was added or updated
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {

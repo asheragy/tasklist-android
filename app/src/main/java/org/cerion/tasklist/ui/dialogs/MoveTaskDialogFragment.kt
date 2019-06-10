@@ -30,7 +30,7 @@ class MoveTaskDialogFragment : DialogFragment() {
 
         val builder = AlertDialog.Builder(activity)
         builder.setTitle("Move to list")
-                .setAdapter(adapter) { dialog, which ->
+                .setAdapter(adapter) { _, which ->
                     if (listId.isNotEmpty()) {
                         val list = lists[which]
                         if (list.id.contentEquals(listId)) {

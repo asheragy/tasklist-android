@@ -62,17 +62,22 @@ internal class TaskListAdapter(private val tasks: ObservableList<Task>,
 
         tasks.addOnListChangedCallback(object : OnListAnyChangeCallback<ObservableList<Task>>() {
             override fun onAnyChange(sender: ObservableList<*>) {
-                if (tasks.size > 0) {
-                    parent?.visibility = View.VISIBLE
-                    emptyView?.visibility = View.GONE
-                } else {
-                    parent?.visibility = View.GONE
-                    emptyView?.visibility = View.VISIBLE
-                }
-
+                setVisibility()
                 notifyDataSetChanged()
             }
         })
+
+        setVisibility()
+    }
+
+    private fun setVisibility() {
+        if (tasks.size > 0) {
+            parent?.visibility = View.VISIBLE
+            emptyView?.visibility = View.GONE
+        } else {
+            parent?.visibility = View.GONE
+            emptyView?.visibility = View.VISIBLE
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {

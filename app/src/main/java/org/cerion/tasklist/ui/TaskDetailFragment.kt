@@ -79,13 +79,15 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
 
         binding.due.setOnClickListener { onEditDueDate() }
 
-        val id = arguments?.getString(EXTRA_TASK_ID)
-        val listId: String = arguments?.getString(EXTRA_LIST_ID)!!
+        if (arguments != null) {
+            val id = arguments?.getString(EXTRA_TASK_ID)
+            val listId: String = arguments?.getString(EXTRA_LIST_ID)!!
 
-        if (id!!.isEmpty())
-            viewModel.addTask(listId)
-        else
-            viewModel.setTask(listId, id)
+            if (id!!.isEmpty())
+                viewModel.addTask(listId)
+            else
+                viewModel.setTask(listId, id)
+        }
 
         return binding.root
     }

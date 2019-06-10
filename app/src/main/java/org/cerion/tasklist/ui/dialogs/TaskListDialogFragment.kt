@@ -37,7 +37,7 @@ class TaskListDialogFragment : DialogFragment() {
             val listName = bundle.getString(LISTNAME)
             edittext.setText(listName)
 
-            alert.setPositiveButton("Save") { dialog, whichButton ->
+            alert.setPositiveButton("Save") { _, _ ->
                 val newName = edittext.text.toString()
                 Log.d(TAG, "Rename $listName to $newName")
 
@@ -51,7 +51,7 @@ class TaskListDialogFragment : DialogFragment() {
             }
         }
 
-        alert.setNegativeButton("Cancel") { dialog, whichButton -> Log.d(TAG, "onCancel") }
+        alert.setNegativeButton("Cancel") { _, _ -> Log.d(TAG, "onCancel") }
 
         return alert.create()
     }

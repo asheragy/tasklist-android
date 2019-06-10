@@ -1,0 +1,24 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:id="@+id/root">
+
+    <FrameLayout
+        android:id="@+id/listContent"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="match_parent">
+
+        <include layout="@layout/fragment_tasklist" />
+    </FrameLayout>
+
+    <fragment
+        android:id="@+id/details_fragment"
+        android:name="org.cerion.tasklist.ui.TaskDetailFragment"
+        android:layout_weight="1"
+        android:layout_width="0dp"
+        android:layout_height="match_parent">
+    </fragment>
+
+</LinearLayout>

@@ -13,7 +13,6 @@ class MainActivity : AppCompatActivity() {
             setTheme(R.style.AppTheme_Dark)
 
         super.onCreate(savedInstanceState)
-
         setContentView(R.layout.activity_main)
     }
 
