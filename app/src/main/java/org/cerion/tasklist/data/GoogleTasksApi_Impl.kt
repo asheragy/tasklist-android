@@ -13,7 +13,7 @@ class GoogleTasksApi_Impl internal constructor(authKey: String) : GoogleApiBase(
 
     override fun delete(task: Task): Boolean {
         val sURL = getURL("lists/" + task.listId + "/tasks/" + task.id)
-        val result = getInetData(sURL, null, GoogleApiBase.DELETE)
+        val result = getInetData(sURL, null, DELETE)
 
         return result.isEmpty() //Successful delete does not return anything
     }
@@ -37,7 +37,7 @@ class GoogleTasksApi_Impl internal constructor(authKey: String) : GoogleApiBase(
             if (task.completed)
                 json.put(FIELD_STATUS, "completed")
 
-            val item = getJSON(sURL, json, GoogleApiBase.POST)
+            val item = getJSON(sURL, json, POST)
             if (item.has(FIELD_ID) && item.has("selfLink")) {
                 val newId = item.getString(FIELD_ID)
 

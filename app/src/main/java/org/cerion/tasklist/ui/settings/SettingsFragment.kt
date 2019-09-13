@@ -58,7 +58,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         mLogout.isEnabled = acct != null && acct.isNotEmpty()
         mLogout.setOnPreferenceClickListener {
             //TODO, progress indicator and async
-            AuthTools.logout(activity)
+            AuthTools.logout(requireActivity())
 
             //Restart app
             TaskStackBuilder.create(activity)
@@ -168,7 +168,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
                 //If current account is set and different than selected account, logout first
                 if (!currentAccount.isNullOrEmpty() && !currentAccount.contentEquals(accountName))
-                    AuthTools.logout(activity)
+                    AuthTools.logout(requireActivity())
 
                 mAccountList.summary = accountName
                 mPrefs.setString(mAccountList.key, accountName)

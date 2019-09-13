@@ -194,22 +194,24 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
             AuthTools.getAuthToken(requireContext(), requireActivity(), object : AuthTools.AuthTokenCallback {
                 override fun onSuccess(token: String) {
 
-                    val task = SyncTask(context, token, OnSyncCompleteListener { bSuccess, e ->
-                        setInSync(false)
+                    val task = SyncTask(requireContext(), token, object : OnSyncCompleteListener {
+                        override fun onSyncFinish(success: Boolean, e: Exception?) {
+                            setInSync(false)
 
-                        if (bSuccess) {
-                            viewModel.updateLastSync() //Update last sync time only if successful
-                            viewModel.hasLocalChanges.set(false)
-                        } else {
-                            var message = "Sync Failed, unknown error"
-                            if (e != null)
-                                message = e.message!!
+                            if (success) {
+                                viewModel.updateLastSync() //Update last sync time only if successful
+                                viewModel.hasLocalChanges.set(false)
+                            } else {
+                                var message = "Sync Failed, unknown error"
+                                if (e != null)
+                                    message = e.message!!
 
-                            val dialog = AlertDialogFragment.newInstance("Sync failed", message)
-                            dialog.show(requireFragmentManager(), "dialog")
+                                val dialog = AlertDialogFragment.newInstance("Sync failed", message)
+                                dialog.show(requireFragmentManager(), "dialog")
+                            }
+
+                            viewModel.load() //refresh since data may have changed
                         }
-
-                        viewModel.load() //refresh since data may have changed
                     })
 
                     task.execute()

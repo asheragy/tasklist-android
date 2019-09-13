@@ -10,7 +10,7 @@ interface GoogleTasklistsApi {
     fun get(id: String): TaskList?
 
     @Throws(GoogleApiException::class)
-    fun getAll(): List<TaskList>?
+    fun getAll(): List<TaskList>
 
     @Throws(GoogleApiException::class)
     fun insert(list: TaskList): TaskList?

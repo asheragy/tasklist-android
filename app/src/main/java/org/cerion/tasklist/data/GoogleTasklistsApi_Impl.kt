@@ -31,7 +31,7 @@ class GoogleTasklistsApi_Impl internal constructor(authKey: String) : GoogleApiB
     }
 
     @Throws(GoogleApiException::class)
-    override fun getAll(): List<TaskList>? {
+    override fun getAll(): List<TaskList> {
         val sURL = getURL("users/@me/lists")
         val json = getJSON(sURL)
         val result = ArrayList<TaskList>()
@@ -68,7 +68,7 @@ class GoogleTasklistsApi_Impl internal constructor(authKey: String) : GoogleApiB
             json.put(FIELD_ID, list.id)
             json.put(FIELD_TITLE, list.title)
 
-            val result = getJSON(sURL, json, GoogleApiBase.PUT)
+            val result = getJSON(sURL, json, PUT)
             if (list.title.contentEquals(result.getString(FIELD_TITLE)))
                 bResult = true
         } catch (e: JSONException) {
@@ -86,7 +86,7 @@ class GoogleTasklistsApi_Impl internal constructor(authKey: String) : GoogleApiB
 
         try {
             json.put(FIELD_TITLE, list.title)
-            val item = getJSON(sURL, json, GoogleApiBase.POST)
+            val item = getJSON(sURL, json, POST)
             result = parseItem(item)
 
         } catch (e: JSONException) {
