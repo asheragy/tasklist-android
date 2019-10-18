@@ -5,9 +5,7 @@ import android.content.Context
 import android.os.AsyncTask
 import android.util.Log
 import org.cerion.tasklist.data.GoogleApiException
-import org.cerion.tasklist.data.Prefs
 import java.net.HttpURLConnection
-import java.util.*
 
 class SyncTask(private val mContext: Context, private val mAuthToken: String, private val mCallback: OnSyncCompleteListener) : AsyncTask<Void, Void, Boolean>() {
 
@@ -25,6 +23,7 @@ class SyncTask(private val mContext: Context, private val mAuthToken: String, pr
             mError = e
             result = false
 
+            // TODO this needs to get moved elsewhere and maybe a few other things here
             //If unauthorized clear token so it will try to get a new one
             if (e.errorCode == HttpURLConnection.HTTP_UNAUTHORIZED)
                 AuthTools.clearSavedToken(mContext)
@@ -59,10 +58,6 @@ class SyncTask(private val mContext: Context, private val mAuthToken: String, pr
     */
 
     override fun onPostExecute(result: Boolean) {
-        Log.d(TAG, "Result=$result Changes=$mChanges")
-        if (result)
-            Prefs.getInstance(mContext).setDate(Prefs.KEY_LAST_SYNC, Date())
-
         mCallback.onSyncFinish(result, mError)
     }
 

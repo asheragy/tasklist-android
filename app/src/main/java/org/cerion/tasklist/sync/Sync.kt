@@ -145,6 +145,7 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
 
         Log.d(TAG, "Google to DB: Lists (" + googleToDb[0] + "," + googleToDb[1] + "," + googleToDb[2] + ") Tasks (" + googleToDb[3] + "," + googleToDb[4] + "," + googleToDb[5] + ")")
         Log.d(TAG, "DB to Google: Lists (" + dbToGoogle[0] + "," + dbToGoogle[1] + "," + dbToGoogle[2] + ") Tasks (" + dbToGoogle[3] + "," + dbToGoogle[4] + "," + dbToGoogle[5] + ")")
+        prefs.setDate(Prefs.KEY_LAST_SYNC, Date())
 
         return true
     }

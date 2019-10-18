@@ -17,28 +17,32 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import kotlinx.coroutines.*
 import org.cerion.tasklist.R
 import org.cerion.tasklist.data.Task
 import org.cerion.tasklist.data.TaskList
 import org.cerion.tasklist.databinding.FragmentTasklistBinding
 import org.cerion.tasklist.sync.AuthTools
-import org.cerion.tasklist.sync.OnSyncCompleteListener
-import org.cerion.tasklist.sync.SyncTask
+import org.cerion.tasklist.sync.Sync
 import org.cerion.tasklist.ui.dialogs.AlertDialogFragment
 import org.cerion.tasklist.ui.dialogs.MoveTaskDialogFragment
 import org.cerion.tasklist.ui.dialogs.TaskListDialogFragment
 import org.cerion.tasklist.ui.dialogs.TaskListsChangedListener
 import org.cerion.tasklist.ui.settings.SettingsActivity
-
+import kotlin.coroutines.CoroutineContext
 
 
 //TODO verify network is available and toast message
 
-class TaskListFragment : Fragment(), TaskListsChangedListener {
+class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
     private val TAG = MainActivity::class.java.simpleName
 
     private lateinit var mSwipeRefresh: SwipeRefreshLayout
     private lateinit var mTaskListAdapter: TaskListAdapter
+
+    private lateinit var syncJob: Job
+    override val coroutineContext: CoroutineContext
+        get() = syncJob + Dispatchers.Main
 
     private val viewModel: TasksViewModel by lazy {
         val factory = ViewModelFactory(requireActivity().application)
@@ -183,57 +187,72 @@ class TaskListFragment : Fragment(), TaskListsChangedListener {
         dialog.show(requireFragmentManager(), "dialog")
     }
 
+    private val handler = CoroutineExceptionHandler { coroutineContext, throwable ->
+        Log.e("Exception", ":" + throwable)
+    }
+
     private fun onSync() {
         val cm = requireActivity().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val networkInfo = cm.activeNetworkInfo
         val isConnected = networkInfo != null && networkInfo.isConnected
 
-        if (isConnected) {
-            setInSync(true)
-
-            AuthTools.getAuthToken(requireContext(), requireActivity(), object : AuthTools.AuthTokenCallback {
-                override fun onSuccess(token: String) {
-
-                    val task = SyncTask(requireContext(), token, object : OnSyncCompleteListener {
-                        override fun onSyncFinish(success: Boolean, e: Exception?) {
-                            setInSync(false)
-
-                            if (success) {
-                                viewModel.updateLastSync() //Update last sync time only if successful
-                                viewModel.hasLocalChanges.set(false)
-                            } else {
-                                var message = "Sync Failed, unknown error"
-                                if (e != null)
-                                    message = e.message!!
-
-                                val dialog = AlertDialogFragment.newInstance("Sync failed", message)
-                                dialog.show(requireFragmentManager(), "dialog")
-                            }
-
-                            viewModel.load() //refresh since data may have changed
-                        }
-                    })
-
-                    task.execute()
-                }
-
-                override fun onError(e: Exception?) {
-                    if (e == null) {
-                        //TODO do automatically
-                        Toast.makeText(requireContext(), "Open settings and select account", Toast.LENGTH_LONG).show()
-                    }
-                    else {
-                        val dialog = AlertDialogFragment.newInstance("Auth Error", e.message!!)
-                        dialog.show(requireFragmentManager(), "dialog")
-                    }
-                }
-
-            })
-        } else {
+        if (!isConnected) {
             val dialog = AlertDialogFragment.newInstance("Error", "Internet not available")
             dialog.show(requireFragmentManager(), "dialog")
             if (mSwipeRefresh.isRefreshing)
                 mSwipeRefresh.isRefreshing = false
+
+            return
+        }
+
+        AuthTools.getAuthToken(requireContext(), requireActivity(), object : AuthTools.AuthTokenCallback {
+            override fun onSuccess(token: String) {
+                startSync(token)
+            }
+
+            override fun onError(e: Exception?) {
+                if (e == null) {
+                    //TODO do automatically
+                    Toast.makeText(requireContext(), "Open settings and select account", Toast.LENGTH_LONG).show()
+                }
+                else {
+                    val dialog = AlertDialogFragment.newInstance("Auth Error", e.message!!)
+                    dialog.show(requireFragmentManager(), "dialog")
+                }
+            }
+        })
+    }
+
+    private fun startSync(token: String) {
+        setInSync(true)
+        syncJob = Job()
+
+        launch(handler)  {
+            val sync = Sync.getInstance(requireContext(), token)
+            var success = false
+            var error: String? = null
+
+            //Use dispatcher to switch between context
+            try {
+                success = withContext(Dispatchers.Default) {
+                    sync.run()
+                }
+            }
+            catch (e: Exception) {
+                error = e.message
+            }
+
+            setInSync(false)
+            if (success) {
+                viewModel.updateLastSync() //Update last sync time only if successful
+                viewModel.hasLocalChanges.set(false)
+            } else {
+                val message = if(error.isNullOrBlank()) "Sync Failed, unknown error" else error
+                val dialog = AlertDialogFragment.newInstance("Sync failed", message)
+                dialog.show(requireFragmentManager(), "dialog")
+            }
+
+            viewModel.load() //refresh since data may have changed
         }
     }
 
