@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.Observable
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -33,8 +34,8 @@ import kotlin.coroutines.CoroutineContext
 
 
 class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
-    private val TAG = MainActivity::class.java.simpleName
 
+    private val TAG = MainActivity::class.java.simpleName
     private lateinit var mSwipeRefresh: SwipeRefreshLayout
     private lateinit var mTaskListAdapter: TaskListAdapter
 
@@ -89,7 +90,10 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
                     onSync()
                 }
             }
+        })
 
+        viewModel.message.observe(this, Observer<String> {
+            Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
         })
 
         //Toolbar
@@ -301,6 +305,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
             Log.d(TAG, "onMove")
 
             val newFragment = MoveTaskDialogFragment.newInstance(task)
+            newFragment.setTargetFragment(this, 0)
             newFragment.show(requireFragmentManager(), "moveTask")
 
             return true

@@ -10,16 +10,17 @@ import androidx.fragment.app.DialogFragment
 import org.cerion.tasklist.data.AppDatabase
 import org.cerion.tasklist.data.Task
 import org.cerion.tasklist.data.TaskList
+import java.util.*
+
 
 class MoveTaskDialogFragment : DialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
 
         val adapter = ArrayAdapter<TaskList>(activity!!, android.R.layout.simple_spinner_dropdown_item)
-
         val db = AppDatabase.getInstance(requireContext())!!
         val taskDb = db.taskDao()
-        val lists = db.taskListDao().getAll().sortedBy { it.title.toLowerCase() }
+        val lists = db.taskListDao().getAll().sortedBy { it.title.toLowerCase(Locale.getDefault()) }
 
         adapter.addAll(lists)
 
@@ -46,7 +47,10 @@ class MoveTaskDialogFragment : DialogFragment() {
                             task.listId = list.id
                             task.id = AppDatabase.generateTempId()
                             taskDb.add(task)
-                            (activity as TaskListsChangedListener).onTaskListsChanged(list)
+
+                            // TODO would be good to have test for this
+                            val parent = targetFragment as TaskListsChangedListener
+                            parent.onTaskListsChanged(list)
                         }
 
                     } else {

@@ -130,7 +130,7 @@ class TasksViewModel(private val resources: ResourceProvider,
             else {
                 currList.deleted = true
                 listDao.update(currList)
-                message.value = "Deleting list on next sync"
+                hasLocalChanges.set(true) // triggers a sync
             }
         }
         else {
