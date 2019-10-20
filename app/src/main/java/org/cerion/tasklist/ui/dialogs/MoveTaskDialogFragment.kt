@@ -19,7 +19,7 @@ class MoveTaskDialogFragment : DialogFragment() {
 
         val db = AppDatabase.getInstance(requireContext())!!
         val taskDb = db.taskDao()
-        val lists = db.taskListDao().getAll()
+        val lists = db.taskListDao().getAll().sortedBy { it.title.toLowerCase() }
 
         adapter.addAll(lists)
 

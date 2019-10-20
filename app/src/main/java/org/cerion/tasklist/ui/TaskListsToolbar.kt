@@ -53,6 +53,8 @@ class TaskListsToolbar(context: Context, attrs: AttributeSet?, defStyleAttr: Int
             }
         }
 
+        mSpinner.setSelection(getListPosition(Objects.requireNonNull<TaskList>(vm.currList)))
+
         vm.lists.addOnListChangedCallback(object : OnListAnyChangeCallback<ObservableList<TaskList>>() {
             override fun onAnyChange(sender: ObservableList<*>) {
                 mSpinnerAdapter!!.notifyDataSetChanged()

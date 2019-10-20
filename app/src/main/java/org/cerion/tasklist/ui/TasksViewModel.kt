@@ -23,9 +23,7 @@ class TasksViewModel(private val resources: ResourceProvider,
     val hasLocalChanges: ObservableField<Boolean> = ObservableField()
 
     var currList: TaskList = TaskList.ALL_TASKS
-        private set(value) {
-            field = value
-        }
+        private set
 
     val lastSync = ObservableField("")
     val isOutOfSync = ObservableField(false)

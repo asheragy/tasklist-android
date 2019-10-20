@@ -190,8 +190,8 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
         dialog.show(requireFragmentManager(), "dialog")
     }
 
-    private val handler = CoroutineExceptionHandler { coroutineContext, throwable ->
-        Log.e("Exception", ":" + throwable)
+    private val handler = CoroutineExceptionHandler { _, throwable ->
+        Log.e("Exception", ":$throwable")
     }
 
     private fun onSync() {
