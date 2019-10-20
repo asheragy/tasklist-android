@@ -1,6 +1,7 @@
 package org.cerion.tasklist.ui
 
 
+import android.content.Context.INPUT_METHOD_SERVICE
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -9,6 +10,8 @@ import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
+import android.view.inputmethod.InputMethodManager.HIDE_NOT_ALWAYS
 import androidx.databinding.Observable
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
@@ -99,6 +102,11 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
     }
 
     private fun saveAndFinish() {
+        val inputManager = requireContext().getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+        val currentFocusedView = requireActivity().currentFocus
+        if (currentFocusedView != null)
+            inputManager.hideSoftInputFromWindow(currentFocusedView.windowToken, HIDE_NOT_ALWAYS)
+
         viewModel.save()
         tasksViewModel.hasLocalChanges.set(true)
         requireActivity().onBackPressed()

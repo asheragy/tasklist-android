@@ -32,8 +32,6 @@ import org.cerion.tasklist.ui.settings.SettingsActivity
 import kotlin.coroutines.CoroutineContext
 
 
-//TODO verify network is available and toast message
-
 class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
     private val TAG = MainActivity::class.java.simpleName
 
@@ -121,6 +119,11 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
         return view
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        syncJob.cancel()
+    }
+
     /*
     override fun onResume() {
         //Log.d(TAG,"onResume");
@@ -197,8 +200,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
         val isConnected = networkInfo != null && networkInfo.isConnected
 
         if (!isConnected) {
-            val dialog = AlertDialogFragment.newInstance("Error", "Internet not available")
-            dialog.show(requireFragmentManager(), "dialog")
+            Toast.makeText(requireContext(), "Internet not available", Toast.LENGTH_SHORT).show()
             if (mSwipeRefresh.isRefreshing)
                 mSwipeRefresh.isRefreshing = false
 
