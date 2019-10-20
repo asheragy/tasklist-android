@@ -121,7 +121,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
 
     override fun onDestroy() {
         super.onDestroy()
-        syncJob.cancel()
+        syncJob?.cancel()
     }
 
     /*
