@@ -86,6 +86,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
         viewModel.hasLocalChanges.addOnPropertyChangedCallback(object : Observable.OnPropertyChangedCallback() {
             override fun onPropertyChanged(sender: Observable?, propertyId: Int) {
                 if(viewModel.hasLocalChanges.get() == true) {
+                    viewModel.hasLocalChanges.set(false)
                     viewModel.refreshTasks()
                     onSync()
                 }

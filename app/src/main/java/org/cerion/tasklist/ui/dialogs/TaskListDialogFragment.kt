@@ -47,7 +47,8 @@ class TaskListDialogFragment : DialogFragment() {
                 val db = AppDatabase.getInstance(activity!!)!!.taskListDao()
                 db.update(update)
 
-                (activity as TaskListsChangedListener).onTaskListsChanged(update)
+                val parent = targetFragment as TaskListsChangedListener
+                parent.onTaskListsChanged(update)
             }
         }
 
