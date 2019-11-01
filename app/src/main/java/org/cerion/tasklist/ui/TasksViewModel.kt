@@ -22,8 +22,9 @@ class TasksViewModel(private val resources: ResourceProvider,
     val message: SingleLiveEvent<String> = SingleLiveEvent()
     val hasLocalChanges: ObservableField<Boolean> = ObservableField()
 
-    var currList: TaskList = TaskList.ALL_TASKS
-        private set
+    val selectedList: ObservableField<TaskList> = ObservableField(TaskList.ALL_TASKS)
+    // TODO make private
+    val currList get() = selectedList.get()!!
 
     val lastSync = ObservableField("")
     val isOutOfSync = ObservableField(false)
@@ -68,7 +69,7 @@ class TasksViewModel(private val resources: ResourceProvider,
 
         val lastId = prefs.getString(Prefs.KEY_LAST_SELECTED_LIST_ID)
         val lastSaved = dbLists.firstOrNull { it.id == lastId }
-        currList = lastSaved ?: TaskList.ALL_TASKS //If nothing valid is saved default to "all tasks" list
+        selectedList.set(lastSaved ?: TaskList.ALL_TASKS) //If nothing valid is saved default to "all tasks" list
 
         lists.clear()
         lists.addAll(dbLists)
@@ -113,6 +114,16 @@ class TasksViewModel(private val resources: ResourceProvider,
         }
 
         refreshTasks()
+    }
+
+    fun moveLeft() {
+        val index = lists.indexOf(currList)
+        setList(lists[(index + 1) % lists.size])
+    }
+
+    fun moveRight() {
+        val index = lists.indexOf(currList)
+        setList(lists[(index - 1) % lists.size])
     }
 
     fun logDatabase() {

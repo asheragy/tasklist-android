@@ -10,9 +10,23 @@
         <action
             android:id="@+id/action_taskListFragment_to_taskDetailFragment"
             app:destination="@id/taskDetailFragment" />
+        <action
+            android:id="@+id/action_taskListFragment_to_moveTaskDialogFragment"
+            app:destination="@id/moveTaskDialogFragment" />
     </fragment>
     <fragment
         android:id="@+id/taskDetailFragment"
         android:name="org.cerion.tasklist.ui.TaskDetailFragment"
         android:label="TaskDetailFragment" />
+    <fragment
+        android:id="@+id/moveTaskDialogFragment"
+        android:name="org.cerion.tasklist.ui.dialogs.MoveTaskDialogFragment"
+        android:label="MoveTaskDialogFragment" >
+        <argument
+            android:name="taskListId"
+            app:argType="string" />
+        <argument
+            android:name="taskId"
+            app:argType="string" />
+    </fragment>
 </navigation>

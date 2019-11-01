@@ -11,6 +11,8 @@ import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.Observable
+import androidx.databinding.ObservableList
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
@@ -18,15 +20,16 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.google.android.material.navigation.NavigationView
 import kotlinx.coroutines.*
 import org.cerion.tasklist.R
+import org.cerion.tasklist.common.OnListAnyChangeCallback
 import org.cerion.tasklist.data.Task
 import org.cerion.tasklist.data.TaskList
 import org.cerion.tasklist.databinding.FragmentTasklistBinding
 import org.cerion.tasklist.sync.AuthTools
 import org.cerion.tasklist.sync.Sync
 import org.cerion.tasklist.ui.dialogs.AlertDialogFragment
-import org.cerion.tasklist.ui.dialogs.MoveTaskDialogFragment
 import org.cerion.tasklist.ui.dialogs.TaskListDialogFragment
 import org.cerion.tasklist.ui.dialogs.TaskListsChangedListener
 import org.cerion.tasklist.ui.settings.SettingsActivity
@@ -73,6 +76,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
         binding.viewModel = viewModel
 
         val defaultTextColor = binding.status.textColors.defaultColor
+
         viewModel.isOutOfSync.addOnPropertyChangedCallback(object : Observable.OnPropertyChangedCallback() {
             override fun onPropertyChanged(observable: Observable, i: Int) {
                 if (viewModel.isOutOfSync.get()!!) {
@@ -93,24 +97,38 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
             }
         })
 
+        viewModel.lists.addOnListChangedCallback(object : OnListAnyChangeCallback<ObservableList<TaskList>>() {
+            override fun onAnyChange(sender: ObservableList<*>?) {
+                populateNavigationLists()
+            }
+        })
+
         viewModel.message.observe(this, Observer<String> {
             Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
         })
 
+        viewModel.selectedList.addOnPropertyChanged {
+            (requireActivity() as AppCompatActivity).supportActionBar?.title = viewModel.currList.title
+            populateNavigationLists() // TODO all we really need here is set the selected list but repopulating is the most accurate way of doing it
+        }
+
         //Toolbar
         setHasOptionsMenu(true)
-        val toolbar = binding.toolbar
-        (requireActivity() as AppCompatActivity).setSupportActionBar(toolbar)
-        (requireActivity() as AppCompatActivity).supportActionBar?.setDisplayShowTitleEnabled(false) //Hide app name, task lists replace title on actionbar
-        toolbar.setViewModel(viewModel)
+        (requireActivity() as AppCompatActivity).supportActionBar?.title = viewModel.currList.title
+        //val toolbar = binding.toolbar
+        //(requireActivity() as AppCompatActivity).setSupportActionBar(toolbar)
+        //(requireActivity() as AppCompatActivity).supportActionBar?.setDisplayShowTitleEnabled(false) //Hide app name, task lists replace title on actionbar
+        //toolbar.setViewModel(viewModel)
+
+        populateNavigationLists()
 
         val touchListener = object : OnSwipeTouchListener(requireContext()) {
             override fun onSwipeLeft() {
-                toolbar.moveLeft()
+                viewModel.moveLeft()
             }
 
             override fun onSwipeRight() {
-                toolbar.moveRight()
+                viewModel.moveRight()
             }
         }
 
@@ -122,6 +140,30 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
         mSwipeRefresh.setOnRefreshListener(this::onSync)
 
         return view
+    }
+
+    private fun populateNavigationLists() {
+        // TODO this may all be better done using adapter and list view
+        val drawer = requireActivity().findViewById<DrawerLayout>(R.id.drawerLayout)
+        val navView = requireActivity().findViewById<NavigationView>(R.id.navView)
+
+        navView.menu.clear()
+        navView.inflateMenu(R.menu.nav_drawer)
+        val menu = navView.menu.getItem(0).subMenu
+        menu.clear() // clears placeholder items
+
+        for (list in viewModel.lists) {
+            val item = menu.add(list.title)
+            item.setOnMenuItemClickListener {
+                viewModel.setList(list)
+                drawer.closeDrawers()
+                true
+            }
+
+            if (viewModel.currList == list) {
+                item.isChecked = true
+            }
+        }
     }
 
     override fun onDestroy() {
@@ -305,9 +347,13 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
         if (id == R.id.move) {
             Log.d(TAG, "onMove")
 
-            val newFragment = MoveTaskDialogFragment.newInstance(task)
-            newFragment.setTargetFragment(this, 0)
-            newFragment.show(requireFragmentManager(), "moveTask")
+
+            val action = TaskListFragmentDirections.actionTaskListFragmentToMoveTaskDialogFragment(task.listId, task.id)
+
+            findNavController().navigate(action)
+            //val newFragment = MoveTaskDialogFragment.newInstance(task)
+            //newFragment.setTargetFragment(this, 0)
+            //newFragment.show(requireFragmentManager(), "moveTask")
 
             return true
         }
@@ -315,3 +361,10 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
         return super.onContextItemSelected(item)
     }
 }
+
+fun <T: Observable> T.addOnPropertyChanged(callback: (T) -> Unit) =
+        addOnPropertyChangedCallback(object: Observable.OnPropertyChangedCallback() {
+            override fun onPropertyChanged(observable: Observable?, i: Int) {
+                callback(observable as T)
+            }
+        })

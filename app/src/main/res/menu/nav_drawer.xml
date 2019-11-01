@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:title="Lists">
+        <menu android:id="@+id/group_lists">
+            <item android:title="All Tasks"/>
+            <item android:title="Default List" />
+        </menu>
+    </item>
+
+    <item android:title="Settings">
+        <menu android:id="@+id/group_other">
+            <item
+                android:id="@+id/settings"
+                android:title="Settings">
+            </item>
+        </menu>
+    </item>
+
+
+
+</menu>
