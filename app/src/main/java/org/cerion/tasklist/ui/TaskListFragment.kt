@@ -22,8 +22,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.navigation.NavigationView
 import kotlinx.coroutines.*
+import org.cerion.tasklist.MainActivity
 import org.cerion.tasklist.R
 import org.cerion.tasklist.common.OnListAnyChangeCallback
+import org.cerion.tasklist.common.OnSwipeTouchListener
 import org.cerion.tasklist.data.Task
 import org.cerion.tasklist.data.TaskList
 import org.cerion.tasklist.databinding.FragmentTasklistBinding
@@ -32,7 +34,6 @@ import org.cerion.tasklist.sync.Sync
 import org.cerion.tasklist.ui.dialogs.AlertDialogFragment
 import org.cerion.tasklist.ui.dialogs.TaskListDialogFragment
 import org.cerion.tasklist.ui.dialogs.TaskListsChangedListener
-import org.cerion.tasklist.ui.settings.SettingsActivity
 import kotlin.coroutines.CoroutineContext
 
 
@@ -42,7 +43,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
     private lateinit var mSwipeRefresh: SwipeRefreshLayout
     private lateinit var mTaskListAdapter: TaskListAdapter
 
-    private lateinit var syncJob: Job
+    private var syncJob: Job = SupervisorJob()
     override val coroutineContext: CoroutineContext
         get() = syncJob + Dispatchers.Main
 
@@ -168,7 +169,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
 
     override fun onDestroy() {
         super.onDestroy()
-        syncJob?.cancel()
+        syncJob.cancel()
     }
 
     /*
@@ -205,11 +206,6 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
     }
     */
 
-    private fun navigateSettings() {
-        val intent = Intent(requireActivity(), SettingsActivity::class.java)
-        startActivity(intent)
-    }
-
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
@@ -218,7 +214,6 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
 
         when (id) {
             R.id.action_add -> onAddTaskList()
-            R.id.action_settings -> navigateSettings()
             R.id.action_clear_completed -> viewModel.clearCompleted()
             R.id.action_rename -> {
                 val dialog = TaskListDialogFragment.getRenameInstance(viewModel.currList)

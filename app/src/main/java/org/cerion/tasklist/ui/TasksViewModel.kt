@@ -123,7 +123,7 @@ class TasksViewModel(private val resources: ResourceProvider,
 
     fun moveRight() {
         val index = lists.indexOf(currList)
-        setList(lists[(index - 1) % lists.size])
+        setList(lists[(index - 1 + lists.size) % lists.size])
     }
 
     fun logDatabase() {

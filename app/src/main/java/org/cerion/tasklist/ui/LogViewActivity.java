@@ -1,4 +1,4 @@
-package org.cerion.tasklist.ui.settings;
+package org.cerion.tasklist.ui;
 
 import android.os.Bundle;
 import android.util.Log;
@@ -33,7 +33,7 @@ public class LogViewActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_log_view);
 
-        Toolbar toolbar = (Toolbar)findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         if(toolbar != null)
             setSupportActionBar(toolbar);
 
@@ -42,8 +42,8 @@ public class LogViewActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayShowHomeEnabled(true);
         }
 
-        mText = (TextView)findViewById(R.id.text);
-        mScroll = (ScrollView)findViewById(R.id.scrollView) ;
+        mText = findViewById(R.id.text);
+        mScroll = findViewById(R.id.scrollView);
         updateLog();
     }
 

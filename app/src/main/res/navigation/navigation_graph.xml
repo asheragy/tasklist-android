@@ -29,4 +29,8 @@
             android:name="taskId"
             app:argType="string" />
     </fragment>
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="org.cerion.tasklist.ui.SettingsFragment"
+        android:label="SettingsFragment" />
 </navigation>

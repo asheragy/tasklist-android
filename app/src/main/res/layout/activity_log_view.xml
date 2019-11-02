@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="org.cerion.tasklist.ui.settings.LogViewActivity">
+    tools:context="org.cerion.tasklist.ui.LogViewActivity">
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"

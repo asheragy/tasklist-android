@@ -1,4 +1,4 @@
-package org.cerion.tasklist.ui
+package org.cerion.tasklist
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
@@ -8,7 +8,6 @@ import androidx.navigation.NavDestination
 import androidx.navigation.findNavController
 import androidx.navigation.ui.NavigationUI
 import com.google.android.material.navigation.NavigationView
-import org.cerion.tasklist.R
 import org.cerion.tasklist.data.Prefs
 
 

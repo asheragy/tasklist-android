@@ -1,4 +1,4 @@
-package org.cerion.tasklist.ui.settings
+package org.cerion.tasklist.ui
 
 
 import android.Manifest
@@ -17,10 +17,10 @@ import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import com.google.android.gms.common.AccountPicker
+import org.cerion.tasklist.MainActivity
 import org.cerion.tasklist.R
 import org.cerion.tasklist.data.Prefs
 import org.cerion.tasklist.sync.AuthTools
-import org.cerion.tasklist.ui.MainActivity
 
 class SettingsFragment : PreferenceFragmentCompat() {
 
