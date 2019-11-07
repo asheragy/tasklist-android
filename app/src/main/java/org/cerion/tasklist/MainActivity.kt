@@ -1,6 +1,7 @@
 package org.cerion.tasklist
 
 import android.os.Bundle
+import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.NavController
@@ -39,6 +40,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onSupportNavigateUp(): Boolean {
+        hideKeyboard()
         val navController = this.findNavController(R.id.nav_host_fragment)
         return NavigationUI.navigateUp(navController, drawerLayout)
     }
@@ -48,6 +50,16 @@ class MainActivity : AppCompatActivity() {
             finishAndRemoveTask()
         else
             super.onBackPressed()
+    }
+
+    private fun hideKeyboard() {
+        val inputManager = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+
+        // check if no view has focus:
+        val currentFocusedView = currentFocus
+        if (currentFocusedView != null) {
+            inputManager.hideSoftInputFromWindow(currentFocusedView.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
+        }
     }
 
 }

@@ -6,12 +6,10 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.text.util.Linkify
-import android.view.LayoutInflater
-import android.view.MenuItem
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.view.inputmethod.InputMethodManager.HIDE_NOT_ALWAYS
+import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.Observable
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
@@ -53,15 +51,10 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
         binding = FragmentTaskBinding.inflate(inflater, container, false)
         binding.viewModel = viewModel
 
-        val toolbar = binding.toolbar
-        toolbar.inflateMenu(R.menu.task)
-        menuSave = toolbar.menu.getItem(0)
-        toolbar.setNavigationOnClickListener { requireActivity().onBackPressed() }
-        toolbar.setOnMenuItemClickListener { item ->
-            if (item?.itemId == R.id.action_save)
-                saveAndFinish()
 
-            false
+        setHasOptionsMenu(true)
+        viewModel.windowTitle.addOnPropertyChanged {
+            (requireActivity() as AppCompatActivity).supportActionBar?.title = viewModel.windowTitle.get()
         }
 
         viewModel.isDirty.addOnPropertyChangedCallback(object : Observable.OnPropertyChangedCallback() {
@@ -93,6 +86,20 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
         }
 
         return binding.root
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.task_detail, menu)
+        menuSave = menu.getItem(0)
+        super.onCreateOptionsMenu(menu, inflater)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.action_save -> saveAndFinish()
+        }
+
+        return super.onOptionsItemSelected(item)
     }
 
     private fun onEditDueDate() {

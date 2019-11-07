@@ -185,6 +185,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
         if (list.isAllTasks)
             list = viewModel.getDefaultList()
 
+        // TODO use safe args
         val bundle = TaskDetailFragment.getBundle(list.id, task?.id ?: "")
         findNavController().navigate(R.id.action_taskListFragment_to_taskDetailFragment, bundle)
     }

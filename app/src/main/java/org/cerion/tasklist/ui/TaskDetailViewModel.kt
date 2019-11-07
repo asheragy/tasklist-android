@@ -11,6 +11,8 @@ import org.cerion.tasklist.data.TaskDao
 import java.text.SimpleDateFormat
 import java.util.*
 
+val TAG = TaskDetailViewModel::class.simpleName
+
 class TaskDetailViewModel(private val resources: ResourceProvider, private val db: TaskDao) : ViewModel() {
 
     // TODO remove double due fields and use binding converter for dateFormat
@@ -50,6 +52,8 @@ class TaskDetailViewModel(private val resources: ResourceProvider, private val d
     }
 
     private fun loadTaskFields(task: Task) {
+        isDirty.set(false)
+
         this.task = task
 
         title.set(task.title)
@@ -57,16 +61,15 @@ class TaskDetailViewModel(private val resources: ResourceProvider, private val d
         completed.set(task.completed)
         setDue(task.due)
 
+        // TODO the data binding appears to be triggering this on load so not sure how to check for actual changes without comparing real values
         val onPropertyChangedCallback = object : Observable.OnPropertyChangedCallback() {
-            // The set above seems to trigger this so ignore first call
-            private var init = 0
             override fun onPropertyChanged(observable: Observable, i: Int) {
-                // TODO this is not working right
-                // New tasks we want to call this even the first time, existing tasks set this field when initializing so ignore it
-                if (init > 0 || isNew)
+                if (task.title != title.get()
+                        || task.notes != notes.get()
+                        || task.completed != completed.get()
+                        || dueDate != task.due)
                     isDirty.set(true)
 
-                init++
             }
         }
 
@@ -80,8 +83,6 @@ class TaskDetailViewModel(private val resources: ResourceProvider, private val d
             modified.set(task.updated.toString())
         else
             modified.set("")
-
-        isDirty.set(false)
     }
 
     fun save() {
@@ -115,6 +116,5 @@ class TaskDetailViewModel(private val resources: ResourceProvider, private val d
 
     companion object {
         private val dateFormat = SimpleDateFormat("EEE, MMM d, yyyy", Locale.US)
-        private val TAG = TaskDetailViewModel::class.simpleName
     }
 }

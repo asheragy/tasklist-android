@@ -9,7 +9,9 @@
         android:label="TaskListFragment" >
         <action
             android:id="@+id/action_taskListFragment_to_taskDetailFragment"
-            app:destination="@id/taskDetailFragment" />
+            app:destination="@id/taskDetailFragment"
+            app:enterAnim="@anim/enter_left"
+            app:exitAnim="@anim/exit_left" />
         <action
             android:id="@+id/action_taskListFragment_to_moveTaskDialogFragment"
             app:destination="@id/moveTaskDialogFragment" />
