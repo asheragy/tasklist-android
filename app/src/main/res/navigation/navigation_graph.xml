@@ -11,7 +11,9 @@
             android:id="@+id/action_taskListFragment_to_taskDetailFragment"
             app:destination="@id/taskDetailFragment"
             app:enterAnim="@anim/enter_left"
-            app:exitAnim="@anim/exit_left" />
+            app:exitAnim="@anim/exit_left"
+            app:popEnterAnim="@anim/enter_right"
+            app:popExitAnim="@anim/exit_right" />
         <action
             android:id="@+id/action_taskListFragment_to_moveTaskDialogFragment"
             app:destination="@id/moveTaskDialogFragment" />
