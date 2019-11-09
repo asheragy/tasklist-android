@@ -83,7 +83,7 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
                 if (addedList != null) {
                     // If current displayed list is this one update the ID so it reloads with this list active
                     val lastId = prefs.getString(Prefs.KEY_LAST_SELECTED_LIST_ID)
-                    if (lastId.contentEquals(dbList.id))
+                    if (lastId != null && lastId.contentEquals(dbList.id))
                         prefs.setString(Prefs.KEY_LAST_SELECTED_LIST_ID, addedList.id)
 
                     listDb.updateId(dbList.id, addedList.id)

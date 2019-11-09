@@ -27,7 +27,7 @@ public class LogViewActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        if (Prefs.getInstance(this).isDarkTheme())
+        if (Prefs.Companion.getInstance(this).isDarkTheme())
             setTheme(R.style.AppTheme_Dark);
 
         super.onCreate(savedInstanceState);

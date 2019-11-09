@@ -39,7 +39,7 @@ object AuthTools {
         val token = prefs.getString(Prefs.KEY_AUTHTOKEN)
         val dtLastToken = prefs.getDate(Prefs.KEY_AUTHTOKEN_DATE)
         val dtDiff = (System.currentTimeMillis() - dtLastToken.time) / 1000
-        if (token.length > 0 && dtDiff < 3500) {
+        if (token != null && token.isNotEmpty() && dtDiff < 3500) {
             //Token is a little less than 1 hour old so its still good
             Log.d(TAG, "Using existing token, remaining minutes: " + (3600 - dtDiff) / 60)
             return token
@@ -63,7 +63,7 @@ object AuthTools {
         var account: Account? = null
 
         for (tmpAccount in accounts) {
-            if (tmpAccount.name!!.contentEquals(accountName))
+            if (accountName != null && tmpAccount.name!!.contentEquals(accountName))
                 account = tmpAccount
         }
 

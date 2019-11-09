@@ -34,7 +34,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
-        prefs = Prefs.getInstance(activity)
+        prefs = Prefs.getInstance(requireContext())
         logout = findPreference("logout")
         accountList = findPreference(getString(R.string.pref_key_accountName))
 
@@ -53,7 +53,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         //Logout button
         logout?.apply {
-            val acct = prefs.getString(accountList?.key)
+            val acct = prefs.getString(accountList?.key!!)
             isEnabled = acct != null && acct.isNotEmpty()
             setOnPreferenceClickListener {
                 //TODO, progress indicator and async
@@ -84,7 +84,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val accountName = prefs.getString(Prefs.KEY_ACCOUNT_NAME)
         var account: Account? = null
         for (tmpAccount in accounts) {
-            if (tmpAccount.name!!.contentEquals(accountName))
+            if (tmpAccount.name!!.contentEquals(accountName!!))
                 account = tmpAccount
         }
 
@@ -152,7 +152,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     AuthTools.logout(requireActivity())
 
                 accountList?.summary = accountName
-                prefs.setString(accountList?.key, accountName)
+                prefs.setString(accountList?.key!!, accountName)
                 logout?.isEnabled = true
             }
         }
