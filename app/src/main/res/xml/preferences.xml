@@ -7,15 +7,6 @@
             android:key="@string/pref_key_accountName"
             android:title="Google Account" />
 
-        <ListPreference
-            android:key="@string/pref_key_background"
-            android:title="@string/background"
-            android:summary="%s"
-            android:dialogTitle="@string/background"
-            android:entries="@array/pref_background_entries"
-            android:entryValues="@array/pref_background_values"
-            android:defaultValue="0"/>
-
         <Preference
             android:title="@string/action_view_log"
             android:key="viewlog"/>

@@ -10,8 +10,18 @@
     </item>
 
     <item
-        android:id="@+id/settingsFragment"
         android:title="Settings">
+        <menu android:id="@+id/group_settings">
+            <item
+                android:id="@+id/settingsFragment"
+                android:title="Settings">
+            </item>
+            <item
+                android:id="@+id/select_theme"
+                android:title="Theme">
+            </item>
+        </menu>
+
     </item>
 
 </menu>

@@ -23,7 +23,7 @@ public class Prefs
     private static Prefs instance;
     private final SharedPreferences mPrefs;
     private final Context mContext;
-    private static Object LOCK = new Object();
+    private static final Object LOCK = new Object();
 
     private Prefs(Context context) {
         mContext = context;
@@ -42,19 +42,21 @@ public class Prefs
         return instance;
     }
 
-    public Prefs setString(String key, String value)
-    {
+    public Prefs setInt(String key, int value) {
         Log.d(TAG,"save " + key + " " + value);
-        mPrefs.edit().putString(key,value).apply();
-
+        mPrefs.edit().putInt(key,value).apply();
         return this;
     }
 
-    public Prefs setBool(String key, boolean value)
-    {
+    public Prefs setString(String key, String value) {
+        Log.d(TAG,"save " + key + " " + value);
+        mPrefs.edit().putString(key,value).apply();
+        return this;
+    }
+
+    public Prefs setBool(String key, boolean value) {
         Log.d(TAG,"save " + key + " " + value);
         mPrefs.edit().putBoolean(key, value).apply();
-
         return this;
     }
 
@@ -105,7 +107,19 @@ public class Prefs
         }
     }
 
+    private String getBackgroundKey() {
+        return mContext.getString(R.string.pref_key_background);
+    }
+
+    public int getTheme() {
+        return mPrefs.getInt(getBackgroundKey(),0);
+    }
+
+    public void setTheme(int theme) {
+        setInt(getBackgroundKey(), theme);
+    }
+
     public boolean isDarkTheme() {
-        return mPrefs.getString(mContext.getString(R.string.pref_key_background),"0").contentEquals("1");
+        return getTheme() == 1;
     }
 }

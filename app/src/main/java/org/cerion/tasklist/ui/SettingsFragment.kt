@@ -13,7 +13,6 @@ import android.util.Log
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import com.google.android.gms.common.AccountPicker
@@ -26,7 +25,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     private var accountList: Preference? = null
     private var logout: Preference? = null
-    private var background: ListPreference? = null
     private lateinit var prefs: Prefs
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
@@ -39,7 +37,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
         prefs = Prefs.getInstance(activity)
         logout = findPreference("logout")
         accountList = findPreference(getString(R.string.pref_key_accountName))
-        background = findPreference(getString(R.string.pref_key_background))
 
         init()
     }
@@ -68,21 +65,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
                         .startActivities()
                 true
             }
-        }
-
-        background?.setOnPreferenceChangeListener { preference, o ->
-            val curr = (preference as ListPreference).value
-
-            //If setting was changed
-            if (!curr.contentEquals(o as String)) {
-                //Recreate main activity followed by this one
-                TaskStackBuilder.create(activity)
-                        .addNextIntent(Intent(activity, MainActivity::class.java))
-                        .addNextIntent(requireActivity().intent)
-                        .startActivities()
-            }
-
-            true
         }
 
         findPreference<Preference>("viewlog")?.setOnPreferenceClickListener {
