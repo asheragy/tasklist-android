@@ -8,10 +8,6 @@
             android:title="Google Account" />
 
         <Preference
-            android:title="@string/action_view_log"
-            android:key="viewlog"/>
-
-        <Preference
             android:title="@string/action_logout"
             android:key="logout"/>
     </PreferenceCategory>

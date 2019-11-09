@@ -66,12 +66,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 true
             }
         }
-
-        findPreference<Preference>("viewlog")?.setOnPreferenceClickListener {
-            val intent = Intent(activity, LogViewActivity::class.java)
-            startActivity(intent)
-            true
-        }
     }
 
     private fun onChooseAccount() {

@@ -51,6 +51,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         when (item.itemId) {
             R.id.select_theme -> onSelectTheme()
             R.id.settingsFragment -> navController.navigate(R.id.settingsFragment)
+            R.id.view_log -> navController.navigate(R.id.action_taskListFragment_to_logViewFragment)
         }
 
         drawerLayout.closeDrawer(GravityCompat.START)

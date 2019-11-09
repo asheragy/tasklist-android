@@ -17,6 +17,9 @@
         <action
             android:id="@+id/action_taskListFragment_to_moveTaskDialogFragment"
             app:destination="@id/moveTaskDialogFragment" />
+        <action
+            android:id="@+id/action_taskListFragment_to_logViewFragment"
+            app:destination="@id/logViewFragment" />
     </fragment>
     <fragment
         android:id="@+id/taskDetailFragment"
@@ -37,4 +40,8 @@
         android:id="@+id/settingsFragment"
         android:name="org.cerion.tasklist.ui.SettingsFragment"
         android:label="SettingsFragment" />
+    <fragment
+        android:id="@+id/logViewFragment"
+        android:name="org.cerion.tasklist.ui.LogViewFragment"
+        android:label="LogViewFragment" />
 </navigation>
