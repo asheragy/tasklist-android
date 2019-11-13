@@ -15,6 +15,7 @@ import androidx.navigation.findNavController
 import androidx.navigation.ui.NavigationUI
 import com.google.android.material.navigation.NavigationView
 import org.cerion.tasklist.data.Prefs
+import org.cerion.tasklist.ui.TaskListFragmentDirections
 
 
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
@@ -50,8 +51,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.select_theme -> onSelectTheme()
-            R.id.settingsFragment -> navController.navigate(R.id.settingsFragment)
-            R.id.view_log -> navController.navigate(R.id.action_taskListFragment_to_logViewFragment)
+            R.id.settingsFragment -> navController.navigate(TaskListFragmentDirections.actionTaskListFragmentToSettingsFragment())
+            R.id.view_log -> navController.navigate(TaskListFragmentDirections.actionTaskListFragmentToLogViewFragment())
         }
 
         drawerLayout.closeDrawer(GravityCompat.START)

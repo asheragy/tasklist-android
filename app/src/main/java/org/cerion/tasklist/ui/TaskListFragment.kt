@@ -104,7 +104,8 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
             }
         })
 
-        viewModel.message.observe(this, Observer<String> {
+        // TODO use viewLifecycleOwner elsewhere so multiple observes do not occur
+        viewModel.message.observe(viewLifecycleOwner, Observer<String> {
             Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
         })
 
@@ -185,7 +186,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
         if (list.isAllTasks)
             list = viewModel.getDefaultList()
 
-        // TODO use safe args
+        // TODO use safe args, the moveTask fragment does this (look at generated file)
         val bundle = TaskDetailFragment.getBundle(list.id, task?.id ?: "")
         findNavController().navigate(R.id.action_taskListFragment_to_taskDetailFragment, bundle)
     }

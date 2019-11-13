@@ -20,6 +20,9 @@
         <action
             android:id="@+id/action_taskListFragment_to_logViewFragment"
             app:destination="@id/logViewFragment" />
+        <action
+            android:id="@+id/action_taskListFragment_to_settingsFragment"
+            app:destination="@id/settingsFragment" />
     </fragment>
     <fragment
         android:id="@+id/taskDetailFragment"

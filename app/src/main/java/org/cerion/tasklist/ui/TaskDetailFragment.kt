@@ -10,8 +10,8 @@ import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.view.inputmethod.InputMethodManager.HIDE_NOT_ALWAYS
 import androidx.appcompat.app.AppCompatActivity
-import androidx.databinding.Observable
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import org.cerion.tasklist.R
 import org.cerion.tasklist.databinding.FragmentTaskBinding
@@ -50,18 +50,14 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = FragmentTaskBinding.inflate(inflater, container, false)
         binding.viewModel = viewModel
-
+        binding.lifecycleOwner = this
 
         setHasOptionsMenu(true)
-        viewModel.windowTitle.addOnPropertyChanged {
-            (requireActivity() as AppCompatActivity).supportActionBar?.title = viewModel.windowTitle.get()
-        }
 
-        viewModel.isDirty.addOnPropertyChangedCallback(object : Observable.OnPropertyChangedCallback() {
-            override fun onPropertyChanged(observable: Observable, i: Int) {
-                if (menuSave != null)
-                    menuSave!!.isVisible = viewModel.isDirty.get()!!
-            }
+        viewModel.windowTitle.observe(viewLifecycleOwner, Observer { title -> (requireActivity() as AppCompatActivity).supportActionBar?.title = title })
+        viewModel.isDirty.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
+            if (menuSave != null)
+                menuSave!!.isVisible = viewModel.isDirty.value!!
         })
 
         // Must be on view, not the binded field
@@ -103,7 +99,7 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
     }
 
     private fun onEditDueDate() {
-        val newFragment = DatePickerFragment.newInstance(viewModel.dueDate)
+        val newFragment = DatePickerFragment.newInstance(viewModel.dueDate.value)
         newFragment.setTargetFragment(this, 0)
         newFragment.show(requireFragmentManager(), "datePicker")
     }
@@ -120,6 +116,6 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
     }
 
     override fun onSelectDate(date: Date) {
-        viewModel.setDue(date)
+        viewModel.dueDate.value = date
     }
 }
