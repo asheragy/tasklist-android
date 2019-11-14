@@ -10,6 +10,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import org.cerion.tasklist.R
+import org.cerion.tasklist.common.TAG
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader

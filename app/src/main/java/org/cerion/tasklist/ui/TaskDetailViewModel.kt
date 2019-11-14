@@ -9,8 +9,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 
-val TAG = TaskDetailViewModel::class.simpleName
-
 class TaskDetailViewModel(private val resources: ResourceProvider, private val db: TaskDao) : ViewModel() {
 
     private lateinit var task: Task

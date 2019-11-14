@@ -22,16 +22,17 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.navigation.NavigationView
 import kotlinx.coroutines.*
-import org.cerion.tasklist.MainActivity
 import org.cerion.tasklist.R
 import org.cerion.tasklist.common.OnListAnyChangeCallback
 import org.cerion.tasklist.common.OnSwipeTouchListener
+import org.cerion.tasklist.common.TAG
 import org.cerion.tasklist.data.Task
 import org.cerion.tasklist.data.TaskList
 import org.cerion.tasklist.databinding.FragmentTasklistBinding
 import org.cerion.tasklist.sync.AuthTools
 import org.cerion.tasklist.sync.Sync
 import org.cerion.tasklist.ui.dialogs.AlertDialogFragment
+import org.cerion.tasklist.ui.dialogs.MoveTaskDialogFragment
 import org.cerion.tasklist.ui.dialogs.TaskListDialogFragment
 import org.cerion.tasklist.ui.dialogs.TaskListsChangedListener
 import kotlin.coroutines.CoroutineContext
@@ -39,7 +40,6 @@ import kotlin.coroutines.CoroutineContext
 
 class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
 
-    private val TAG = MainActivity::class.java.simpleName
     private lateinit var mSwipeRefresh: SwipeRefreshLayout
     private lateinit var mTaskListAdapter: TaskListAdapter
 
@@ -186,9 +186,8 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
         if (list.isAllTasks)
             list = viewModel.getDefaultList()
 
-        // TODO use safe args, the moveTask fragment does this (look at generated file)
-        val bundle = TaskDetailFragment.getBundle(list.id, task?.id ?: "")
-        findNavController().navigate(R.id.action_taskListFragment_to_taskDetailFragment, bundle)
+        val action = TaskListFragmentDirections.actionTaskListFragmentToTaskDetailFragment(list.id, task?.id ?: "")
+        findNavController().navigate(action)
     }
 
     override fun onTaskListsChanged(currList: TaskList) {
@@ -344,13 +343,13 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
         if (id == R.id.move) {
             Log.d(TAG, "onMove")
 
-
+            // TODO needs to set target fragment or some alternative before using NavController
             val action = TaskListFragmentDirections.actionTaskListFragmentToMoveTaskDialogFragment(task.listId, task.id)
-
-            findNavController().navigate(action)
-            //val newFragment = MoveTaskDialogFragment.newInstance(task)
-            //newFragment.setTargetFragment(this, 0)
-            //newFragment.show(requireFragmentManager(), "moveTask")
+            //findNavController().navigate(action)
+            val newFragment = MoveTaskDialogFragment()
+            newFragment.setTargetFragment(this, 0)
+            newFragment.arguments = action.arguments
+            newFragment.show(requireFragmentManager(), "moveTask")
 
             return true
         }

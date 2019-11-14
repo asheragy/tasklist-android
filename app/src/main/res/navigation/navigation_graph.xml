@@ -27,18 +27,26 @@
     <fragment
         android:id="@+id/taskDetailFragment"
         android:name="org.cerion.tasklist.ui.TaskDetailFragment"
-        android:label="TaskDetailFragment" />
-    <fragment
+        android:label="TaskDetailFragment" >
+        <argument
+            android:name="listId"
+            app:argType="string" />
+        <argument
+            android:name="taskId"
+            app:argType="string"
+            app:nullable="true" />
+    </fragment>
+    <dialog
         android:id="@+id/moveTaskDialogFragment"
         android:name="org.cerion.tasklist.ui.dialogs.MoveTaskDialogFragment"
         android:label="MoveTaskDialogFragment" >
         <argument
-            android:name="taskListId"
+            android:name="listId"
             app:argType="string" />
         <argument
             android:name="taskId"
             app:argType="string" />
-    </fragment>
+    </dialog>
     <fragment
         android:id="@+id/settingsFragment"
         android:name="org.cerion.tasklist.ui.SettingsFragment"

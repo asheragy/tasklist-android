@@ -18,25 +18,11 @@ import org.cerion.tasklist.databinding.FragmentTaskBinding
 import org.cerion.tasklist.ui.dialogs.DatePickerFragment
 import java.util.*
 
-
 class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
-
-    companion object {
-        private val TAG = TaskDetailFragment::class.java.simpleName
-
-        const val EXTRA_TASK_ID = "taskId"
-        const val EXTRA_LIST_ID = "taskListId"
-
-        fun getBundle(listId: String, id: String): Bundle {
-            val args = Bundle()
-            args.putString(EXTRA_LIST_ID, listId)
-            args.putString(EXTRA_TASK_ID, id)
-            return args
-        }
-    }
 
     private lateinit var binding: FragmentTaskBinding
     private var menuSave: MenuItem? = null
+
     private val viewModel: TaskDetailViewModel by lazy {
         val factory = ViewModelFactory(requireActivity().application)
         ViewModelProviders.of(this, factory).get(TaskDetailViewModel::class.java)
@@ -72,13 +58,12 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
         binding.due.setOnClickListener { onEditDueDate() }
 
         if (arguments != null) {
-            val id = arguments?.getString(EXTRA_TASK_ID)
-            val listId: String = arguments?.getString(EXTRA_LIST_ID)!!
+            val args = TaskDetailFragmentArgs.fromBundle(arguments!!)
 
-            if (id!!.isEmpty())
-                viewModel.addTask(listId)
+            if (args.taskId.isNullOrEmpty())
+                viewModel.addTask(args.listId)
             else
-                viewModel.setTask(listId, id)
+                viewModel.setTask(args.listId, args.taskId)
         }
 
         return binding.root

@@ -7,8 +7,8 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.ArrayAdapter
 import androidx.fragment.app.DialogFragment
+import org.cerion.tasklist.common.TAG
 import org.cerion.tasklist.data.AppDatabase
-import org.cerion.tasklist.data.Task
 import org.cerion.tasklist.data.TaskList
 import java.util.*
 
@@ -24,17 +24,15 @@ class MoveTaskDialogFragment : DialogFragment() {
 
         adapter.addAll(lists)
 
-        val bundle = arguments!!
-        val taskId = bundle.getString(TASK_ID)!!
-        val listId = bundle.getString(TASK_LISTID)!!
-        val task = taskDb.get(listId, taskId)
+        val args = MoveTaskDialogFragmentArgs.fromBundle(arguments!!)
+        val task = taskDb.get(args.listId, args.taskId)
 
         val builder = AlertDialog.Builder(activity)
         builder.setTitle("Move to list")
                 .setAdapter(adapter) { _, which ->
-                    if (listId.isNotEmpty()) {
+                    if (args.listId.isNotEmpty()) {
                         val list = lists[which]
-                        if (list.id.contentEquals(listId)) {
+                        if (list.id.contentEquals(args.listId)) {
                             Log.d(TAG, "Ignoring moving since same list")
                         } else {
                             // Delete task, add to new list and refresh
@@ -59,22 +57,5 @@ class MoveTaskDialogFragment : DialogFragment() {
                 }
 
         return builder.create()
-    }
-
-    companion object {
-        private const val TASK_LISTID = "taskListId"
-        private const val TASK_ID = "taskId"
-        private val TAG = MoveTaskDialogFragment::class.java.simpleName
-
-        fun newInstance(task: Task): MoveTaskDialogFragment {
-            val frag = MoveTaskDialogFragment()
-
-            val args = Bundle()
-            args.putString(TASK_LISTID, task.listId)
-            args.putString(TASK_ID, task.id)
-
-            frag.arguments = args
-            return frag
-        }
     }
 }
