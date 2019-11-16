@@ -32,7 +32,6 @@ import org.cerion.tasklist.databinding.FragmentTasklistBinding
 import org.cerion.tasklist.sync.AuthTools
 import org.cerion.tasklist.sync.Sync
 import org.cerion.tasklist.ui.dialogs.AlertDialogFragment
-import org.cerion.tasklist.ui.dialogs.MoveTaskDialogFragment
 import org.cerion.tasklist.ui.dialogs.TaskListDialogFragment
 import org.cerion.tasklist.ui.dialogs.TaskListsChangedListener
 import kotlin.coroutines.CoroutineContext
@@ -109,14 +108,19 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
             Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
         })
 
+
         viewModel.selectedList.addOnPropertyChanged {
-            (requireActivity() as AppCompatActivity).supportActionBar?.title = viewModel.currList.title
+            //(requireActivity() as AppCompatActivity).supportActionBar?.title = viewModel.currList.title
             populateNavigationLists() // TODO all we really need here is set the selected list but repopulating is the most accurate way of doing it
         }
 
+        viewModel.title.observe(viewLifecycleOwner, Observer { title ->
+            (requireActivity() as AppCompatActivity).supportActionBar?.title = title
+        })
+
         //Toolbar
         setHasOptionsMenu(true)
-        (requireActivity() as AppCompatActivity).supportActionBar?.title = viewModel.currList.title
+        //(requireActivity() as AppCompatActivity).supportActionBar?.title = viewModel.currList.title
         //val toolbar = binding.toolbar
         //(requireActivity() as AppCompatActivity).setSupportActionBar(toolbar)
         //(requireActivity() as AppCompatActivity).supportActionBar?.setDisplayShowTitleEnabled(false) //Hide app name, task lists replace title on actionbar
@@ -345,11 +349,11 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
 
             // TODO needs to set target fragment or some alternative before using NavController
             val action = TaskListFragmentDirections.actionTaskListFragmentToMoveTaskDialogFragment(task.listId, task.id)
-            //findNavController().navigate(action)
-            val newFragment = MoveTaskDialogFragment()
-            newFragment.setTargetFragment(this, 0)
-            newFragment.arguments = action.arguments
-            newFragment.show(requireFragmentManager(), "moveTask")
+            findNavController().navigate(action)
+            //val newFragment = MoveTaskDialogFragment()
+            //newFragment.setTargetFragment(this, 0)
+            //newFragment.arguments = action.arguments
+            //newFragment.show(requireFragmentManager(), "moveTask")
 
             return true
         }

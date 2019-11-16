@@ -2,13 +2,17 @@ package org.cerion.tasklist.ui
 
 import android.text.format.DateUtils
 import android.util.Log
+import androidx.databinding.Observable
 import androidx.databinding.ObservableArrayList
 import androidx.databinding.ObservableField
 import androidx.databinding.ObservableList
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import org.cerion.tasklist.R
 import org.cerion.tasklist.common.ResourceProvider
 import org.cerion.tasklist.common.SingleLiveEvent
+import org.cerion.tasklist.common.TAG
 import org.cerion.tasklist.data.*
 import java.util.*
 
@@ -29,7 +33,17 @@ class TasksViewModel(private val resources: ResourceProvider,
     val lastSync = ObservableField("")
     val isOutOfSync = ObservableField(false)
 
+    val _title = MutableLiveData<String>()
+    val title: LiveData<String>
+        get() = _title
+
     init {
+        selectedList.addOnPropertyChangedCallback(object: Observable.OnPropertyChangedCallback() {
+            override fun onPropertyChanged(sender: Observable?, propertyId: Int) {
+                _title.value = selectedList.get()?.title
+            }
+        })
+
         load()
     }
 
@@ -114,6 +128,26 @@ class TasksViewModel(private val resources: ResourceProvider,
         }
 
         refreshTasks()
+    }
+
+    fun moveTaskToList(task: Task, newList: TaskList) {
+        if (newList.id == task.listId) {
+            Log.i(TAG, "Ignoring moving since same list")
+            return
+        }
+
+        // Delete task, add to new list and refresh
+        // TODO if temp ID permanently delete
+        task.setModified()
+        task.deleted = true
+        taskDao.update(task)
+
+        task.deleted = false
+        task.listId = newList.id
+        task.id = AppDatabase.generateTempId()
+        taskDao.add(task)
+
+        setList(newList)
     }
 
     fun moveLeft() {

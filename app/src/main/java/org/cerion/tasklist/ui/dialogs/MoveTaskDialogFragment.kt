@@ -7,53 +7,35 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.ArrayAdapter
 import androidx.fragment.app.DialogFragment
+import androidx.lifecycle.ViewModelProviders
 import org.cerion.tasklist.common.TAG
-import org.cerion.tasklist.data.AppDatabase
 import org.cerion.tasklist.data.TaskList
-import java.util.*
+import org.cerion.tasklist.ui.TasksViewModel
+import org.cerion.tasklist.ui.ViewModelFactory
 
 
 class MoveTaskDialogFragment : DialogFragment() {
 
+    private val viewModel: TasksViewModel by lazy {
+        val factory = ViewModelFactory(requireActivity().application)
+        ViewModelProviders.of(requireActivity(), factory).get(TasksViewModel::class.java)
+    }
+
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        val args = MoveTaskDialogFragmentArgs.fromBundle(requireArguments())
+        val lists = viewModel.lists
+        val task = viewModel.tasks.first { it.id == args.taskId }
 
-        val adapter = ArrayAdapter<TaskList>(activity!!, android.R.layout.simple_spinner_dropdown_item)
-        val db = AppDatabase.getInstance(requireContext())!!
-        val taskDb = db.taskDao()
-        val lists = db.taskListDao().getAll().sortedBy { it.title.toLowerCase(Locale.getDefault()) }
-
+        val adapter = ArrayAdapter<TaskList>(requireContext(), android.R.layout.simple_spinner_dropdown_item)
         adapter.addAll(lists)
 
-        val args = MoveTaskDialogFragmentArgs.fromBundle(arguments!!)
-        val task = taskDb.get(args.listId, args.taskId)
-
         val builder = AlertDialog.Builder(activity)
-        builder.setTitle("Move to list")
+                .setTitle("Move to list")
                 .setAdapter(adapter) { _, which ->
-                    if (args.listId.isNotEmpty()) {
-                        val list = lists[which]
-                        if (list.id.contentEquals(args.listId)) {
-                            Log.d(TAG, "Ignoring moving since same list")
-                        } else {
-                            // Delete task, add to new list and refresh
-                            // TODO if temp ID permanently delete
-                            task.setModified()
-                            task.deleted = true
-                            taskDb.update(task)
-
-                            task.deleted = false
-                            task.listId = list.id
-                            task.id = AppDatabase.generateTempId()
-                            taskDb.add(task)
-
-                            // TODO would be good to have test for this
-                            val parent = targetFragment as TaskListsChangedListener
-                            parent.onTaskListsChanged(list)
-                        }
-
-                    } else {
+                    if (args.listId.isNotEmpty())
+                        viewModel.moveTaskToList(task, lists[which])
+                    else
                         Log.e(TAG, "Error, unable to find task")
-                    }
                 }
 
         return builder.create()

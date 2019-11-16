@@ -6,7 +6,7 @@
     <fragment
         android:id="@+id/taskListFragment"
         android:name="org.cerion.tasklist.ui.TaskListFragment"
-        android:label="TaskListFragment" >
+     >
         <action
             android:id="@+id/action_taskListFragment_to_taskDetailFragment"
             app:destination="@id/taskDetailFragment"
