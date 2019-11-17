@@ -73,18 +73,17 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
         binding.recyclerView.addItemDecoration(DividerItemDecoration(context, DividerItemDecoration.VERTICAL))
 
         binding.layoutDebug.visibility = View.GONE
+        binding.lifecycleOwner = this
         binding.viewModel = viewModel
 
         val defaultTextColor = binding.status.textColors.defaultColor
 
-        viewModel.isOutOfSync.addOnPropertyChangedCallback(object : Observable.OnPropertyChangedCallback() {
-            override fun onPropertyChanged(observable: Observable, i: Int) {
-                if (viewModel.isOutOfSync.get()!!) {
-                    binding.status.setTextColor(Color.RED)
-                    onSync()
-                } else
-                    binding.status.setTextColor(defaultTextColor)
-            }
+        viewModel.isOutOfSync.observe(viewLifecycleOwner, Observer { outOfSync ->
+            if (outOfSync) {
+                binding.status.setTextColor(Color.RED)
+                onSync()
+            } else
+                binding.status.setTextColor(defaultTextColor)
         })
 
         viewModel.hasLocalChanges.addOnPropertyChangedCallback(object : Observable.OnPropertyChangedCallback() {
@@ -103,29 +102,16 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
             }
         })
 
-        // TODO use viewLifecycleOwner elsewhere so multiple observes do not occur
         viewModel.message.observe(viewLifecycleOwner, Observer<String> {
             Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
         })
 
-
-        viewModel.selectedList.addOnPropertyChanged {
-            //(requireActivity() as AppCompatActivity).supportActionBar?.title = viewModel.currList.title
+        viewModel.selectedList.observe(viewLifecycleOwner, Observer { list ->
             populateNavigationLists() // TODO all we really need here is set the selected list but repopulating is the most accurate way of doing it
-        }
-
-        viewModel.title.observe(viewLifecycleOwner, Observer { title ->
-            (requireActivity() as AppCompatActivity).supportActionBar?.title = title
+            (requireActivity() as AppCompatActivity).supportActionBar?.title = list.title
         })
 
-        //Toolbar
         setHasOptionsMenu(true)
-        //(requireActivity() as AppCompatActivity).supportActionBar?.title = viewModel.currList.title
-        //val toolbar = binding.toolbar
-        //(requireActivity() as AppCompatActivity).setSupportActionBar(toolbar)
-        //(requireActivity() as AppCompatActivity).supportActionBar?.setDisplayShowTitleEnabled(false) //Hide app name, task lists replace title on actionbar
-        //toolbar.setViewModel(viewModel)
-
         populateNavigationLists()
 
         val touchListener = object : OnSwipeTouchListener(requireContext()) {
@@ -166,7 +152,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
                 true
             }
 
-            if (viewModel.currList == list) {
+            if (viewModel.selectedList.value == list) {
                 item.isChecked = true
             }
         }
@@ -177,18 +163,10 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
         syncJob.cancel()
     }
 
-    /*
-    override fun onResume() {
-        //Log.d(TAG,"onResume");
-        vm.updateLastSync()
-        super.onResume()
-    }
-    */
-
     private fun onOpenTask(task: Task?) {
-        var list = viewModel.currList
+        var list = viewModel.selectedList.value!!
         if (list.isAllTasks)
-            list = viewModel.getDefaultList()
+            list = viewModel.defaultList
 
         val action = TaskListFragmentDirections.actionTaskListFragmentToTaskDetailFragment(list.id, task?.id ?: "")
         findNavController().navigate(action)
@@ -221,7 +199,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
             R.id.action_add -> onAddTaskList()
             R.id.action_clear_completed -> viewModel.clearCompleted()
             R.id.action_rename -> {
-                val dialog = TaskListDialogFragment.getRenameInstance(viewModel.currList)
+                val dialog = TaskListDialogFragment.getRenameInstance(viewModel.selectedList.value!!)
                 dialog.setTargetFragment(this, 0)
                 dialog.show(requireFragmentManager(), "dialog")
             }
@@ -345,26 +323,11 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
         }
 
         if (id == R.id.move) {
-            Log.d(TAG, "onMove")
-
-            // TODO needs to set target fragment or some alternative before using NavController
             val action = TaskListFragmentDirections.actionTaskListFragmentToMoveTaskDialogFragment(task.listId, task.id)
             findNavController().navigate(action)
-            //val newFragment = MoveTaskDialogFragment()
-            //newFragment.setTargetFragment(this, 0)
-            //newFragment.arguments = action.arguments
-            //newFragment.show(requireFragmentManager(), "moveTask")
-
             return true
         }
 
         return super.onContextItemSelected(item)
     }
 }
-
-fun <T: Observable> T.addOnPropertyChanged(callback: (T) -> Unit) =
-        addOnPropertyChangedCallback(object: Observable.OnPropertyChangedCallback() {
-            override fun onPropertyChanged(observable: Observable?, i: Int) {
-                callback(observable as T)
-            }
-        })

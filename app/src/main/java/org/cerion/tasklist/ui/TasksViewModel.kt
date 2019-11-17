@@ -2,7 +2,6 @@ package org.cerion.tasklist.ui
 
 import android.text.format.DateUtils
 import android.util.Log
-import androidx.databinding.Observable
 import androidx.databinding.ObservableArrayList
 import androidx.databinding.ObservableField
 import androidx.databinding.ObservableList
@@ -24,26 +23,25 @@ class TasksViewModel(private val resources: ResourceProvider,
     val lists: ObservableList<TaskList> = ObservableArrayList()
     val tasks: ObservableList<Task> = ObservableArrayList()
     val message: SingleLiveEvent<String> = SingleLiveEvent()
+
     val hasLocalChanges: ObservableField<Boolean> = ObservableField()
 
-    val selectedList: ObservableField<TaskList> = ObservableField(TaskList.ALL_TASKS)
-    // TODO make private
-    val currList get() = selectedList.get()!!
+    val _selectedList = MutableLiveData<TaskList>(TaskList.ALL_TASKS)
+    val selectedList: LiveData<TaskList>
+        get() = _selectedList
+    private val currList get() = selectedList.value!!
 
-    val lastSync = ObservableField("")
-    val isOutOfSync = ObservableField(false)
+    val _lastSync = MutableLiveData<String>("")
+    val lastSync: LiveData<String>
+        get() = _lastSync
 
-    val _title = MutableLiveData<String>()
-    val title: LiveData<String>
-        get() = _title
+    val _isOutOfSync = MutableLiveData<Boolean>(false) // TODO consider merging with hasLocalChanges and true=sync now
+    val isOutOfSync : LiveData<Boolean>
+        get() = _isOutOfSync
+
+    val defaultList get() = TaskList.getDefault(lists)!!
 
     init {
-        selectedList.addOnPropertyChangedCallback(object: Observable.OnPropertyChangedCallback() {
-            override fun onPropertyChanged(sender: Observable?, propertyId: Int) {
-                _title.value = selectedList.get()?.title
-            }
-        })
-
         load()
     }
 
@@ -83,7 +81,7 @@ class TasksViewModel(private val resources: ResourceProvider,
 
         val lastId = prefs.getString(Prefs.KEY_LAST_SELECTED_LIST_ID)
         val lastSaved = dbLists.firstOrNull { it.id == lastId }
-        selectedList.set(lastSaved ?: TaskList.ALL_TASKS) //If nothing valid is saved default to "all tasks" list
+        _selectedList.value = (lastSaved ?: TaskList.ALL_TASKS) //If nothing valid is saved default to "all tasks" list
 
         lists.clear()
         lists.addAll(dbLists)
@@ -199,34 +197,22 @@ class TasksViewModel(private val resources: ResourceProvider,
     }
 
     fun updateLastSync() {
-        var sText = "Last Sync: "
+        var lastSyncText = "Last Sync: "
         val lastSyncTime = prefs.getDate(Prefs.KEY_LAST_SYNC)
-        if (lastSyncTime == null || lastSyncTime.time == 0L)
-            sText += "Never"
+        if (lastSyncTime.time == 0L)
+            lastSyncText += "Never"
         else {
             val now = Date().time
 
-            sText +=
+            lastSyncText +=
                     if (now - lastSyncTime.time < 60 * 1000)
                         "Less than 1 minute ago"
                     else
                         DateUtils.getRelativeTimeSpanString(lastSyncTime.time, now, DateUtils.SECOND_IN_MILLIS).toString()
 
-            if (now - lastSyncTime.time > 24 * 60 * 60 * 1000)
-                isOutOfSync.set(true)
-            else
-                isOutOfSync.set(false)
+            _isOutOfSync.value = (now - lastSyncTime.time > 24 * 60 * 60 * 1000)
         }
 
-        lastSync.set(sText)
+        _lastSync.value = lastSyncText
     }
-
-    fun getDefaultList(): TaskList {
-        return TaskList.getDefault(lists)!!
-    }
-
-    companion object {
-        private val TAG = TasksViewModel::class.qualifiedName
-    }
-
 }
