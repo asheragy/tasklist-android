@@ -14,7 +14,7 @@ import androidx.navigation.NavDestination
 import androidx.navigation.findNavController
 import androidx.navigation.ui.NavigationUI
 import com.google.android.material.navigation.NavigationView
-import org.cerion.tasklist.data.Prefs
+import org.cerion.tasklist.database.Prefs
 import org.cerion.tasklist.ui.TaskListFragmentDirections
 
 

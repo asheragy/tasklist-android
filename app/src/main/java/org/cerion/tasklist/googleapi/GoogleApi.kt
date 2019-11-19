@@ -1,5 +1,7 @@
-package org.cerion.tasklist.data
+package org.cerion.tasklist.googleapi
 
+import org.cerion.tasklist.database.Task
+import org.cerion.tasklist.database.TaskList
 import java.util.*
 
 //Error from tasks API, json encoded with error code and message

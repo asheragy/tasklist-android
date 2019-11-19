@@ -3,8 +3,8 @@ package org.cerion.tasklist.ui
 import androidx.lifecycle.*
 import org.cerion.tasklist.R
 import org.cerion.tasklist.common.ResourceProvider
-import org.cerion.tasklist.data.Task
-import org.cerion.tasklist.data.TaskDao
+import org.cerion.tasklist.database.Task
+import org.cerion.tasklist.database.TaskDao
 import java.text.SimpleDateFormat
 import java.util.*
 

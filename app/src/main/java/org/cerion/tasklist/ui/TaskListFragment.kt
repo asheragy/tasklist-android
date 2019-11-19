@@ -25,8 +25,8 @@ import org.cerion.tasklist.R
 import org.cerion.tasklist.common.OnListAnyChangeCallback
 import org.cerion.tasklist.common.OnSwipeTouchListener
 import org.cerion.tasklist.common.TAG
-import org.cerion.tasklist.data.Task
-import org.cerion.tasklist.data.TaskList
+import org.cerion.tasklist.database.Task
+import org.cerion.tasklist.database.TaskList
 import org.cerion.tasklist.databinding.FragmentTasklistBinding
 import org.cerion.tasklist.sync.AuthTools
 import org.cerion.tasklist.ui.dialogs.AlertDialogFragment
@@ -181,14 +181,11 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
         inflater.inflate(R.menu.main, menu)
     }
 
-    /* TODO need to convert
-    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
-        menu.findItem(R.id.action_rename).isVisible = !vm.getCurrList().isAllTasks() //Hide rename if "All Tasks" list
-        menu.findItem(R.id.action_delete).isVisible = mTaskListAdapter.itemCount === 0
-
-        return super.onPrepareOptionsMenu(menu)
+    override fun onPrepareOptionsMenu(menu: Menu) {
+        super.onPrepareOptionsMenu(menu)
+        menu.findItem(R.id.action_rename).isVisible = !viewModel.selectedList.value!!.isAllTasks
+        menu.findItem(R.id.action_delete).isVisible = viewModel.tasks.size == 0
     }
-    */
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {

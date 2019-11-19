@@ -6,8 +6,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import org.cerion.tasklist.common.ResourceProvider
 import org.cerion.tasklist.common.ResourceProvider_Impl
-import org.cerion.tasklist.data.AppDatabase
-import org.cerion.tasklist.data.Prefs
+import org.cerion.tasklist.database.AppDatabase
+import org.cerion.tasklist.database.Prefs
 
 class ViewModelFactory(private val app: Application) : ViewModelProvider.Factory {
 

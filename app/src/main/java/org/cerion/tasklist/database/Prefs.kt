@@ -1,4 +1,4 @@
-package org.cerion.tasklist.data
+package org.cerion.tasklist.database
 
 import android.annotation.SuppressLint
 import android.content.Context

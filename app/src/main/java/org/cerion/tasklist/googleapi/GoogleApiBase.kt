@@ -1,4 +1,4 @@
-package org.cerion.tasklist.data
+package org.cerion.tasklist.googleapi
 
 import android.util.Log
 import com.squareup.okhttp.MediaType

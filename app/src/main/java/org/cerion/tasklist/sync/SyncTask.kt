@@ -3,7 +3,7 @@ package org.cerion.tasklist.sync
 
 import android.content.Context
 import android.os.AsyncTask
-import org.cerion.tasklist.data.GoogleApiException
+import org.cerion.tasklist.googleapi.GoogleApiException
 import java.net.HttpURLConnection
 
 class SyncTask(private val mContext: Context, private val mAuthToken: String, private val mCallback: OnSyncCompleteListener) : AsyncTask<Void, Void, Boolean>() {

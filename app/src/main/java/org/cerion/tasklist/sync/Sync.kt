@@ -3,7 +3,11 @@ package org.cerion.tasklist.sync
 
 import android.content.Context
 import android.util.Log
-import org.cerion.tasklist.data.*
+import org.cerion.tasklist.database.*
+import org.cerion.tasklist.googleapi.GoogleApi
+import org.cerion.tasklist.googleapi.GoogleApiException
+import org.cerion.tasklist.googleapi.GoogleTasklistsApi
+import org.cerion.tasklist.googleapi.GoogleTasksApi
 import java.util.*
 
 internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao, //Instance variables
@@ -22,7 +26,7 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
 
         //Google->Local (Added or Updated)
         for (curr in googleLists) {
-            var dbList = TaskList[dbLists, curr.id]
+            var dbList = dbLists.getById(curr.id)
             //--- UPDATE
             if (dbList != null) {
                 if (!curr.title.contentEquals(dbList.title)) {
@@ -33,7 +37,7 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
                     }
                 }
             } else if (curr.isDefault) {
-                dbList = TaskList.getDefault(dbLists)
+                dbList = dbLists.getDefault()
                 if (dbList != null) {
                     if (!dbList.isRenamed) {
                         dbList.title = curr.title
@@ -61,7 +65,7 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
             //Temp ids don't exist on web since they have not been created yet
                 continue
 
-            val googleList = TaskList[googleLists, curr.id]
+            val googleList = googleLists.getById(curr.id)
             if (googleList == null) {
                 // TODO this will cascade delete so log tasks count its removing...
                 listDb.delete(curr)
@@ -99,7 +103,7 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
 
             //--- UPDATE
             if (dbList.isRenamed) {
-                val googleList = TaskList[googleLists, dbList.id]
+                val googleList = googleLists.getById(dbList.id)
 
                 if (googleList != null) {
                     if (listApi.update(dbList)) {
@@ -121,7 +125,7 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
         }
 
         for (list in googleLists) {
-            val dbList = TaskList[dbLists, list.id]
+            val dbList = dbLists.getById(list.id)
             if (dbList != null)
                 syncTasks(list, dbList.updated)
             else

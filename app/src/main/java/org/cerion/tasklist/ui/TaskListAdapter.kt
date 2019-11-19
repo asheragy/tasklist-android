@@ -17,7 +17,7 @@ import androidx.databinding.ObservableList
 import androidx.recyclerview.widget.RecyclerView
 import org.cerion.tasklist.R
 import org.cerion.tasklist.common.OnListAnyChangeCallback
-import org.cerion.tasklist.data.Task
+import org.cerion.tasklist.database.Task
 import java.text.SimpleDateFormat
 import java.util.*
 

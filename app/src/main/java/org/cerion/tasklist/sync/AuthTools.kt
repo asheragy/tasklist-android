@@ -7,9 +7,10 @@ import android.app.Activity
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
-import org.cerion.tasklist.data.AppDatabase
-import org.cerion.tasklist.data.Prefs
-import org.cerion.tasklist.data.TaskList
+import org.cerion.tasklist.database.AppDatabase
+import org.cerion.tasklist.database.Prefs
+import org.cerion.tasklist.database.TaskList
+import org.cerion.tasklist.database.getDefault
 import java.util.*
 
 object AuthTools {
@@ -111,7 +112,7 @@ object AuthTools {
 
         //Move un-synced task to this default list
         val lists = listDb.getAll()
-        val defaultList = TaskList.getDefault(lists)
+        val defaultList = lists.getDefault()
 
         //Delete all non-temp Id records, also remove records marked as deleted
         val tasks = taskDb.getAll()

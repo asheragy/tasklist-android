@@ -1,4 +1,4 @@
-package org.cerion.tasklist.data
+package org.cerion.tasklist.database
 
 import android.content.Context
 import android.util.Log
@@ -45,7 +45,7 @@ abstract class AppDatabase : RoomDatabase() {
         private var instance: AppDatabase? = null
         private val LOCK = Any()
 
-        val MIGRATION_1_2 = object : Migration(1, 2) {
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("ALTER TABLE " + TaskList.TABLE_NAME + " ADD COLUMN deleted INTEGER DEFAULT 0 NOT NULL")
             }

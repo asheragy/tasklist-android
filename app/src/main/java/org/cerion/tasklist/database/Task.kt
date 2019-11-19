@@ -1,4 +1,4 @@
-package org.cerion.tasklist.data
+package org.cerion.tasklist.database
 
 import androidx.room.Entity
 import androidx.room.ForeignKey

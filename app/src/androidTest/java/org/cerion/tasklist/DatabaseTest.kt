@@ -3,7 +3,7 @@ package org.cerion.tasklist
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import org.cerion.tasklist.data.*
+import org.cerion.tasklist.database.*
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

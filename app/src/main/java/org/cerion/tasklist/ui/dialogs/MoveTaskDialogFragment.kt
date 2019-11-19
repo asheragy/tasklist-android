@@ -9,7 +9,7 @@ import android.widget.ArrayAdapter
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.ViewModelProviders
 import org.cerion.tasklist.common.TAG
-import org.cerion.tasklist.data.TaskList
+import org.cerion.tasklist.database.TaskList
 import org.cerion.tasklist.ui.TasksViewModel
 import org.cerion.tasklist.ui.ViewModelFactory
 

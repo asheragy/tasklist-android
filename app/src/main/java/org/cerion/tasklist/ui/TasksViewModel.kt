@@ -14,7 +14,7 @@ import org.cerion.tasklist.R
 import org.cerion.tasklist.common.ResourceProvider
 import org.cerion.tasklist.common.SingleLiveEvent
 import org.cerion.tasklist.common.TAG
-import org.cerion.tasklist.data.*
+import org.cerion.tasklist.database.*
 import org.cerion.tasklist.sync.Sync
 import java.util.*
 
@@ -51,7 +51,7 @@ class TasksViewModel(private val resources: ResourceProvider,
     val syncing: LiveData<Boolean>
         get() = _syncing
 
-    val defaultList get() = TaskList.getDefault(lists)!!
+    val defaultList get() = lists.getDefault()!!
 
     init {
         load()
@@ -223,30 +223,29 @@ class TasksViewModel(private val resources: ResourceProvider,
 
     fun deleteCurrentList() {
         // Only take action if list is empty
-        if (taskDao.getAllbyList(currList.id).isEmpty()) {
-            if (currList.hasTempId) {
-                listDao.delete(currList)
-                message.value = resources.getString(R.string.message_deleted_list, currList.title)
-                load()
-            }
-            else {
-                currList.deleted = true
-                listDao.update(currList)
-                hasLocalChanges.set(true) // triggers a sync
-            }
+        if (currList.isAllTasks || currList.isDefault)
+            message.value = resources.getString(R.string.warning_delete_system_list)
+        else if (tasks.size != 0)
+            message.value = resources.getString(R.string.warning_delete_nonEmpty_list)
+        else if (currList.hasTempId) {
+            // If never synced just delete
+            listDao.delete(currList)
+            message.value = resources.getString(R.string.message_deleted_list, currList.title)
+            load()
         }
         else {
-            message.value = resources.getString(R.string.warning_delete_nonEmpty_list)
+            // Set deleted and sync
+            currList.deleted = true
+            listDao.update(currList)
+            hasLocalChanges.set(true) // triggers a sync
         }
-
-        db.log()
     }
 
     private fun getListsFromDatabase(): List<TaskList> {
         var dbLists = listDao.getAll()
         if (dbLists.isEmpty()) {
             Log.d(TAG, "No lists, adding default")
-            val defaultList = TaskList("Default")
+            val defaultList = TaskList(AppDatabase.generateTempId(),"Default")
             defaultList.isDefault = true
             listDao.add(defaultList)
             dbLists = listDao.getAll() //re-get list

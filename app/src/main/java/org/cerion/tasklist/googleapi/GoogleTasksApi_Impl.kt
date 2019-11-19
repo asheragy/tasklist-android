@@ -1,8 +1,9 @@
-package org.cerion.tasklist.data
+package org.cerion.tasklist.googleapi
 
 
 import android.util.Log
 import androidx.annotation.Nullable
+import org.cerion.tasklist.database.Task
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -76,7 +77,7 @@ class GoogleTasksApi_Impl internal constructor(authKey: String) : GoogleApiBase(
             else
                 json.put(FIELD_DUE, JSONObject.NULL)
 
-            val result = getJSON(sURL, json, GoogleApiBase.PATCH)
+            val result = getJSON(sURL, json, PATCH)
             if (task.id.contentEquals(result.getString("id")))
                 bResult = true
         } catch (e: JSONException) {

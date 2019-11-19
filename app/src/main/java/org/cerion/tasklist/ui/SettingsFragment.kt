@@ -18,7 +18,7 @@ import androidx.preference.PreferenceFragmentCompat
 import com.google.android.gms.common.AccountPicker
 import org.cerion.tasklist.MainActivity
 import org.cerion.tasklist.R
-import org.cerion.tasklist.data.Prefs
+import org.cerion.tasklist.database.Prefs
 import org.cerion.tasklist.sync.AuthTools
 
 class SettingsFragment : PreferenceFragmentCompat() {

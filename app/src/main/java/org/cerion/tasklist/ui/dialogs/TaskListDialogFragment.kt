@@ -6,8 +6,8 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.EditText
 import androidx.fragment.app.DialogFragment
-import org.cerion.tasklist.data.AppDatabase
-import org.cerion.tasklist.data.TaskList
+import org.cerion.tasklist.database.AppDatabase
+import org.cerion.tasklist.database.TaskList
 
 class TaskListDialogFragment : DialogFragment() {
 
@@ -25,7 +25,7 @@ class TaskListDialogFragment : DialogFragment() {
                 val name = edittext.text.toString()
 
                 val db = AppDatabase.getInstance(requireContext())!!.taskListDao()
-                val update = TaskList(name)
+                val update = TaskList(AppDatabase.generateTempId(), name)
                 db.add(update)
 
                 // TODO not sure if this method is prefered or onActivityResult is better
