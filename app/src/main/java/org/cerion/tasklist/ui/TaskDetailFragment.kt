@@ -59,7 +59,6 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
 
         if (arguments != null) {
             val args = TaskDetailFragmentArgs.fromBundle(arguments!!)
-
             if (args.taskId.isNullOrEmpty())
                 viewModel.addTask(args.listId)
             else

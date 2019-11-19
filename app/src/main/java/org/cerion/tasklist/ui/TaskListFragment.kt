@@ -21,7 +21,6 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.navigation.NavigationView
-import kotlinx.coroutines.*
 import org.cerion.tasklist.R
 import org.cerion.tasklist.common.OnListAnyChangeCallback
 import org.cerion.tasklist.common.OnSwipeTouchListener
@@ -30,21 +29,15 @@ import org.cerion.tasklist.data.Task
 import org.cerion.tasklist.data.TaskList
 import org.cerion.tasklist.databinding.FragmentTasklistBinding
 import org.cerion.tasklist.sync.AuthTools
-import org.cerion.tasklist.sync.Sync
 import org.cerion.tasklist.ui.dialogs.AlertDialogFragment
 import org.cerion.tasklist.ui.dialogs.TaskListDialogFragment
 import org.cerion.tasklist.ui.dialogs.TaskListsChangedListener
-import kotlin.coroutines.CoroutineContext
 
 
-class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
+class TaskListFragment : Fragment(), TaskListsChangedListener  {
 
     private lateinit var mSwipeRefresh: SwipeRefreshLayout
     private lateinit var mTaskListAdapter: TaskListAdapter
-
-    private var syncJob: Job = SupervisorJob()
-    override val coroutineContext: CoroutineContext
-        get() = syncJob + Dispatchers.Main
 
     private val viewModel: TasksViewModel by lazy {
         val factory = ViewModelFactory(requireActivity().application)
@@ -111,6 +104,14 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
             (requireActivity() as AppCompatActivity).supportActionBar?.title = list.title
         })
 
+        viewModel.syncing.observe(viewLifecycleOwner, Observer { syncing ->
+            // TODO see if 'isRefreshing = syncing' will work
+            if (!syncing && mSwipeRefresh.isRefreshing)
+                mSwipeRefresh.isRefreshing = false
+            else if (syncing && !mSwipeRefresh.isRefreshing)
+                mSwipeRefresh.isRefreshing = true
+        })
+
         setHasOptionsMenu(true)
         populateNavigationLists()
 
@@ -158,17 +159,17 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        syncJob.cancel()
-    }
-
     private fun onOpenTask(task: Task?) {
-        var list = viewModel.selectedList.value!!
-        if (list.isAllTasks)
-            list = viewModel.defaultList
+        // TODO fragment has viewmodel so can probably just pass listId or empty here
+        val action =
+                if (task != null)
+                    TaskListFragmentDirections.actionTaskListFragmentToTaskDetailFragment(task.listId, task.id)
+                else {
+                    val list = viewModel.selectedList.value!!
+                    val id = if(list.isAllTasks) viewModel.defaultList.id else list.id
+                    TaskListFragmentDirections.actionTaskListFragmentToTaskDetailFragment(id, "")
+                }
 
-        val action = TaskListFragmentDirections.actionTaskListFragmentToTaskDetailFragment(list.id, task?.id ?: "")
         findNavController().navigate(action)
     }
 
@@ -190,12 +191,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
     */
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        val id = item.itemId
-
-        when (id) {
+        when (item.itemId) {
             R.id.action_add -> onAddTaskList()
             R.id.action_clear_completed -> viewModel.clearCompleted()
             R.id.action_rename -> {
@@ -215,10 +211,6 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
         dialog.show(requireFragmentManager(), "dialog")
     }
 
-    private val handler = CoroutineExceptionHandler { _, throwable ->
-        Log.e("Exception", ":$throwable")
-    }
-
     private fun onSync() {
         val cm = requireActivity().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val networkInfo = cm.activeNetworkInfo
@@ -234,7 +226,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
 
         AuthTools.getAuthToken(requireContext(), requireActivity(), object : AuthTools.AuthTokenCallback {
             override fun onSuccess(token: String) {
-                startSync(token)
+                viewModel.sync(token)
             }
 
             override fun onError(e: Exception?) {
@@ -246,50 +238,11 @@ class TaskListFragment : Fragment(), TaskListsChangedListener, CoroutineScope  {
                     val dialog = AlertDialogFragment.newInstance("Auth Error", e.message!!)
                     dialog.show(requireFragmentManager(), "dialog")
                 }
+
+                mSwipeRefresh.isRefreshing = false
             }
         })
     }
-
-    private fun startSync(token: String) {
-        setInSync(true)
-        syncJob = Job()
-
-        launch(handler)  {
-            val sync = Sync.getInstance(requireContext(), token)
-            var success = false
-            var error: String? = null
-
-            //Use dispatcher to switch between context
-            try {
-                success = withContext(Dispatchers.Default) {
-                    sync.run()
-                }
-            }
-            catch (e: Exception) {
-                error = e.message
-            }
-
-            setInSync(false)
-            if (success) {
-                viewModel.updateLastSync() //Update last sync time only if successful
-                viewModel.hasLocalChanges.set(false)
-            } else {
-                val message = if(error.isNullOrBlank()) "Sync Failed, unknown error" else error
-                val dialog = AlertDialogFragment.newInstance("Sync failed", message)
-                dialog.show(requireFragmentManager(), "dialog")
-            }
-
-            viewModel.load() //refresh since data may have changed
-        }
-    }
-
-    private fun setInSync(bSyncing: Boolean) {
-        if (!bSyncing && mSwipeRefresh.isRefreshing)
-            mSwipeRefresh.isRefreshing = false
-        else if (bSyncing && !mSwipeRefresh.isRefreshing)
-            mSwipeRefresh.isRefreshing = true
-    }
-
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         Log.d(TAG, "onActivityResult: $resultCode")

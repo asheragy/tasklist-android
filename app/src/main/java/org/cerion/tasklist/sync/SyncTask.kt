@@ -3,7 +3,6 @@ package org.cerion.tasklist.sync
 
 import android.content.Context
 import android.os.AsyncTask
-import android.util.Log
 import org.cerion.tasklist.data.GoogleApiException
 import java.net.HttpURLConnection
 
@@ -19,7 +18,6 @@ class SyncTask(private val mContext: Context, private val mAuthToken: String, pr
         try {
             result = sync.run()
         } catch (e: GoogleApiException) {
-            Log.d(TAG, "GoogleApiException " + e.message)
             mError = e
             result = false
 
@@ -37,32 +35,7 @@ class SyncTask(private val mContext: Context, private val mAuthToken: String, pr
         return result
     }
 
-    /**
-     * Get token and run sync process in background
-     * @param context Context
-     * @param activity Use for permissions prompt if starting from activity
-     * @param callback Listener for when sync completes
-     */
-/*
-    public static void run(Context context, @Nullable Activity activity, OnSyncCompleteListener callback) {
-        String token = AuthTools.getSavedToken(context);
-
-        if(token != null) {
-            SyncTask task = new SyncTask(context, token, callback);
-            task.execute();
-        } else {
-            //Get new token then run sync
-            AuthTools.getTokenAndSync(context, activity, callback);
-        }
-    }
-    */
-
     override fun onPostExecute(result: Boolean) {
         mCallback.onSyncFinish(result, mError)
-    }
-
-    companion object {
-
-        private val TAG = SyncTask::class.java.simpleName
     }
 }
