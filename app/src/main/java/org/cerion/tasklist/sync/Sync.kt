@@ -135,7 +135,7 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
         // If any local lists are empty and marked for deletion, delete from web
         for (list in dbLists) {
             if (list.deleted) {
-                val tasks = taskDb.getAllbyList(list.id)
+                val tasks = taskDb.getAllByList(list.id)
                 if (tasks.size == 0) {
                     if (listApi.delete(list)) {
                         listDb.delete(list)
@@ -188,7 +188,7 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
         /**************
          * Web -> Database
          */
-        val dbTasks = taskDb.getAllbyList(listId).toMutableList()
+        val dbTasks = taskDb.getAllByList(listId).toMutableList()
         if (webTasks != null) {
             for (task in webTasks) {
                 val dbTask = getTask(dbTasks, task.id)

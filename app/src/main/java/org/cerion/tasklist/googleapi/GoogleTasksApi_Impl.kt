@@ -3,6 +3,7 @@ package org.cerion.tasklist.googleapi
 
 import android.util.Log
 import androidx.annotation.Nullable
+import org.cerion.tasklist.common.TAG
 import org.cerion.tasklist.database.Task
 import org.json.JSONArray
 import org.json.JSONException
@@ -34,7 +35,7 @@ class GoogleTasksApi_Impl internal constructor(authKey: String) : GoogleApiBase(
             json.put(FIELD_NOTES, task.notes)
             //Only need to set these if non-default value
             if (task.hasDueDate)
-                json.put(FIELD_DUE, mDateFormat.format(task.due))
+                json.put(FIELD_DUE, dateFormat.format(task.due))
             if (task.completed)
                 json.put(FIELD_STATUS, "completed")
 
@@ -47,7 +48,9 @@ class GoogleTasksApi_Impl internal constructor(authKey: String) : GoogleApiBase(
                     val token = tokens[i]
                     if (token.contentEquals("lists")) {
                         val newListId = tokens[i + 1]
-                        return Task(newListId, newId)
+                        return Task(newListId).apply {
+                            id = newId
+                        }
                     }
                 }
             }
@@ -73,7 +76,7 @@ class GoogleTasksApi_Impl internal constructor(authKey: String) : GoogleApiBase(
             if (!task.completed)
                 json.put(FIELD_COMPLETED, JSONObject.NULL)
             if (task.hasDueDate)
-                json.put(FIELD_DUE, mDateFormat.format(task.due))
+                json.put(FIELD_DUE, dateFormat.format(task.due))
             else
                 json.put(FIELD_DUE, JSONObject.NULL)
 
@@ -91,7 +94,7 @@ class GoogleTasksApi_Impl internal constructor(authKey: String) : GoogleApiBase(
     override fun list(listId: String, @Nullable dtUpdatedMin: Date?): List<Task>? {
         var sURL = getURL("lists/$listId/tasks")
         if (dtUpdatedMin != null) {
-            sURL += "&updatedMin=" + mDateFormat.format(dtUpdatedMin)
+            sURL += "&updatedMin=" + dateFormat.format(dtUpdatedMin)
             sURL += "&showDeleted=true"
         }
 
@@ -123,25 +126,23 @@ class GoogleTasksApi_Impl internal constructor(authKey: String) : GoogleApiBase(
     @Throws(JSONException::class)
     private fun parseItem(item: JSONObject, listId: String): Task? {
         try {
-            val task = Task(listId, item.getString(FIELD_ID))
-            task.title = item.getString(FIELD_TITLE)
-            task.updated = mDateFormat.parse(item.getString(FIELD_UPDATED))
+            return Task(listId).apply {
+                id = item.getString(FIELD_ID)
+                title = item.getString(FIELD_TITLE)
+                updated = dateFormat.parse(item.getString(FIELD_UPDATED))
+                completed = item.getString(FIELD_STATUS) == "completed"
 
-            if (item.has(FIELD_NOTES))
-                task.notes = item.getString(FIELD_NOTES)
-            task.completed = item.getString(FIELD_STATUS) == "completed"
+                if (item.has(FIELD_NOTES))
+                    notes = item.getString(FIELD_NOTES)
 
-            if (item.has(FIELD_DUE)) {
-                val sDue = item.getString(FIELD_DUE)
-                task.due = mDateFormat.parse(item.getString(FIELD_DUE))
-                println(sDue + " = " + task.due)
+                if (item.has(FIELD_DUE))
+                    due = dateFormat.parse(item.getString(FIELD_DUE))
+
+                if (item.has(FIELD_DELETED))
+                    deleted = item.getBoolean(FIELD_DELETED)
             }
-
-            if (item.has(FIELD_DELETED))
-                task.deleted = item.getBoolean(FIELD_DELETED)
-
-            return task
-        } catch (e: ParseException) {
+        }
+        catch (e: ParseException) {
             Log.e(TAG, "exception", e)
         }
 
@@ -149,9 +150,6 @@ class GoogleTasksApi_Impl internal constructor(authKey: String) : GoogleApiBase(
     }
 
     companion object {
-
-        private val TAG = GoogleTasksApi_Impl::class.java.simpleName
-
         private const val FIELD_ID = "id"
         private const val FIELD_TITLE = "title"
         private const val FIELD_UPDATED = "updated"

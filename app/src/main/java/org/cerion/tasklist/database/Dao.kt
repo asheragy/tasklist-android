@@ -15,7 +15,7 @@ interface TaskDao {
     fun getAll(): List<Task>
 
     @Query("SELECT * FROM " + Task.TABLE_NAME + " WHERE listId=:listId")
-    fun getAllbyList(listId: String): List<Task>
+    fun getAllByList(listId: String): List<Task>
 
     @Insert
     fun add(task: Task)

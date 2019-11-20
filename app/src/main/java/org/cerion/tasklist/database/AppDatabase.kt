@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import org.cerion.tasklist.common.TAG
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -20,25 +21,24 @@ abstract class AppDatabase : RoomDatabase() {
         dateFormat.timeZone = TimeZone.getTimeZone("UTC")
 
         val lists = taskListDao().getAll()
-        Log.d(TAG, "---------------------- App Database ----------------------")
+        Log.i(TAG, "---------------------- App Database ----------------------")
 
         for (list in lists) {
-            Log.d(TAG, list.logString(dateFormat))
+            Log.i(TAG, list.logString(dateFormat))
             logTasks(list.id)
         }
 
-        Log.d(TAG, "----------------------------------------------------------")
+        Log.i(TAG, "----------------------------------------------------------")
     }
 
     private fun logTasks(listId: String) {
-        val tasks = taskDao().getAllbyList(listId)
+        val tasks = taskDao().getAllByList(listId)
         for (task in tasks) {
-            Log.d(TAG, "    " + task.logString(dateFormat))
+            Log.i(TAG, "    " + task.logString(dateFormat))
         }
     }
 
     companion object {
-        val TAG: String = AppDatabase::class.java.simpleName
 
         private const val DATABASE_NAME = "tasks.db"
         @Volatile

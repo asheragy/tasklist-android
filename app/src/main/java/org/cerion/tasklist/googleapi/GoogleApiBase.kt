@@ -5,6 +5,7 @@ import com.squareup.okhttp.MediaType
 import com.squareup.okhttp.OkHttpClient
 import com.squareup.okhttp.Request
 import com.squareup.okhttp.RequestBody
+import org.cerion.tasklist.common.TAG
 import org.json.JSONObject
 import java.io.IOException
 import java.text.SimpleDateFormat
@@ -12,10 +13,10 @@ import java.util.*
 
 open class GoogleApiBase internal constructor(private val mAuthKey: String, private val mBaseUrl: String) {
 
-    internal val mDateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
+    internal val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
 
     init {
-        mDateFormat.timeZone = TimeZone.getTimeZone("UTC")
+        dateFormat.timeZone = TimeZone.getTimeZone("UTC")
     }
 
     @Throws(GoogleApiException::class)
@@ -96,9 +97,6 @@ open class GoogleApiBase internal constructor(private val mAuthKey: String, priv
     }
 
     companion object {
-
-        private val TAG = GoogleApiBase::class.java.simpleName
-
         const val GET = 0
         const val PUT = 1
         const val POST = 2

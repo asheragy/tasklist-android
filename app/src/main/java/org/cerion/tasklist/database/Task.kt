@@ -2,7 +2,6 @@ package org.cerion.tasklist.database
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
-import androidx.room.Ignore
 import androidx.room.Index
 import java.text.DateFormat
 import java.util.*
@@ -16,17 +15,18 @@ import java.util.*
                 childColumns = arrayOf("listId"),
                 onDelete = ForeignKey.CASCADE,
                 onUpdate = ForeignKey.CASCADE)])
-class Task(var listId: String, var id: String, var title: String, var notes: String, var due: Date, var updated: Date, var completed: Boolean, var deleted: Boolean) {
+data class Task(var listId: String) {
 
-    // val isBlank: Boolean get() = title.isEmpty() && notes.isEmpty() && !hasDueDate
+    var id: String = AppDatabase.generateTempId()
+    var title: String = ""
+    var notes: String = ""
+    var due: Date = Date(0)
+    var updated: Date = Date(0)
+    var completed: Boolean = false
+    var deleted: Boolean = false
+
     val hasDueDate: Boolean get() = due.time > 0
     val hasTempId: Boolean get() = id.startsWith("temp_")
-
-    @Ignore
-    @JvmOverloads
-    constructor(listId: String, id: String = AppDatabase.generateTempId()) : this(listId, id, "", "", Date(0), Date(0), false, false)
-
-    override fun toString(): String = title + if (deleted) " (Deleted)" else ""
 
     fun setModified() {
         updated = Date()
@@ -34,8 +34,8 @@ class Task(var listId: String, var id: String, var title: String, var notes: Str
 
     fun logString(dateFormat: DateFormat): String {
         var result = String.format("Task(id=%s, updated='%s', title='%s'", id, dateFormat.format(updated), title)
-        if (!notes.isEmpty())
-            result += ", notes=" + notes.length
+        if (notes.isNotEmpty())
+            result += ", note_length=" + notes.length
         if (hasDueDate)
             result += ", due=" + dateFormat.format(updated)
         if (completed)

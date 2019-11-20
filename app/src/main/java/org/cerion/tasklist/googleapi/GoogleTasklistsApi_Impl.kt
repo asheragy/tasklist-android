@@ -2,6 +2,7 @@ package org.cerion.tasklist.googleapi
 
 
 import android.util.Log
+import org.cerion.tasklist.common.TAG
 import org.cerion.tasklist.database.TaskList
 import org.json.JSONException
 import org.json.JSONObject
@@ -104,7 +105,7 @@ class GoogleTasklistsApi_Impl internal constructor(authKey: String) : GoogleApiB
         val title = item.getString(FIELD_TITLE)
         val updated = item.getString(FIELD_UPDATED)
         try {
-            val dt = mDateFormat.parse(updated)
+            val dt = dateFormat.parse(updated)
             result = TaskList(id, title)
             result.updated = dt
         } catch (e: ParseException) {
@@ -115,7 +116,7 @@ class GoogleTasklistsApi_Impl internal constructor(authKey: String) : GoogleApiB
     }
 
     companion object {
-        private val TAG = GoogleTasklistsApi_Impl::class.java.simpleName
+        //private val TAG = GoogleTasklistsApi_Impl::class.java.simpleName
         private const val FIELD_ID = "id"
         private const val FIELD_TITLE = "title"
         private const val FIELD_UPDATED = "updated"

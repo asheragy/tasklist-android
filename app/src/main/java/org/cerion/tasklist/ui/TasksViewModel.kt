@@ -112,7 +112,7 @@ class TasksViewModel(private val resources: ResourceProvider,
                 if(currList.isAllTasks)
                     taskDao.getAll()
                 else
-                    taskDao.getAllbyList(currList.id)
+                    taskDao.getAllByList(currList.id)
 
         Collections.sort(dbTasks, Comparator { task, t1 ->
             if (task.deleted != t1.deleted)
@@ -148,13 +148,11 @@ class TasksViewModel(private val resources: ResourceProvider,
     }
 
     fun clearCompleted() {
-        Log.d(TAG, "onClearCompleted")
+        Log.i(TAG, "onClearCompleted")
 
-        // TODO should be able to use current list and not have to get from database
-        val tasks = (if(currList.isAllTasks) taskDao.getAll() else taskDao.getAllbyList(currList.id))
-                .filter { it.completed && !it.deleted }
+        val completedTasks = tasks.filter { it.completed && !it.deleted }
 
-        for (task in tasks) {
+        for (task in completedTasks) {
             if (task.hasTempId)
                 taskDao.delete(task)
             else {
