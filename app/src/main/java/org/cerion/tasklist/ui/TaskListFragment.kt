@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.navigation.NavigationView
+import com.google.android.material.snackbar.Snackbar
 import org.cerion.tasklist.R
 import org.cerion.tasklist.common.OnListAnyChangeCallback
 import org.cerion.tasklist.common.OnSwipeTouchListener
@@ -55,7 +56,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
                 viewModel.tasks,
                 object : TaskListener {
                     override fun toggleComplete(task: Task) = viewModel.toggleCompleted(task)
-                    override fun toggleDeleted(task: Task) = viewModel.toggleDeleted(task)
+                    override fun undelete(task: Task) = viewModel.undoDelete(task)
                     override fun open(task: Task) = onOpenTask(task)
                 }
         )
@@ -110,6 +111,16 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
                 mSwipeRefresh.isRefreshing = false
             else if (syncing && !mSwipeRefresh.isRefreshing)
                 mSwipeRefresh.isRefreshing = true
+        })
+
+        viewModel.deletedTask.observe(viewLifecycleOwner, Observer { task ->
+            if(task != null) {
+                Snackbar.make(requireActivity().findViewById(android.R.id.content), "Task deleted", Snackbar.LENGTH_SHORT)
+                        .setAction("UNDO") { viewModel.undoDelete(task) }
+                        .show()
+
+                viewModel.deleteConfirmed()
+            }
         })
 
         setHasOptionsMenu(true)
@@ -263,21 +274,21 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
         val id = item.itemId
         val task = mTaskListAdapter.getItem(mTaskListAdapter.itemPosition)
 
-        if (id == R.id.complete || id == R.id.delete) {
-            if (id == R.id.complete)
-                viewModel.toggleCompleted(task)
-            else
-                viewModel.toggleDeleted(task)
-
-            return true
+        when (id) {
+            R.id.complete -> viewModel.toggleCompleted(task)
+            R.id.delete -> {
+                if (task.deleted)
+                    viewModel.undoDelete(task)
+                else
+                    viewModel.delete(task)
+            }
+            R.id.move -> {
+                val action = TaskListFragmentDirections.actionTaskListFragmentToMoveTaskDialogFragment(task.listId, task.id)
+                findNavController().navigate(action)
+            }
+            else -> return super.onContextItemSelected(item)
         }
 
-        if (id == R.id.move) {
-            val action = TaskListFragmentDirections.actionTaskListFragmentToMoveTaskDialogFragment(task.listId, task.id)
-            findNavController().navigate(action)
-            return true
-        }
-
-        return super.onContextItemSelected(item)
+        return true
     }
 }

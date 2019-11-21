@@ -24,7 +24,7 @@ import java.util.*
 interface TaskListener {
     fun open(task: Task)
     fun toggleComplete(task: Task)
-    fun toggleDeleted(task: Task)
+    fun undelete(task: Task)
 }
 
 internal class TaskListAdapter(private val tasks: ObservableList<Task>,
@@ -129,7 +129,7 @@ internal class TaskListAdapter(private val tasks: ObservableList<Task>,
 
         private val mOnUnDeleteListener = OnClickListener {
             val task = tasks[layoutPosition]
-            taskListener.toggleDeleted(task)
+            taskListener.undelete(task)
         }
 
         init {

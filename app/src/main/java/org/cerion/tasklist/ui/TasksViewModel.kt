@@ -51,6 +51,10 @@ class TasksViewModel(private val resources: ResourceProvider,
     val syncing: LiveData<Boolean>
         get() = _syncing
 
+    private val _deletedTask = MutableLiveData<Task>()
+    val deletedTask: LiveData<Task>
+        get() = _deletedTask
+
     val defaultList get() = lists.getDefault()!!
 
     init {
@@ -172,17 +176,34 @@ class TasksViewModel(private val resources: ResourceProvider,
         refreshTasks()
     }
 
-    fun toggleDeleted(task: Task) {
-        if (task.hasTempId && !task.deleted) {
+    fun delete(task: Task) {
+        _deletedTask.value = task
+
+        if (task.hasTempId)
             taskDao.delete(task)
-        }
         else {
             task.setModified()
-            task.deleted = !task.deleted
+            task.deleted = true
             taskDao.update(task)
         }
 
         refreshTasks()
+    }
+
+    fun undoDelete(task: Task) {
+        if (task.hasTempId)
+            taskDao.add(task)
+        else {
+            task.setModified()
+            task.deleted = false
+            taskDao.update(task)
+        }
+
+        refreshTasks()
+    }
+
+    fun deleteConfirmed() {
+        _deletedTask.value = null
     }
 
     fun moveTaskToList(task: Task, newList: TaskList) {
