@@ -11,9 +11,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import kotlinx.coroutines.*
 import org.cerion.tasklist.R
-import org.cerion.tasklist.common.ResourceProvider
-import org.cerion.tasklist.common.SingleLiveEvent
-import org.cerion.tasklist.common.TAG
+import org.cerion.tasklist.common.*
 import org.cerion.tasklist.database.*
 import org.cerion.tasklist.sync.Sync
 import java.util.*
@@ -28,7 +26,10 @@ class TasksViewModel(private val resources: ResourceProvider,
     private val job = Job()
     private val uiScope =  CoroutineScope(Dispatchers.Main + job)
 
-    val lists: ObservableList<TaskList> = ObservableArrayList()
+    private val _lists = NonNullMutableLiveData<List<TaskList>>(emptyList())
+    val lists: NonNullLiveData<List<TaskList>>
+        get() = _lists
+
     val tasks: ObservableList<Task> = ObservableArrayList()
     val message: SingleLiveEvent<String> = SingleLiveEvent()
 
@@ -55,7 +56,7 @@ class TasksViewModel(private val resources: ResourceProvider,
     val deletedTask: LiveData<Task>
         get() = _deletedTask
 
-    val defaultList get() = lists.getDefault()!!
+    val defaultList get() = lists.value.getDefault()!!
 
     init {
         load()
@@ -100,7 +101,7 @@ class TasksViewModel(private val resources: ResourceProvider,
         }
     }
 
-    suspend fun syncInBackground(token: String): Boolean {
+    private suspend fun syncInBackground(token: String): Boolean {
         val sync = Sync.getInstance(getApplication(), token)
         return withContext(Dispatchers.IO) {
             sync.run()
@@ -133,7 +134,7 @@ class TasksViewModel(private val resources: ResourceProvider,
         load()
     }
 
-    fun load() {
+    private fun load() {
         Log.d(TAG, "load")
         db.log()
         updateLastSync() //Relative time so update it as much as possible
@@ -145,9 +146,7 @@ class TasksViewModel(private val resources: ResourceProvider,
         val lastSaved = dbLists.firstOrNull { it.id == lastId }
         _selectedList.value = (lastSaved ?: TaskList.ALL_TASKS) //If nothing valid is saved default to "all tasks" list
 
-        lists.clear()
-        lists.addAll(dbLists)
-
+        _lists.value = dbLists
         refreshTasks()
     }
 
@@ -227,13 +226,13 @@ class TasksViewModel(private val resources: ResourceProvider,
     }
 
     fun moveLeft() {
-        val index = lists.indexOf(currList)
-        setList(lists[(index + 1) % lists.size])
+        val index = lists.value.indexOf(currList)
+        setList(lists.value[(index + 1) % lists.value.size])
     }
 
     fun moveRight() {
-        val index = lists.indexOf(currList)
-        setList(lists[(index - 1 + lists.size) % lists.size])
+        val index = lists.value.indexOf(currList)
+        setList(lists.value[(index - 1 + lists.value.size) % lists.value.size])
     }
 
     fun logDatabase() {
@@ -273,7 +272,7 @@ class TasksViewModel(private val resources: ResourceProvider,
         return dbLists
     }
 
-    fun updateLastSync() {
+    private fun updateLastSync() {
         var lastSyncText = "Last Sync: "
         val lastSyncTime = prefs.getDate(Prefs.KEY_LAST_SYNC)
         if (lastSyncTime.time == 0L)

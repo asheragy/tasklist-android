@@ -27,13 +27,13 @@ class MoveTaskDialogFragment : DialogFragment() {
         val task = viewModel.tasks.first { it.id == args.taskId }
 
         val adapter = ArrayAdapter<TaskList>(requireContext(), android.R.layout.simple_spinner_dropdown_item)
-        adapter.addAll(lists)
+        adapter.addAll(lists.value)
 
         val builder = AlertDialog.Builder(activity)
                 .setTitle("Move to list")
                 .setAdapter(adapter) { _, which ->
                     if (args.listId.isNotEmpty())
-                        viewModel.moveTaskToList(task, lists[which])
+                        viewModel.moveTaskToList(task, lists.value[which])
                     else
                         Log.e(TAG, "Error, unable to find task")
                 }

@@ -11,7 +11,6 @@ import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.Observable
-import androidx.databinding.ObservableList
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
@@ -23,7 +22,6 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.Snackbar
 import org.cerion.tasklist.R
-import org.cerion.tasklist.common.OnListAnyChangeCallback
 import org.cerion.tasklist.common.OnSwipeTouchListener
 import org.cerion.tasklist.common.TAG
 import org.cerion.tasklist.database.Task
@@ -90,10 +88,8 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
             }
         })
 
-        viewModel.lists.addOnListChangedCallback(object : OnListAnyChangeCallback<ObservableList<TaskList>>() {
-            override fun onAnyChange(sender: ObservableList<*>?) {
-                populateNavigationLists()
-            }
+        viewModel.lists.observe(viewLifecycleOwner, Observer {
+            populateNavigationLists()
         })
 
         viewModel.message.observe(viewLifecycleOwner, Observer<String> {
@@ -124,7 +120,6 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
         })
 
         setHasOptionsMenu(true)
-        populateNavigationLists()
 
         val touchListener = object : OnSwipeTouchListener(requireContext()) {
             override fun onSwipeLeft() {
@@ -156,7 +151,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
         val menu = navView.menu.getItem(0).subMenu
         menu.clear() // clears placeholder items
 
-        for (list in viewModel.lists) {
+        for (list in viewModel.lists.value) {
             val item = menu.add(list.title)
             item.setOnMenuItemClickListener {
                 viewModel.setList(list)
