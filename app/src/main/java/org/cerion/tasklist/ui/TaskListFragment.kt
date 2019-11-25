@@ -17,7 +17,6 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.DividerItemDecoration
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.Snackbar
@@ -35,8 +34,8 @@ import org.cerion.tasklist.ui.dialogs.TaskListsChangedListener
 
 class TaskListFragment : Fragment(), TaskListsChangedListener  {
 
-    private lateinit var mSwipeRefresh: SwipeRefreshLayout
-    private lateinit var mTaskListAdapter: TaskListAdapter
+    private lateinit var swipeRefresh: SwipeRefreshLayout
+    private lateinit var taskListAdapter: TaskListAdapter
 
     private val viewModel: TasksViewModel by lazy {
         val factory = ViewModelFactory(requireActivity().application)
@@ -50,7 +49,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
         content.removeAllViews()
         content.addView(binding.root, 0)
 
-        mTaskListAdapter = TaskListAdapter(
+        taskListAdapter = TaskListAdapter(
                 viewModel.tasks,
                 object : TaskListener {
                     override fun toggleComplete(task: Task) = viewModel.toggleCompleted(task)
@@ -59,9 +58,8 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
                 }
         )
 
-        binding.recyclerView.layoutManager = LinearLayoutManager(context)
-        mTaskListAdapter.setEmptyView(binding.recyclerView, binding.emptyView)
-        binding.recyclerView.adapter = mTaskListAdapter
+        taskListAdapter.setEmptyView(binding.recyclerView, binding.emptyView)
+        binding.recyclerView.adapter = taskListAdapter
         binding.recyclerView.addItemDecoration(DividerItemDecoration(context, DividerItemDecoration.VERTICAL))
 
         binding.layoutDebug.visibility = View.GONE
@@ -103,10 +101,10 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
 
         viewModel.syncing.observe(viewLifecycleOwner, Observer { syncing ->
             // TODO see if 'isRefreshing = syncing' will work
-            if (!syncing && mSwipeRefresh.isRefreshing)
-                mSwipeRefresh.isRefreshing = false
-            else if (syncing && !mSwipeRefresh.isRefreshing)
-                mSwipeRefresh.isRefreshing = true
+            if (!syncing && swipeRefresh.isRefreshing)
+                swipeRefresh.isRefreshing = false
+            else if (syncing && !swipeRefresh.isRefreshing)
+                swipeRefresh.isRefreshing = true
         })
 
         viewModel.deletedTask.observe(viewLifecycleOwner, Observer { task ->
@@ -135,8 +133,8 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
 
         binding.emptyView.setOnTouchListener(touchListener)
         binding.recyclerView.setOnTouchListener(touchListener)
-        mSwipeRefresh = binding.swipeRefresh
-        mSwipeRefresh.setOnRefreshListener(this::onSync)
+        swipeRefresh = binding.swipeRefresh
+        swipeRefresh.setOnRefreshListener(this::onSync)
 
         return view
     }
@@ -221,8 +219,8 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
 
         if (!isConnected) {
             Toast.makeText(requireContext(), "Internet not available", Toast.LENGTH_SHORT).show()
-            if (mSwipeRefresh.isRefreshing)
-                mSwipeRefresh.isRefreshing = false
+            if (swipeRefresh.isRefreshing)
+                swipeRefresh.isRefreshing = false
 
             return
         }
@@ -242,7 +240,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
                     dialog.show(requireFragmentManager(), "dialog")
                 }
 
-                mSwipeRefresh.isRefreshing = false
+                swipeRefresh.isRefreshing = false
             }
         })
     }
@@ -267,7 +265,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
 
     override fun onContextItemSelected(item: MenuItem): Boolean {
         val id = item.itemId
-        val task = mTaskListAdapter.getItem(mTaskListAdapter.itemPosition)
+        val task = taskListAdapter.getItem(taskListAdapter.itemPosition)
 
         when (id) {
             R.id.complete -> viewModel.toggleCompleted(task)

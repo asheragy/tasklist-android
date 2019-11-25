@@ -1,76 +1,90 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_margin="@dimen/activity_vertical_margin">
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
-    <RelativeLayout
-        android:layout_width="36dp"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical">
+    <data>
+        <variable name="listener" type="org.cerion.tasklist.ui.TaskListener" />
+        <variable name="task" type="org.cerion.tasklist.database.Task" />
+        <import type="android.view.View"/>
+    </data>
 
-        <CheckBox
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text=""
-            android:id="@+id/completed"
-            android:layout_centerHorizontal="true"
-            android:layout_centerVertical="true"/>
-
-        <ImageButton
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/undelete"
-            android:src="?attr/iconUnDeleteDrawable"
-            android:background="?attr/selectableItemBackground"
-            android:visibility="gone" />
-
-    </RelativeLayout>
-
-    <RelativeLayout
-        android:layout_marginLeft="@dimen/activity_vertical_margin"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        tools:ignore="UselessParent">
+        android:layout_margin="@dimen/activity_vertical_margin"
+        android:onClick="@{() -> listener.open(task)}">
 
-        <TextView
-            android:layout_width="wrap_content"
+        <RelativeLayout
+            android:layout_width="36dp"
             android:layout_height="wrap_content"
-            android:textSize="18sp"
-            tools:text="Title"
-            android:textColor="?android:attr/textColorPrimary"
-            android:id="@+id/title"
-            android:layout_alignParentStart="true"
-            android:singleLine="true"
-            android:layout_toStartOf="@+id/dueDate"/>
+            android:layout_gravity="center_vertical">
 
+            <CheckBox
+                android:id="@+id/completed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:layout_centerVertical="true"
+                android:checked="@{task.completed}"
+                android:visibility="@{task.deleted ? View.GONE : View.VISIBLE}"
+                android:text="" />
 
+            <ImageButton
+                android:id="@+id/undelete"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:src="?attr/iconUnDeleteDrawable"
+                android:visibility="@{task.deleted ? View.VISIBLE : View.GONE}"
+                android:onClick="@{() -> listener.undelete(task)}"
+                tools:visibility="gone" />
 
-        <TextView
-            android:layout_width="wrap_content"
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            tools:text="Wed, Jul 22, 2015"
-            android:id="@+id/dueDate"
-            android:textColor="?android:attr/textColorPrimary"
-            android:layout_alignParentEnd="true" />
+            android:layout_marginLeft="@dimen/activity_vertical_margin"
+            tools:ignore="UselessParent">
+
+            <TextView
+                android:id="@+id/title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_toStartOf="@+id/dueDate"
+                android:singleLine="true"
+                android:text="@{task.title}"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textSize="18sp"
+                tools:text="Title" />
 
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceSmall"
-            tools:text="Note"
-            android:id="@+id/notes"
-            android:layout_below="@+id/title"
-            android:layout_alignParentStart="true"
-            android:singleLine="true"
-            android:textColor="?android:attr/textColorSecondary" />
+            <TextView
+                android:id="@+id/dueDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:textColor="?android:attr/textColorPrimary"
+                tools:text="Wed, Jul 22, 2015" />
 
-    </RelativeLayout>
 
-</LinearLayout>
+            <TextView
+                android:id="@+id/notes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/title"
+                android:layout_alignParentStart="true"
+                android:singleLine="true"
+                android:text="@{task.notes}"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textColor="?android:attr/textColorSecondary"
+                tools:text="Note" />
+
+        </RelativeLayout>
+
+    </LinearLayout>
+</layout>
 
 
