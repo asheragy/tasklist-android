@@ -8,10 +8,8 @@ import android.view.animation.Animation
 import android.widget.CompoundButton
 import android.widget.CompoundButton.OnCheckedChangeListener
 import androidx.core.content.ContextCompat
-import androidx.databinding.ObservableList
 import androidx.recyclerview.widget.RecyclerView
 import org.cerion.tasklist.R
-import org.cerion.tasklist.common.OnListAnyChangeCallback
 import org.cerion.tasklist.database.Task
 import org.cerion.tasklist.databinding.ListItemTaskBinding
 import java.text.SimpleDateFormat
@@ -20,20 +18,19 @@ import java.util.*
 interface TaskListener {
     fun open(task: Task)
     fun toggleComplete(task: Task)
+    fun toggleDeleted(task: Task)
     fun undelete(task: Task)
+    fun move(task: Task)
 }
 
-internal class TaskListAdapter(private val tasks: ObservableList<Task>,
-                               private val taskListener: TaskListener) : RecyclerView.Adapter<TaskListAdapter.ViewHolder>() {
+internal class TaskListAdapter(private val taskListener: TaskListener) : RecyclerView.Adapter<TaskListAdapter.ViewHolder>() {
+
     private var primaryColor: Int = 0
     private var secondaryColor: Int = 0
     private var parent: RecyclerView? = null
     private var emptyView: View? = null
     private val dateFormat = SimpleDateFormat("EEE, MMM d, yyyy", Locale.US)
-
-    //Workaround for activity to get context menu position
-    var itemPosition: Int = 0
-        private set
+    private var tasks: List<Task> = emptyList()
 
     init {
         dateFormat.timeZone = TimeZone.getTimeZone("UTC")
@@ -42,6 +39,22 @@ internal class TaskListAdapter(private val tasks: ObservableList<Task>,
     fun setEmptyView(recyclerView: RecyclerView, emptyView: View) {
         this.parent = recyclerView
         this.emptyView = emptyView
+    }
+
+    fun setTasks(tasks: List<Task>) {
+        this.tasks = tasks
+        setVisibility()
+        notifyDataSetChanged()
+    }
+
+    private fun setVisibility() {
+        if (tasks.isNotEmpty()) {
+            parent?.visibility = View.VISIBLE
+            emptyView?.visibility = View.GONE
+        } else {
+            parent?.visibility = View.GONE
+            emptyView?.visibility = View.VISIBLE
+        }
     }
 
     override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
@@ -55,25 +68,6 @@ internal class TaskListAdapter(private val tasks: ObservableList<Task>,
         primaryColor = ContextCompat.getColor(context, typedValue.resourceId)
         theme.resolveAttribute(android.R.attr.textColorSecondary, typedValue, true)
         secondaryColor = ContextCompat.getColor(context, typedValue.resourceId)
-
-        tasks.addOnListChangedCallback(object : OnListAnyChangeCallback<ObservableList<Task>>() {
-            override fun onAnyChange(sender: ObservableList<*>) {
-                setVisibility()
-                notifyDataSetChanged()
-            }
-        })
-
-        setVisibility()
-    }
-
-    private fun setVisibility() {
-        if (tasks.size > 0) {
-            parent?.visibility = View.VISIBLE
-            emptyView?.visibility = View.GONE
-        } else {
-            parent?.visibility = View.GONE
-            emptyView?.visibility = View.VISIBLE
-        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -88,10 +82,6 @@ internal class TaskListAdapter(private val tasks: ObservableList<Task>,
     }
 
     override fun getItemCount(): Int = tasks.size
-
-    fun getItem(position: Int): Task {
-        return tasks[position]
-    }
 
     inner class ViewHolder internal constructor(private val binding: ListItemTaskBinding) : RecyclerView.ViewHolder(binding.root), View.OnCreateContextMenuListener, OnCheckedChangeListener {
 
@@ -122,12 +112,22 @@ internal class TaskListAdapter(private val tasks: ObservableList<Task>,
         }
 
         override fun onCreateContextMenu(menu: ContextMenu?, v: View?, menuInfo: ContextMenu.ContextMenuInfo?) {
-            itemPosition = layoutPosition
-            val task = tasks[itemPosition]
+            val task = binding.task!!
 
-            menu?.add(Menu.NONE, R.id.complete, Menu.NONE, if(!task.completed) "Complete" else "Un-Complete")
-            menu?.add(Menu.NONE, R.id.delete, Menu.NONE, if(!task.deleted) "Delete" else "Un-Delete")
-            menu?.add(Menu.NONE, R.id.move, Menu.NONE, "Move")
+            menu?.apply {
+                add(Menu.NONE, R.id.complete, Menu.NONE, if(!task.completed) "Complete" else "Un-Complete").setOnMenuItemClickListener {
+                    taskListener.toggleComplete(task)
+                    true
+                }
+                add(Menu.NONE, R.id.delete, Menu.NONE, if(!task.deleted) "Delete" else "Un-Delete").setOnMenuItemClickListener {
+                    taskListener.toggleDeleted(task)
+                    true
+                }
+                add(Menu.NONE, R.id.move, Menu.NONE, "Move").setOnMenuItemClickListener {
+                    taskListener.move(task)
+                    true
+                }
+            }
         }
 
         override fun onCheckedChanged(buttonView: CompoundButton, isChecked: Boolean) {

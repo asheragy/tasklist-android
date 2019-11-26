@@ -1,5 +1,6 @@
 package org.cerion.tasklist.ui
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -42,6 +43,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
         ViewModelProviders.of(requireActivity(), factory).get(TasksViewModel::class.java)
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_tasklist_single, container, false)
         val content = view.findViewById<FrameLayout>(R.id.listContent)
@@ -49,14 +51,16 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
         content.removeAllViews()
         content.addView(binding.root, 0)
 
-        taskListAdapter = TaskListAdapter(
-                viewModel.tasks,
-                object : TaskListener {
-                    override fun toggleComplete(task: Task) = viewModel.toggleCompleted(task)
-                    override fun undelete(task: Task) = viewModel.undoDelete(task)
-                    override fun open(task: Task) = onOpenTask(task)
-                }
-        )
+        taskListAdapter = TaskListAdapter(object : TaskListener {
+            override fun toggleComplete(task: Task) = viewModel.toggleCompleted(task)
+            override fun toggleDeleted(task: Task) =viewModel.toggleDeleted(task)
+            override fun undelete(task: Task) = viewModel.undoDelete(task)
+            override fun open(task: Task) = onOpenTask(task)
+            override fun move(task: Task) {
+                val action = TaskListFragmentDirections.actionTaskListFragmentToMoveTaskDialogFragment(task.listId, task.id)
+                findNavController().navigate(action)
+            }
+        })
 
         taskListAdapter.setEmptyView(binding.recyclerView, binding.emptyView)
         binding.recyclerView.adapter = taskListAdapter
@@ -88,6 +92,10 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
 
         viewModel.lists.observe(viewLifecycleOwner, Observer {
             populateNavigationLists()
+        })
+
+        viewModel.tasks.observe(viewLifecycleOwner, Observer {
+            taskListAdapter.setTasks(it)
         })
 
         viewModel.message.observe(viewLifecycleOwner, Observer<String> {
@@ -164,7 +172,6 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
     }
 
     private fun onOpenTask(task: Task?) {
-        // TODO fragment has viewmodel so can probably just pass listId or empty here
         val action =
                 if (task != null)
                     TaskListFragmentDirections.actionTaskListFragmentToTaskDetailFragment(task.listId, task.id)
@@ -188,7 +195,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
     override fun onPrepareOptionsMenu(menu: Menu) {
         super.onPrepareOptionsMenu(menu)
         menu.findItem(R.id.action_rename).isVisible = !viewModel.selectedList.value!!.isAllTasks
-        menu.findItem(R.id.action_delete).isVisible = viewModel.tasks.size == 0
+        menu.findItem(R.id.action_delete).isVisible = viewModel.tasks.value.isEmpty()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -261,27 +268,5 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
             mPrefs.setString(Prefs.KEY_ACCOUNT_NAME, accountName);
         }
         */
-    }
-
-    override fun onContextItemSelected(item: MenuItem): Boolean {
-        val id = item.itemId
-        val task = taskListAdapter.getItem(taskListAdapter.itemPosition)
-
-        when (id) {
-            R.id.complete -> viewModel.toggleCompleted(task)
-            R.id.delete -> {
-                if (task.deleted)
-                    viewModel.undoDelete(task)
-                else
-                    viewModel.delete(task)
-            }
-            R.id.move -> {
-                val action = TaskListFragmentDirections.actionTaskListFragmentToMoveTaskDialogFragment(task.listId, task.id)
-                findNavController().navigate(action)
-            }
-            else -> return super.onContextItemSelected(item)
-        }
-
-        return true
     }
 }

@@ -3,9 +3,7 @@ package org.cerion.tasklist.ui
 import android.app.Application
 import android.text.format.DateUtils
 import android.util.Log
-import androidx.databinding.ObservableArrayList
 import androidx.databinding.ObservableField
-import androidx.databinding.ObservableList
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -30,7 +28,10 @@ class TasksViewModel(private val resources: ResourceProvider,
     val lists: NonNullLiveData<List<TaskList>>
         get() = _lists
 
-    val tasks: ObservableList<Task> = ObservableArrayList()
+    private val _tasks = NonNullMutableLiveData<List<Task>>(emptyList())
+    val tasks: NonNullLiveData<List<Task>>
+        get() = _tasks
+
     val message: SingleLiveEvent<String> = SingleLiveEvent()
 
     val hasLocalChanges: ObservableField<Boolean> = ObservableField()
@@ -125,8 +126,7 @@ class TasksViewModel(private val resources: ResourceProvider,
             if (task.completed != t1.completed) if (task.completed) 1 else -1 else task.title.compareTo(t1.title, ignoreCase = true)
         })
 
-        tasks.clear()
-        tasks.addAll(dbTasks)
+        _tasks.value = dbTasks
     }
 
     fun setList(list: TaskList) {
@@ -153,7 +153,7 @@ class TasksViewModel(private val resources: ResourceProvider,
     fun clearCompleted() {
         Log.i(TAG, "onClearCompleted")
 
-        val completedTasks = tasks.filter { it.completed && !it.deleted }
+        val completedTasks = tasks.value.filter { it.completed && !it.deleted }
 
         for (task in completedTasks) {
             if (task.hasTempId)
@@ -173,6 +173,13 @@ class TasksViewModel(private val resources: ResourceProvider,
         task.completed = !task.completed
         taskDao.update(task)
         refreshTasks()
+    }
+
+    fun toggleDeleted(task: Task) {
+        if (task.deleted)
+            undoDelete(task)
+        else
+            delete(task)
     }
 
     fun delete(task: Task) {
@@ -243,7 +250,7 @@ class TasksViewModel(private val resources: ResourceProvider,
         // Only take action if list is empty
         if (currList.isAllTasks || currList.isDefault)
             message.value = resources.getString(R.string.warning_delete_system_list)
-        else if (tasks.size != 0)
+        else if (tasks.value.isNotEmpty())
             message.value = resources.getString(R.string.warning_delete_nonEmpty_list)
         else if (currList.hasTempId) {
             // If never synced just delete
