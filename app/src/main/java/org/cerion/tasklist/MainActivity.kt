@@ -7,6 +7,7 @@ import android.view.MenuItem
 import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.NavController
@@ -15,6 +16,7 @@ import androidx.navigation.findNavController
 import androidx.navigation.ui.NavigationUI
 import com.google.android.material.navigation.NavigationView
 import org.cerion.tasklist.database.Prefs
+import org.cerion.tasklist.database.Theme
 import org.cerion.tasklist.ui.TaskListFragmentDirections
 
 
@@ -24,8 +26,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private lateinit var navController: NavController
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        if (Prefs.getInstance(this).isDarkTheme)
-            setTheme(R.style.AppTheme_Dark)
+        AppCompatDelegate.setDefaultNightMode( when(Prefs.getInstance(this).theme) {
+            Theme.System -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+            Theme.Light -> AppCompatDelegate.MODE_NIGHT_NO
+            Theme.Dark -> AppCompatDelegate.MODE_NIGHT_YES
+        })
 
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -91,8 +96,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         builder.setNegativeButton("Cancel", null)
         builder.setItems(values) { _, which ->
             val prefs = Prefs.getInstance(this)
-            if (which != prefs.theme) {
-                prefs.theme = which
+            if (which != prefs.theme.ordinal) {
+                prefs.theme = Theme.values()[which]
                 TaskStackBuilder.create(this)
                         .addNextIntent(Intent(this, MainActivity::class.java))
                         .addNextIntent(this.intent)

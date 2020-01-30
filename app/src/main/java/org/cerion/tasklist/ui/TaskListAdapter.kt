@@ -15,6 +15,8 @@ import org.cerion.tasklist.databinding.ListItemTaskBinding
 import java.text.SimpleDateFormat
 import java.util.*
 
+// TODO see if this works better converted to class that takes the task parameter
+// Make internal to the adapter
 interface TaskListener {
     fun open(task: Task)
     fun toggleComplete(task: Task)

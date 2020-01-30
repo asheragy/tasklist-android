@@ -1,25 +1,19 @@
 <resources>
 
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
-        <item name="colorPrimary">@color/material_light_green_500</item>
-        <item name="colorPrimaryDark">@color/material_light_green_700</item>
-        <item name="colorAccent">@color/material_amber_500</item>
+    <style name="AppTheme" parent="Theme.AppCompat.DayNight.DarkActionBar">
+        <item name="colorPrimary">@color/primaryColor</item>
+        <item name="colorPrimaryDark">@color/primaryDarkColor</item>
+        <item name="colorPrimaryVariant">@color/primaryLightColor</item>
+        <item name="colorOnPrimary">@color/primaryTextColor</item>
+        <item name="colorSecondary">@color/secondaryColor</item>
+        <item name="colorSecondaryVariant">@color/secondaryDarkColor</item>
+        <item name="colorOnSecondary">@color/secondaryTextColor</item>
 
-        <item name="menuSaveDrawable">@drawable/ic_save_black</item>
+        <item name="colorAccent">@color/accentColor</item>
+
+        <item name="menuSaveDrawable">@drawable/save</item>
         <item name="iconUnDeleteDrawable">@drawable/undelete</item>
-        <item name="iconBackArrow">@drawable/ic_arrow_back_black_24dp</item>
-    </style>
-
-      <!-- Secondary dark theme -->
-    <style name="AppTheme.Dark" parent="Theme.AppCompat">
-        <item name="colorPrimary">@color/material_light_green_700</item>
-        <item name="colorPrimaryDark">@color/material_light_green_900</item>
-        <item name="colorAccent">@color/material_amber_500</item>
-
-        <item name="menuSaveDrawable">@drawable/ic_save_white</item>
-        <item name="iconUnDeleteDrawable">@drawable/ic_delete_forever_white</item>
-        <item name="iconBackArrow">@drawable/ic_arrow_back_white_24dp</item>
     </style>
 
 </resources>

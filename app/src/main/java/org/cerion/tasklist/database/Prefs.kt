@@ -7,6 +7,12 @@ import android.util.Log
 import org.cerion.tasklist.R
 import java.util.*
 
+enum class Theme {
+    System,
+    Light,
+    Dark
+}
+
 class Prefs private constructor(private val context: Context) {
 
     private val prefs = PreferenceManager.getDefaultSharedPreferences(context)
@@ -14,14 +20,11 @@ class Prefs private constructor(private val context: Context) {
     private val backgroundKey: String
         get() = context.getString(R.string.pref_key_background)
 
-    var theme: Int
-        get() = prefs.getInt(backgroundKey, 0)
+    var theme: Theme
+        get() = Theme.values()[prefs.getInt(backgroundKey, 0)]
         set(theme) {
-            setInt(backgroundKey, theme)
+            setInt(backgroundKey, theme.ordinal)
         }
-
-    val isDarkTheme: Boolean
-        get() = theme == 1
 
     private fun setInt(key: String, value: Int): Prefs {
         Log.d(TAG, "save $key $value")
