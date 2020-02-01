@@ -9,17 +9,16 @@ import org.json.JSONObject
 import java.text.ParseException
 import java.util.*
 
-class GoogleTasklistsApi_Impl internal constructor(authKey: String) : GoogleApiBase(authKey, GoogleApi.TASKS_BASE_URL), GoogleTasklistsApi {
+class GoogleTasklistsApi internal constructor(authKey: String) : GoogleApiBase(authKey, GoogleApi.TASKS_BASE_URL) {
 
-    override fun delete(list: TaskList): Boolean {
+    fun delete(list: TaskList): Boolean {
         val sURL = getURL("users/@me/lists/" + list.id)
         val result = getInetData(sURL, null, DELETE)
 
         return result.isEmpty() //Successful delete does not return anything
     }
 
-    @Throws(GoogleApiException::class)
-    override operator fun get(id: String): TaskList? {
+    operator fun get(id: String): TaskList? {
         val sURL = getURL("users/@me/lists/$id")
         val json = getJSON(sURL)
 
@@ -32,8 +31,7 @@ class GoogleTasklistsApi_Impl internal constructor(authKey: String) : GoogleApiB
         return null
     }
 
-    @Throws(GoogleApiException::class)
-    override fun getAll(): List<TaskList> {
+    fun getAll(): List<TaskList> {
         val sURL = getURL("users/@me/lists")
         val json = getJSON(sURL)
         val result = ArrayList<TaskList>()
@@ -60,8 +58,7 @@ class GoogleTasklistsApi_Impl internal constructor(authKey: String) : GoogleApiB
         return result
     }
 
-    @Throws(GoogleApiException::class)
-    override fun update(list: TaskList): Boolean {
+    fun update(list: TaskList): Boolean {
         val sURL = getURL("users/@me/lists/" + list.id)
         val json = JSONObject()
         var bResult = false
@@ -80,8 +77,7 @@ class GoogleTasklistsApi_Impl internal constructor(authKey: String) : GoogleApiB
         return bResult
     }
 
-    @Throws(GoogleApiException::class)
-    override fun insert(list: TaskList): TaskList? {
+    fun insert(list: TaskList): TaskList? {
         val sURL = getURL("users/@me/lists")
         val json = JSONObject()
         var result: TaskList? = null
@@ -116,7 +112,6 @@ class GoogleTasklistsApi_Impl internal constructor(authKey: String) : GoogleApiB
     }
 
     companion object {
-        //private val TAG = GoogleTasklistsApi_Impl::class.java.simpleName
         private const val FIELD_ID = "id"
         private const val FIELD_TITLE = "title"
         private const val FIELD_UPDATED = "updated"

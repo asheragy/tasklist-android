@@ -11,17 +11,16 @@ import org.json.JSONObject
 import java.text.ParseException
 import java.util.*
 
-class GoogleTasksApi_Impl internal constructor(authKey: String) : GoogleApiBase(authKey, GoogleApi.TASKS_BASE_URL), GoogleTasksApi {
+class GoogleTasksApi internal constructor(authKey: String) : GoogleApiBase(authKey, GoogleApi.TASKS_BASE_URL) {
 
-    override fun delete(task: Task): Boolean {
+    fun delete(task: Task): Boolean {
         val sURL = getURL("lists/" + task.listId + "/tasks/" + task.id)
         val result = getInetData(sURL, null, DELETE)
 
         return result.isEmpty() //Successful delete does not return anything
     }
 
-    @Throws(GoogleApiException::class)
-    override fun insert(task: Task): Task? {
+    fun insert(task: Task): Task? {
         val listId = task.listId
         //String listId = "@default";
         //if(task.getListId() != null && task.getListId().length() > 0)
@@ -61,8 +60,7 @@ class GoogleTasksApi_Impl internal constructor(authKey: String) : GoogleApiBase(
         return null
     }
 
-    @Throws(GoogleApiException::class)
-    override fun update(task: Task): Boolean {
+    fun update(task: Task): Boolean {
         val sURL = getURL("lists/" + task.listId + "/tasks/" + task.id)
         val json = JSONObject()
         var bResult = false
@@ -90,8 +88,7 @@ class GoogleTasksApi_Impl internal constructor(authKey: String) : GoogleApiBase(
         return bResult
     }
 
-    @Throws(GoogleApiException::class)
-    override fun list(listId: String, @Nullable dtUpdatedMin: Date?): List<Task>? {
+    fun list(listId: String, @Nullable dtUpdatedMin: Date?): List<Task>? {
         var sURL = getURL("lists/$listId/tasks")
         if (dtUpdatedMin != null) {
             sURL += "&updatedMin=" + dateFormat.format(dtUpdatedMin)

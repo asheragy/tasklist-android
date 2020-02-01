@@ -52,3 +52,5 @@ data class Task(var listId: String) {
         internal const val TABLE_NAME = "tasks"
     }
 }
+
+fun List<Task>.getById(id: String): Task? = this.first { task -> task.id == id }

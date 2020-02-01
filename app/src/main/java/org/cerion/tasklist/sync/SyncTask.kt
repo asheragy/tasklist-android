@@ -27,10 +27,13 @@ class SyncTask(private val mContext: Context, private val mAuthToken: String, pr
                 AuthTools.clearSavedToken(mContext)
         }
 
+        /*
         for (i in sync.dbToGoogle.indices) {
             mChanges += sync.dbToGoogle[i]
             mChanges += sync.googleToDb[i]
         }
+
+         */
 
         return result
     }
