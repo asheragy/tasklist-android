@@ -1,5 +1,6 @@
 package org.cerion.tasklist.googleapi
 
+import org.cerion.tasklist.BuildConfig
 import org.cerion.tasklist.database.Task
 import org.cerion.tasklist.database.TaskList
 import java.util.*
@@ -45,9 +46,7 @@ class GoogleApi(private val mAuthKey: String) {
         get() = GoogleTasksApi_Impl(mAuthKey)
 
     companion object {
-
-        internal const val API_KEY = "346378052412-b0lrj3jgnucf299u3qf23c4sh4agdgsk.apps.googleusercontent.com"
-        //private static final String API_KEY = "AIzaSyAHgDGorXJ1I0WqzpWE6Pm2o894T-j4pdQ";
+        internal const val API_KEY = BuildConfig.GOOGLE_TASKS_APIKEY
         internal const val mLogFullResults = true
         internal const val TASKS_BASE_URL = "https://www.googleapis.com/tasks/v1/"
     }
