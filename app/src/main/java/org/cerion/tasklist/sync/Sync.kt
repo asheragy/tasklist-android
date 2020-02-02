@@ -12,13 +12,8 @@ import java.util.*
 
 internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao, private val googleRepo: GoogleTasksRepository, private val prefs: Prefs) {
 
-    private lateinit var googleToDb: SyncChanges
-    private lateinit var dbToGoogle: SyncChanges
-
     fun run(): SyncResult {
-        googleToDb = SyncChanges()
-        dbToGoogle = SyncChanges()
-        val result = SyncResult(false, googleToDb, dbToGoogle)
+        val result = SyncResult(false)
 
         val googleLists = googleRepo.getLists().toMutableList()
         if (googleLists.isEmpty())
@@ -35,7 +30,7 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
                     //Name mismatch, update only if local list was not renamed
                     if (!dbList.isRenamed) {
                         listDb.update(curr)
-                        googleToDb.listChange++
+                        result.listsToLocal.change++
                     }
                 }
             }
@@ -55,10 +50,10 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
             }
             else { //Does not exist locally, add it
                 listDb.add(curr)
-                googleToDb.listAdd++
+                result.listsToLocal.add++
 
                 // Then add all its tasks
-                syncTasks(curr, Date(0))
+                syncTasks(curr, Date(0), result)
             }//--- ADD
             //--- MERGE default, first sync only
         }
@@ -74,13 +69,13 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
             if (googleList == null) {
                 // TODO this will cascade delete so log tasks count its removing...
                 listDb.delete(curr)
-                googleToDb.listDelete++
+                result.listsToLocal.delete++
             }
         }
 
         // TODO always reload?
         //If any changes made to local database, just reload it
-        if (googleToDb.listDelete > 0 || googleToDb.listAdd > 0)
+        if (result.listsToLocal.delete > 0 || result.listsToLocal.add > 0)
             dbLists = listDb.getAll()
 
         //Local ----> Google
@@ -98,7 +93,7 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
                     dbList.id = addedList.id
 
                     googleLists.add(addedList)
-                    dbToGoogle.listAdd++
+                    result.listsToRemote.add++
                 }
                 else {
                     Log.e(TAG, "Failed to add list")
@@ -115,7 +110,7 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
                         //Save state in db to indicate rename was successful
                         dbList.isRenamed = false
                         listDb.update(dbList)
-                        dbToGoogle.listChange++
+                        result.listsToRemote.change++
                     }
                     else
                         Log.d(TAG, "Failed to rename list")
@@ -133,19 +128,20 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
         for (list in googleLists) {
             val dbList = dbLists.getById(list.id)
             if (dbList != null)
-                syncTasks(list, dbList.updated)
+                syncTasks(list, dbList.updated, result)
             else
                 Log.e(TAG, "Unable to find database list") //TODO throw exception
         }
 
         // If any local lists are empty and marked for deletion, delete from web
+        // TODO verify what happens if list has tempid
         dbLists.forEach { list ->
             if (list.deleted) {
                 val tasks = taskDb.getAllByList(list.id)
                 if (tasks.isEmpty()) {
                     if (googleRepo.deleteList(list)) {
                         listDb.delete(list)
-                        dbToGoogle.listDelete++
+                        result.listsToRemote.delete++
                     }
                 }
                 else {
@@ -154,8 +150,10 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
             }
         }
 
-        Log.d(TAG, "To Local : ${googleToDb.totalChanges} $googleToDb")
-        Log.d(TAG, "To Google: ${dbToGoogle.totalChanges} $dbToGoogle")
+        Log.d(TAG, "Lists to Local : ${result.listsToLocal.totalChanges} ${result.listsToLocal}")
+        Log.d(TAG, "Tasks to Local : ${result.tasksToLocal.totalChanges} ${result.tasksToLocal}")
+        Log.d(TAG, "Lists to Google: ${result.listsToRemote.totalChanges} ${result.listsToRemote}")
+        Log.d(TAG, "Tasks to Google: ${result.tasksToRemote.totalChanges} ${result.tasksToRemote}")
         prefs.setDate(Prefs.KEY_LAST_SYNC, Date())
 
         result.success = true
@@ -163,7 +161,7 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
     }
 
     @Throws(GoogleApiException::class)
-    private fun syncTasks(list: TaskList, savedUpdatedNEW: Date) {
+    private fun syncTasks(list: TaskList, savedUpdatedNEW: Date, result: SyncResult) {
 
         if (list.updated.time == 0L) {
             Log.e(TAG, "invalid updated time") //TODO, need new exception for this class
@@ -205,7 +203,7 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
             if (dbTask != null) {
                 if (task.deleted) {
                     taskDb.delete(task)
-                    googleToDb.taskDelete++
+                    result.listsToLocal.delete++
                     dbTasks.remove(dbTask)
                 }
                 else if (dbTask.deleted) {
@@ -218,7 +216,7 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
                     else {
                         dbTasks.remove(dbTask)
                         taskDb.update(task)
-                        googleToDb.taskChange++
+                        result.tasksToLocal.change++
                     }
                 }
             }
@@ -227,7 +225,7 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
             }
             else {
                 taskDb.add(task)
-                googleToDb.taskAdd++
+                result.tasksToLocal.add++
             }
         }
 
@@ -252,7 +250,7 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
                 }
                 else if (googleRepo.deleteTask(task)) {
                     taskDb.delete(task)
-                    dbToGoogle.taskDelete++
+                    result.tasksToRemote.delete++
                     bListUpdated = true
                 }
             }
@@ -263,7 +261,7 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
                     task.listId = updated.listId
                     taskDb.add(task)
 
-                    dbToGoogle.taskAdd++
+                    result.listsToRemote.add++
                     bListUpdated = true
 
                     // TODO what is this assignment used for?
@@ -274,7 +272,7 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
             }
             else if (bModified) {
                 if (googleRepo.updateTask(task)) {
-                    dbToGoogle.taskChange++
+                    result.tasksToRemote.change++
                     bListUpdated = true
                 }
             }
@@ -310,16 +308,17 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
     }
 }
 
-data class SyncResult(var success: Boolean, val toLocal: SyncChanges, val toRemote: SyncChanges)
-
-data class SyncChanges(
-        var listAdd: Int = 0,
-        var listChange: Int = 0,
-        var listDelete: Int = 0,
-        var taskAdd: Int = 0,
-        var taskChange: Int = 0,
-        var taskDelete: Int = 0) {
+data class SyncResult(var success: Boolean) {
+    val listsToLocal = SyncChanges()
+    val tasksToLocal = SyncChanges()
+    val listsToRemote = SyncChanges()
+    val tasksToRemote = SyncChanges()
 
     val totalChanges: Int
-        get() = listAdd + listChange + listDelete + taskAdd + taskChange + taskDelete
+        get() = listsToLocal.totalChanges + tasksToLocal.totalChanges + listsToRemote.totalChanges + tasksToRemote.totalChanges
+}
+
+data class SyncChanges(var add: Int = 0, var change: Int = 0, var delete: Int = 0) {
+    val totalChanges: Int
+        get() = add + change + delete
 }

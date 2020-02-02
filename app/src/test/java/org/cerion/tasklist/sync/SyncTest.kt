@@ -2,10 +2,7 @@ package org.cerion.tasklist.sync
 
 
 import com.nhaarman.mockitokotlin2.*
-import org.cerion.tasklist.database.Prefs
-import org.cerion.tasklist.database.TaskDao
-import org.cerion.tasklist.database.TaskList
-import org.cerion.tasklist.database.TaskListDao
+import org.cerion.tasklist.database.*
 import org.cerion.tasklist.googleapi.GoogleTasksRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -24,11 +21,18 @@ internal class SyncTest {
 
     private val sync = Sync(listDao, taskDao, remoteRepo, prefs)
     private val baseModifiedTime = Date(1577836800000) // UTC Midnight 1/1/2020
+    private val defaultList = TaskList("1","Default").apply { isDefault = true; updated = baseModifiedTime }
 
     @BeforeEach
     fun beforeEachTest() {
-        whenever(listDao.getAll()).thenReturn(listOf(TaskList("1","Default").apply { isDefault = true; updated = baseModifiedTime }))
+        whenever(listDao.getAll()).thenReturn(listOf(defaultList))
+        whenever(taskDao.getAllByList(eq("1"))).thenReturn(listOf(Task("1").apply { id = "A"; title = "task A"; updated = baseModifiedTime }))
         whenever(remoteRepo.getLists()).thenReturn(listOf(TaskList("1","Default").apply { isDefault = true; updated = baseModifiedTime }))
+
+        // Default successful response
+        whenever(remoteRepo.createList(any())).thenAnswer { it.arguments[0] }
+        whenever(remoteRepo.updateList(any())).thenReturn(true)
+        whenever(remoteRepo.deleteList(any())).thenReturn(true)
     }
 
     @Test
@@ -36,8 +40,7 @@ internal class SyncTest {
         val result = sync.run()
 
         assertTrue(result.success)
-        assertEquals(0, result.toLocal.totalChanges)
-        assertEquals(0, result.toRemote.totalChanges)
+        assertEquals(0, result.totalChanges)
         verifyCallsMatchChanges(result)
     }
 
@@ -54,21 +57,82 @@ internal class SyncTest {
         assertEquals(1, Mockito.mockingDetails(prefs).invocations.size)
     }
 
-    private fun verifyCallsMatchChanges(result: SyncResult) {
-        verify(remoteRepo, times(result.toRemote.listAdd)).createList(any())
-        verify(remoteRepo, times(result.toRemote.listChange)).updateList(any())
-        verify(remoteRepo, times(result.toRemote.listDelete)).deleteList(any())
-        verify(remoteRepo, times(result.toRemote.taskAdd)).createTask(any())
-        verify(remoteRepo, times(result.toRemote.taskChange)).updateTask(any())
-        verify(remoteRepo, times(result.toRemote.taskDelete)).deleteTask(any())
+    @Test
+    fun `lists local to remote add+change`() {
+        whenever(listDao.getAll()).thenReturn(listOf(
+                defaultList.fullCopy().apply { title = "Default Modified"; isRenamed = true },
+                TaskList("temp_id", "Another list")
+        ))
 
-        verify(listDao, times(result.toLocal.listAdd)).add(any())
-        verify(listDao, times(result.toLocal.listChange)).update(any())
-        verify(listDao, times(result.toLocal.listDelete)).delete(any())
+        val result = sync.run()
+        assertEquals(2, result.totalChanges)
+        assertEquals(1, result.listsToRemote.add)
+        assertEquals(1, result.listsToRemote.change)
+        // Deleted is a special case depending on if tasks exist
 
-        verify(taskDao, times(result.toLocal.taskAdd)).add(any())
-        verify(taskDao, times(result.toLocal.taskChange)).update(any())
-        verify(taskDao, times(result.toLocal.taskDelete)).delete(any())
+        result.listsToLocal.change++ // offset call to local db to clear isRenamed
+        verifyCallsMatchChanges(result)
     }
 
+    @Test
+    fun `lists local to remote delete`() {
+        whenever(listDao.getAll()).thenReturn(listOf(defaultList, TaskList("2", "List B").apply { deleted = true }))
+        whenever(remoteRepo.getLists()).thenReturn(listOf(defaultList, TaskList("2", "List B")))
+        whenever(taskDao.getAllByList(eq("2"))).thenReturn(listOf(Task("2")))
+
+        // Nothing if list is non-empty
+        var result = sync.run()
+        assertEquals(0, result.totalChanges)
+
+        // Deletes if empty
+        whenever(taskDao.getAllByList(eq("2"))).thenReturn(emptyList())
+        result = sync.run()
+        assertEquals(1, result.totalChanges)
+        assertEquals(1, result.listsToRemote.delete)
+    }
+
+    @Test
+    fun `lists remote to local`() {
+        whenever(listDao.getAll()).thenReturn(listOf(
+                defaultList,
+                TaskList("3", "List not on remote")
+        ))
+        whenever(remoteRepo.getLists()).thenReturn(listOf(
+                defaultList.fullCopy().apply { title = "New Title" },
+                TaskList("2", "List Added")
+        ))
+
+        val result = sync.run()
+        assertEquals(3, result.totalChanges)
+        assertEquals(1, result.listsToLocal.add)
+        assertEquals(1, result.listsToLocal.change)
+        assertEquals(1, result.listsToLocal.delete)
+        verifyCallsMatchChanges(result)
+    }
+
+    private fun verifyCallsMatchChanges(result: SyncResult) {
+        verify(remoteRepo, times(result.listsToRemote.add)).createList(any())
+        verify(remoteRepo, times(result.listsToRemote.change)).updateList(any())
+        verify(remoteRepo, times(result.listsToRemote.delete)).deleteList(any())
+
+        verify(remoteRepo, times(result.tasksToRemote.add)).createTask(any())
+        verify(remoteRepo, times(result.tasksToRemote.change)).updateTask(any())
+        verify(remoteRepo, times(result.tasksToRemote.delete)).deleteTask(any())
+
+        verify(listDao, times(result.listsToLocal.add)).add(any())
+        verify(listDao, times(result.listsToLocal.change)).update(any())
+        verify(listDao, times(result.listsToLocal.delete)).delete(any())
+
+        verify(taskDao, times(result.tasksToLocal.add)).add(any())
+        verify(taskDao, times(result.tasksToLocal.change)).update(any())
+        verify(taskDao, times(result.tasksToLocal.delete)).delete(any())
+    }
+
+}
+
+fun TaskList.fullCopy() = TaskList(id, title).also { copy ->
+    copy.deleted = deleted
+    copy.isRenamed = isRenamed
+    copy.updated = updated
+    copy.isDefault = isDefault
 }
