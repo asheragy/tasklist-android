@@ -53,4 +53,4 @@ data class Task(var listId: String) {
     }
 }
 
-fun List<Task>.getById(id: String): Task? = this.first { task -> task.id == id }
+fun List<Task>.getById(id: String): Task? = this.firstOrNull { task -> task.id == id }

@@ -203,7 +203,7 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
             if (dbTask != null) {
                 if (task.deleted) {
                     taskDb.delete(task)
-                    result.listsToLocal.delete++
+                    result.tasksToLocal.delete++
                     dbTasks.remove(dbTask)
                 }
                 else if (dbTask.deleted) {
@@ -256,12 +256,13 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
             }
             else if (task.hasTempId) {
                 googleRepo.createTask(task)?.let { updated ->
+                    // TODO consider update ID function so this is a little more clear
                     taskDb.delete(task)
                     task.id = updated.id
                     task.listId = updated.listId
                     taskDb.add(task)
 
-                    result.listsToRemote.add++
+                    result.tasksToRemote.add++
                     bListUpdated = true
 
                     // TODO what is this assignment used for?

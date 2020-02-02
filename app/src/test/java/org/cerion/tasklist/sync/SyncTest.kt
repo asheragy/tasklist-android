@@ -33,6 +33,9 @@ internal class SyncTest {
         whenever(remoteRepo.createList(any())).thenAnswer { it.arguments[0] }
         whenever(remoteRepo.updateList(any())).thenReturn(true)
         whenever(remoteRepo.deleteList(any())).thenReturn(true)
+        whenever(remoteRepo.createTask(any())).thenAnswer { it.arguments[0]}
+        whenever(remoteRepo.updateTask(any())).thenReturn(true)
+        whenever(remoteRepo.deleteTask(any())).thenReturn(true)
     }
 
     @Test
@@ -103,10 +106,65 @@ internal class SyncTest {
         ))
 
         val result = sync.run()
+
         assertEquals(3, result.totalChanges)
         assertEquals(1, result.listsToLocal.add)
         assertEquals(1, result.listsToLocal.change)
         assertEquals(1, result.listsToLocal.delete)
+        verifyCallsMatchChanges(result)
+    }
+
+    @Test
+    fun `tasks local to remote`() {
+        whenever(taskDao.getAllByList(eq("1"))).thenReturn(listOf(
+                Task("1").apply { updated = baseModifiedTime },
+                Task("1").apply { id = "abc"; updated = Date(baseModifiedTime.time + 1) },
+                Task("1").apply { id = "def"; deleted = true }
+        ))
+
+        val result = sync.run()
+        assertEquals(3, result.totalChanges)
+        assertEquals(1, result.tasksToRemote.add)
+        assertEquals(1, result.tasksToRemote.change)
+        assertEquals(1, result.tasksToRemote.delete)
+
+        // remote add triggers local delete+add to update ID, may change this later...
+        result.tasksToLocal.delete++
+        result.tasksToLocal.add++
+        // remote delete removes local record as well
+        result.tasksToLocal.delete++
+        verifyCallsMatchChanges(result)
+    }
+
+    @Test
+    fun `tasks remote to local`() {
+        whenever(remoteRepo.getLists()).thenReturn(listOf(TaskList("1","Default").apply { isDefault = true; updated = Date(baseModifiedTime.time + 1) }))
+        whenever(remoteRepo.getTasks(eq("1"), any())).thenReturn(listOf(
+                Task("1"),
+                Task("1").apply { id = "abc" },
+                Task("1").apply { id = "def"; deleted = true }
+        ))
+        whenever(taskDao.getAllByList(eq("1"))).thenReturn(listOf(
+                Task("1").apply { id = "abc" },
+                Task("1").apply { id = "def" }
+        ))
+
+        val result = sync.run()
+        assertEquals(3, result.totalChanges)
+        assertEquals(1, result.tasksToLocal.add)
+        assertEquals(1, result.tasksToLocal.change)
+        assertEquals(1, result.tasksToLocal.delete)
+        verifyCallsMatchChanges(result)
+    }
+
+    @Test
+    fun `tasks remote to local ignore unsynced deletions`() {
+        whenever(remoteRepo.getLists()).thenReturn(listOf(TaskList("1","Default").apply { isDefault = true; updated = Date(baseModifiedTime.time + 1) }))
+        whenever(remoteRepo.getTasks(eq("1"), any())).thenReturn(listOf(Task("1").apply { id = "def"; deleted = true }))
+        whenever(taskDao.getAllByList(eq("1"))).thenReturn(listOf(Task("1").apply { id = "abc" }))
+
+        val result = sync.run()
+        assertEquals(0, result.totalChanges)
         verifyCallsMatchChanges(result)
     }
 
