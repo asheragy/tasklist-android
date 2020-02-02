@@ -16,7 +16,7 @@ class SyncTask(private val mContext: Context, private val mAuthToken: String, pr
         var result: Boolean
 
         try {
-            result = sync.run()
+            result = sync.run().success
         } catch (e: GoogleApiException) {
             mError = e
             result = false

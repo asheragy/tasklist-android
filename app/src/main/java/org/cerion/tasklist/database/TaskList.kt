@@ -42,5 +42,5 @@ data class TaskList(@PrimaryKey var id: String, var title: String) {
     }
 }
 
-fun List<TaskList>.getById(id: String): TaskList? = this.first { list -> !list.isAllTasks && list.id.contentEquals(id) }
+fun List<TaskList>.getById(id: String): TaskList? = this.firstOrNull { list -> !list.isAllTasks && list.id.contentEquals(id) }
 fun List<TaskList>.getDefault(): TaskList? = this.first { list -> list.isDefault }

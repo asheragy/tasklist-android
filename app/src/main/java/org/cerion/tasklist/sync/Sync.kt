@@ -12,13 +12,17 @@ import java.util.*
 
 internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao, private val googleRepo: GoogleTasksRepository, private val prefs: Prefs) {
 
-    private val googleToDb = SyncChanges()
-    private val dbToGoogle = SyncChanges()
+    private lateinit var googleToDb: SyncChanges
+    private lateinit var dbToGoogle: SyncChanges
 
-    fun run(): Boolean {
+    fun run(): SyncResult {
+        googleToDb = SyncChanges()
+        dbToGoogle = SyncChanges()
+        val result = SyncResult(false, googleToDb, dbToGoogle)
+
         val googleLists = googleRepo.getLists().toMutableList()
         if (googleLists.isEmpty())
-            return false
+            return result
 
         var dbLists = listDb.getAll()
 
@@ -98,7 +102,7 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
                 }
                 else {
                     Log.e(TAG, "Failed to add list")
-                    return false
+                    return result
                 }
             }
 
@@ -119,7 +123,7 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
                 else {
                     //This shouldn't be possible, if list does not exist it should have deleted database list in earlier code
                     Log.e(TAG, "Error: Failed to find list to update")
-                    return false
+                    return result
                 }
             }
 
@@ -154,7 +158,8 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
         Log.d(TAG, "To Google: ${dbToGoogle.totalChanges} $dbToGoogle")
         prefs.setDate(Prefs.KEY_LAST_SYNC, Date())
 
-        return true
+        result.success = true
+        return result
     }
 
     @Throws(GoogleApiException::class)
@@ -304,6 +309,8 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
         }
     }
 }
+
+data class SyncResult(var success: Boolean, val toLocal: SyncChanges, val toRemote: SyncChanges)
 
 data class SyncChanges(
         var listAdd: Int = 0,
