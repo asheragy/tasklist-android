@@ -13,12 +13,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
+import com.google.android.material.datepicker.MaterialDatePicker
 import org.cerion.tasklist.R
 import org.cerion.tasklist.databinding.FragmentTaskBinding
-import org.cerion.tasklist.ui.dialogs.DatePickerFragment
 import java.util.*
 
-class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
+class TaskDetailFragment : Fragment() {
 
     private lateinit var binding: FragmentTaskBinding
     private var menuSave: MenuItem? = null
@@ -83,10 +83,15 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
     }
 
     private fun onEditDueDate() {
-        // TODO use navigation and shared viewmodel
-        val newFragment = DatePickerFragment.newInstance(viewModel.dueDate.value)
-        newFragment.setTargetFragment(this, 0)
-        newFragment.show(requireFragmentManager(), "datePicker")
+        val builder = MaterialDatePicker.Builder.datePicker()
+        if (viewModel.dueDate.value?.time != 0L)
+            builder.setSelection(viewModel.dueDate.value!!.time)
+
+        val picker = builder.build()
+        picker.addOnPositiveButtonClickListener {
+            viewModel.dueDate.value = Date(it)
+        }
+        picker.show(requireFragmentManager(), picker.toString())
     }
 
     private fun saveAndFinish() {
@@ -98,9 +103,5 @@ class TaskDetailFragment : Fragment(), DatePickerFragment.DatePickerListener {
         viewModel.save()
         tasksViewModel.hasLocalChanges.set(true)
         requireActivity().onBackPressed()
-    }
-
-    override fun onSelectDate(date: Date) {
-        viewModel.dueDate.value = date
     }
 }
