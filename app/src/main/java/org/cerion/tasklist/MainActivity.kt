@@ -13,6 +13,7 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.findNavController
+import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.NavigationUI
 import com.google.android.material.navigation.NavigationView
 import org.cerion.tasklist.database.Prefs
@@ -36,7 +37,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         setContentView(R.layout.activity_main)
 
         drawerLayout = findViewById(R.id.drawerLayout)
-        navController = this.findNavController(R.id.nav_host_fragment)
+        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        navController = navHostFragment.navController
         val navView = findViewById<NavigationView>(R.id.navView)
 
         NavigationUI.setupActionBarWithNavController(this, navController, drawerLayout)
@@ -88,14 +90,13 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun onSelectTheme() {
-        // TODO add system/default theme, it should be default if nothing is set, may need to update SDK to 29
         val values = resources.getStringArray(R.array.pref_background_entries)
+        val prefs = Prefs.getInstance(this)
 
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Select theme")
         builder.setNegativeButton("Cancel", null)
-        builder.setItems(values) { _, which ->
-            val prefs = Prefs.getInstance(this)
+        builder.setSingleChoiceItems(values, prefs.theme.ordinal) { _, which ->
             if (which != prefs.theme.ordinal) {
                 prefs.theme = Theme.values()[which]
                 TaskStackBuilder.create(this)
