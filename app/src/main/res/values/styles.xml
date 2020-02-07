@@ -12,7 +12,6 @@
 
         <item name="colorAccent">@color/accentColor</item>
 
-        <item name="menuSaveDrawable">@drawable/save</item>
         <item name="iconUnDeleteDrawable">@drawable/undelete</item>
     </style>
 

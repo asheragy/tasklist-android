@@ -1,8 +1,14 @@
 package org.cerion.tasklist.ui
 
-import androidx.lifecycle.*
+import android.util.Log
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Transformations
+import androidx.lifecycle.ViewModel
 import org.cerion.tasklist.R
+import org.cerion.tasklist.common.NonNullMutableLiveData
 import org.cerion.tasklist.common.ResourceProvider
+import org.cerion.tasklist.common.TAG
 import org.cerion.tasklist.database.Task
 import org.cerion.tasklist.database.TaskDao
 import java.text.SimpleDateFormat
@@ -11,27 +17,11 @@ import java.util.*
 
 class TaskDetailViewModel(private val resources: ResourceProvider, private val db: TaskDao) : ViewModel() {
 
-    private lateinit var task: Task
+    private lateinit var originalTask: Task
 
-    private val isNew
-        get() = task.hasTempId
-
-    val title = MutableLiveData<String>()
-    val notes = MutableLiveData<String>()
-    val completed = MutableLiveData<Boolean>()
-    val dueDate = MutableLiveData<Date>()
-    val isDirty = MediatorLiveData<Boolean>()
-
-    val dueString: LiveData<String>
-        get() = Transformations.map(dueDate) { date ->
-            if(date.time != 0L)
-                dateFormat.format(date)
-            else
-                resources.getString(R.string.no_due_date)
-        }
-
-    val hasDueDate: LiveData<Boolean>
-        get() = Transformations.map(this.dueDate) { value -> value.time > 0}
+    val _task = MutableLiveData<TaskModel>()
+    val task: LiveData<TaskModel>
+        get() = _task
 
     val _windowTitle = MutableLiveData<String>()
     val windowTitle: LiveData<String>
@@ -43,12 +33,6 @@ class TaskDetailViewModel(private val resources: ResourceProvider, private val d
 
     init {
         dateFormat.timeZone = TimeZone.getTimeZone("UTC")
-
-        isDirty.value = false
-        isDirty.addSource(title) { value -> if(!isDirty.value!! && value != task.title) isDirty.value = true }
-        isDirty.addSource(notes) { value -> if(!isDirty.value!! && value != task.notes) isDirty.value = true }
-        isDirty.addSource(completed) { value -> if(!isDirty.value!! && value != task.completed) isDirty.value = true }
-        isDirty.addSource(dueDate) { value -> if(!isDirty.value!! && value != task.due) isDirty.value = true }
     }
 
     fun addTask(taskListId: String) {
@@ -64,39 +48,71 @@ class TaskDetailViewModel(private val resources: ResourceProvider, private val d
     }
 
     private fun loadTaskFields(task: Task) {
-        isDirty.value = false
-        this.task = task
-
-        title.value = task.title
-        notes.value = task.notes
-        completed.value = task.completed
-        dueDate.value = task.due
-
-        // TODO is it ever this value?
-        if (task.updated.time > 0)
-            _modified.value = task.updated.toString()
-        else
-            _modified.value = ""
+        originalTask = task
+        _task.value = TaskModel(task, resources)
+        _modified.value = task.updated.toString()
     }
 
-    fun save() {
-        task.setModified()
-        task.title = title.value!!
-        task.notes = notes.value!!
-        task.completed = completed.value!!
-        task.due = dueDate.value!!
+    fun save(): Boolean {
+        task.value!!.let { task ->
+            if (task.isModified) {
+                if (task.isNew)
+                    db.add(task.modifiedTask)
+                else
+                    db.update(task.modifiedTask)
 
-        if (isNew)
-            db.add(task)
-        else
-            db.update(task)
+                return true
+            }
+
+            Log.i(TAG, "Ignoring save, no changes")
+            return false
+        }
     }
 
     fun removeDueDate() {
-        dueDate.value = Date(0)
+        task.value!!.dueDate.value = Date(0)
+    }
+
+    class TaskModel(val task: Task, private val resources: ResourceProvider) {
+
+        var title = task.title
+        var notes = task.notes
+        var completed = task.completed
+        val dueDate = NonNullMutableLiveData(task.due)
+
+        val dueString: LiveData<String>
+            get() = Transformations.map(dueDate) { date ->
+                if(date.time != 0L)
+                    dateFormat.format(date)
+                else
+                    resources.getString(R.string.no_due_date)
+            }
+
+        val hasDueDate: LiveData<Boolean>
+            get() = Transformations.map(this.dueDate) { value -> value.time > 0}
+
+        val isModified: Boolean
+            get() = title != task.title || notes != task.notes || completed != task.completed || dueDate.value != task.due
+
+        val modifiedTask: Task
+            get() {
+                return task.also { updated ->
+                    updated.setModified()
+                    updated.title = title
+                    updated.notes = notes
+                    updated.completed = completed
+                    updated.due = dueDate.value
+                }
+            }
+
+        val isNew: Boolean
+            get() = task.hasTempId
     }
 
     companion object {
         private val dateFormat = SimpleDateFormat("EEE, MMM d, yyyy", Locale.US)
     }
 }
+
+
+

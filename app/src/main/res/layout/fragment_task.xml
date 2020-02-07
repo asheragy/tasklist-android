@@ -38,7 +38,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="@string/field_title"
-                android:text="@={viewModel.title}"
+                android:text="@={viewModel.task.title}"
                 android:id="@+id/title" />
 
             <LinearLayout
@@ -54,7 +54,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@{viewModel.dueString}"
+                    android:text="@{viewModel.task.dueString}"
                     tools:text="DUE"
                     android:textSize="20sp"
                     android:layout_gravity="center_vertical"
@@ -68,7 +68,7 @@
                 <Button
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:visibility="@{viewModel.hasDueDate ? View.VISIBLE : View.GONE}"
+                    android:visibility="@{viewModel.task.hasDueDate ? View.VISIBLE : View.GONE}"
                     android:text="Remove"
                     android:onClick="@{() -> viewModel.removeDueDate()}"
                     />
@@ -79,14 +79,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/field_completed"
-                android:checked="@={viewModel.completed}"
+                android:checked="@={viewModel.task.completed}"
                 android:id="@+id/completed"/>
 
             <EditText
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:id="@+id/notes"
-                android:text="@={viewModel.notes}"
+                android:text="@={viewModel.task.notes}"
                 android:hint="@string/field_notes"
                 android:minLines="5"
                 android:linksClickable="true"

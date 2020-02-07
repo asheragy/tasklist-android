@@ -21,7 +21,6 @@ import java.util.*
 class TaskDetailFragment : Fragment() {
 
     private lateinit var binding: FragmentTaskBinding
-    private var menuSave: MenuItem? = null
 
     private val viewModel: TaskDetailViewModel by lazy {
         val factory = ViewModelFactory(requireActivity().application)
@@ -41,10 +40,6 @@ class TaskDetailFragment : Fragment() {
         setHasOptionsMenu(true)
 
         viewModel.windowTitle.observe(viewLifecycleOwner, Observer { title -> (requireActivity() as AppCompatActivity).supportActionBar?.title = title })
-        viewModel.isDirty.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
-            if (menuSave != null)
-                menuSave!!.isVisible = viewModel.isDirty.value!!
-        })
 
         // Must be on view, not the binded field
         binding.notes.addTextChangedListener(object : TextWatcher {
@@ -70,7 +65,6 @@ class TaskDetailFragment : Fragment() {
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.task_detail, menu)
-        menuSave = menu.getItem(0)
         super.onCreateOptionsMenu(menu, inflater)
     }
 
@@ -84,14 +78,15 @@ class TaskDetailFragment : Fragment() {
 
     private fun onEditDueDate() {
         val builder = MaterialDatePicker.Builder.datePicker()
-        if (viewModel.dueDate.value?.time != 0L)
-            builder.setSelection(viewModel.dueDate.value!!.time)
+        if (viewModel.task.value!!.dueDate.value.time != 0L)
+            builder.setSelection(viewModel.task.value!!.dueDate.value.time)
 
         val picker = builder.build()
         picker.addOnPositiveButtonClickListener {
-            viewModel.dueDate.value = Date(it)
+            viewModel.task.value!!.dueDate.value = Date(it)
         }
-        picker.show(requireFragmentManager(), picker.toString())
+
+        picker.show(parentFragmentManager, picker.toString())
     }
 
     private fun saveAndFinish() {
@@ -100,8 +95,8 @@ class TaskDetailFragment : Fragment() {
         if (currentFocusedView != null)
             inputManager.hideSoftInputFromWindow(currentFocusedView.windowToken, HIDE_NOT_ALWAYS)
 
-        viewModel.save()
-        tasksViewModel.hasLocalChanges.set(true)
+        val changes = viewModel.save()
+        tasksViewModel.hasLocalChanges.set(changes)
         requireActivity().onBackPressed()
     }
 }

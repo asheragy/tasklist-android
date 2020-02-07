@@ -10,6 +10,7 @@ import org.json.JSONObject
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 open class GoogleApiBase internal constructor(private val mAuthKey: String, private val mBaseUrl: String) {
 
@@ -62,7 +63,13 @@ open class GoogleApiBase internal constructor(private val mAuthKey: String, priv
         var sResult = ""
 
         val client = OkHttpClient()
-        var requestBuilder: Request.Builder = Request.Builder().url(sURL).addHeader("Authorization", "Bearer $mAuthKey")
+        client.setReadTimeout(3, TimeUnit.SECONDS)
+        client.setWriteTimeout(3, TimeUnit.SECONDS)
+
+        var requestBuilder: Request.Builder = Request.Builder()
+                .url(sURL)
+                .addHeader("Authorization", "Bearer $mAuthKey")
+
         //connection.setRequestProperty("Content-type", "application/json");
 
         if (sRequestBody != null) {
@@ -83,7 +90,10 @@ open class GoogleApiBase internal constructor(private val mAuthKey: String, priv
         val request = requestBuilder.build()
 
         try {
-            val response = client.newCall(request).execute()
+            val response = client
+                    .newCall(request)
+                    .execute()
+
             Log.d(TAG, "Result=" + response.code())
             sResult = response.body().string()
 
