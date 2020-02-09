@@ -11,7 +11,7 @@ import org.cerion.tasklist.common.TAG
 import java.text.SimpleDateFormat
 import java.util.*
 
-@androidx.room.Database(entities = [TaskList::class, Task::class], version = 3, exportSchema = false)
+@androidx.room.Database(entities = [TaskList::class, Task::class], version = 4, exportSchema = false)
 @TypeConverters(DateConverter::class)
 abstract class AppDatabase : RoomDatabase() {
 
@@ -57,13 +57,22 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("CREATE TABLE IF NOT EXISTS `tasklists_new` (`updated` INTEGER NOT NULL, `updated_tasks` INTEGER NOT NULL, `isDefault` INTEGER NOT NULL, `deleted` INTEGER NOT NULL, `id` TEXT NOT NULL, `title` TEXT NOT NULL, PRIMARY KEY(`id`))")
+                database.execSQL("INSERT INTO tasklists_new (updated, updated_tasks, isDefault, deleted, id, title) SELECT updated, updated_tasks, isDefault, deleted, id, title FROM tasklists")
+                database.execSQL("DROP TABLE tasklists")
+                database.execSQL("ALTER TABLE tasklists_new RENAME TO tasklists")
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase? {
             if (instance == null) {
                 synchronized(LOCK) {
                     if (instance == null) {
                         instance = Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, DATABASE_NAME)
                                 .allowMainThreadQueries()
-                                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                                 .build()
                     }
                 }

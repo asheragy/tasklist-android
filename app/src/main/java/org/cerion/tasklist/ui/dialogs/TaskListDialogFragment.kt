@@ -8,6 +8,8 @@ import android.widget.EditText
 import androidx.fragment.app.DialogFragment
 import org.cerion.tasklist.database.AppDatabase
 import org.cerion.tasklist.database.TaskList
+import org.cerion.tasklist.database.getById
+import java.util.*
 
 class TaskListDialogFragment : DialogFragment() {
 
@@ -41,14 +43,14 @@ class TaskListDialogFragment : DialogFragment() {
                 val newName = edittext.text.toString()
                 Log.d(TAG, "Rename $listName to $newName")
 
-                // TODO if list has a tempId we should NOT set the renamed flag
-                val update = TaskList(listId!!, newName)
-                update.isRenamed = true
-                val db = AppDatabase.getInstance(activity!!)!!.taskListDao()
-                db.update(update)
+                val db = AppDatabase.getInstance(requireActivity())!!.taskListDao()
+                val list = db.getAll().getById(listId!!)!!
+                list.title = newName
+                list.updated = Date()
+                db.update(list)
 
                 val parent = targetFragment as TaskListsChangedListener
-                parent.onTaskListsChanged(update)
+                parent.onTaskListsChanged(list)
             }
         }
 

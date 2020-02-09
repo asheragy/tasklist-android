@@ -107,8 +107,8 @@ class TasksViewModel(private val resources: ResourceProvider,
         return withContext(Dispatchers.IO) {
             if(sync.lists().success)
                 sync.tasks(currList.id).success
-
-            false
+            else
+                false
         }
     }
 
@@ -284,7 +284,7 @@ class TasksViewModel(private val resources: ResourceProvider,
 
     private fun updateLastSync() {
         var lastSyncText = "Last Sync: "
-        val lastSyncTime = prefs.getDate(Prefs.KEY_LAST_SYNC)
+        val lastSyncTime = prefs.getDate(Prefs.KEY_LAST_LIST_SYNC)
         if (lastSyncTime.time == 0L)
             lastSyncText += "Never"
         else {

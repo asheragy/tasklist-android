@@ -53,13 +53,11 @@ internal class SyncTest_Lists {
 
         // Get local data to check for changes
         assertEquals(1, Mockito.mockingDetails(listDao).invocations.size)
-        //assertEquals(1, Mockito.mockingDetails(taskDao).invocations.size)
+        assertEquals(0, Mockito.mockingDetails(taskDao).invocations.size)
         // Remote data for changes
         assertEquals(1, Mockito.mockingDetails(remoteRepo).invocations.size)
-
-        // TODO may not be needed after refactor
         // Save last sync time
-        assertEquals(0, Mockito.mockingDetails(prefs).invocations.size)
+        assertEquals(1, Mockito.mockingDetails(prefs).invocations.size)
     }
 
     @Test
@@ -75,7 +73,7 @@ internal class SyncTest_Lists {
     @Test
     fun `lists local to remote add+change`() {
         whenever(listDao.getAll()).thenReturn(listOf(
-                defaultList.fullCopy().apply { title = "Default Modified"; isRenamed = true; updated = Date(baseModifiedTime + 1) },
+                defaultList.fullCopy().apply { title = "Default Modified"; updated = Date(baseModifiedTime + 1) },
                 TaskList("temp_id", "Another list")
         ))
 
@@ -85,8 +83,25 @@ internal class SyncTest_Lists {
         assertEquals(1, result.toRemote.change)
         // Deleted is a special case depending on if tasks exist
 
-        result.toLocal.change++ // offset call to local db to clear isRenamed
+        result.toLocal.change++ // offset call to local db to updated last modified time
         verifyCallsMatchChanges(result)
+    }
+
+    @Test
+    fun `changes based on last updated time`() {
+        whenever(listDao.getAll()).thenReturn(listOf(
+                defaultList.fullCopy().apply { title = "Default Modified"; updated = Date(baseModifiedTime + 2) },
+                TaskList("2", "Another list").apply { updated = Date(baseModifiedTime + 1) }
+        ))
+        whenever(remoteRepo.getLists()).thenReturn(listOf(
+                defaultListGoogle.copy(updated = Date(baseModifiedTime + 1)),
+                GoogleTaskList("2", "List B", Date(baseModifiedTime + 2))
+        ))
+
+        val result = sync.lists()
+        assertEquals(2, result.totalChanges)
+        verify(listDao, times(1)).update(argThat { id == "2" })
+        verify(remoteRepo, times(1)).updateList(argThat { id == "1" })
     }
 
     @Test

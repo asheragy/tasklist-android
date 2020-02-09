@@ -13,7 +13,7 @@ import java.util.*
 internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao, private val googleRepo: GoogleTasksRepository, private val prefs: Prefs) {
 
     fun tasks(listId: String): ListSyncResult {
-        val result = ListSyncResult(false)
+        val result = ListSyncResult(true)
 
         //val list = listDb.getAll().first { it.id == listId }
         //val updatedMin = if(list.updated_tasks.time == 0L) null else list.updated_tasks
