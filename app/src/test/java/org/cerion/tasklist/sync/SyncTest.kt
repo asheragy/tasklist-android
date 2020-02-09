@@ -3,6 +3,7 @@ package org.cerion.tasklist.sync
 
 import com.nhaarman.mockitokotlin2.*
 import org.cerion.tasklist.database.*
+import org.cerion.tasklist.googleapi.GoogleTaskList
 import org.cerion.tasklist.googleapi.GoogleTasksRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -22,16 +23,17 @@ internal class SyncTest {
     private val sync = Sync(listDao, taskDao, remoteRepo, prefs)
     private val baseModifiedTime = Date(1577836800000) // UTC Midnight 1/1/2020
     private val defaultList = TaskList("1","Default").apply { isDefault = true; updated = baseModifiedTime }
+    private val defaultListGoogle = GoogleTaskList("1","Default", baseModifiedTime, true)
 
     @BeforeEach
     fun beforeEachTest() {
         whenever(listDao.getAll()).thenReturn(listOf(defaultList))
         whenever(taskDao.getAllByList(eq("1"))).thenReturn(listOf(Task("1").apply { id = "A"; title = "task A"; updated = baseModifiedTime }))
-        whenever(remoteRepo.getLists()).thenReturn(listOf(TaskList("1","Default").apply { isDefault = true; updated = baseModifiedTime }))
+        whenever(remoteRepo.getLists()).thenReturn(listOf(defaultListGoogle))
 
         // Default successful response
         whenever(remoteRepo.createList(any())).thenAnswer { it.arguments[0] }
-        whenever(remoteRepo.updateList(any())).thenReturn(true)
+        whenever(remoteRepo.updateList(any())).thenAnswer { it.arguments[0] }
         whenever(remoteRepo.deleteList(any())).thenReturn(true)
         whenever(remoteRepo.createTask(any())).thenAnswer { it.arguments[0]}
         whenever(remoteRepo.updateTask(any())).thenReturn(true)
@@ -80,7 +82,7 @@ internal class SyncTest {
     @Test
     fun `lists local to remote delete`() {
         whenever(listDao.getAll()).thenReturn(listOf(defaultList, TaskList("2", "List B").apply { deleted = true }))
-        whenever(remoteRepo.getLists()).thenReturn(listOf(defaultList, TaskList("2", "List B")))
+        whenever(remoteRepo.getLists()).thenReturn(listOf(defaultListGoogle, GoogleTaskList("2", "List B")))
         whenever(taskDao.getAllByList(eq("2"))).thenReturn(listOf(Task("2")))
 
         // Nothing if list is non-empty
@@ -101,8 +103,8 @@ internal class SyncTest {
                 TaskList("3", "List not on remote")
         ))
         whenever(remoteRepo.getLists()).thenReturn(listOf(
-                defaultList.fullCopy().apply { title = "New Title" },
-                TaskList("2", "List Added")
+                defaultListGoogle.copy(title = "New Title"),
+                GoogleTaskList("2", "List Added")
         ))
 
         val result = sync.run()
@@ -138,7 +140,7 @@ internal class SyncTest {
 
     @Test
     fun `tasks remote to local`() {
-        whenever(remoteRepo.getLists()).thenReturn(listOf(TaskList("1","Default").apply { isDefault = true; updated = Date(baseModifiedTime.time + 1) }))
+        whenever(remoteRepo.getLists()).thenReturn(listOf(defaultListGoogle))
         whenever(remoteRepo.getTasks(eq("1"), any())).thenReturn(listOf(
                 Task("1"),
                 Task("1").apply { id = "abc" },
@@ -159,7 +161,7 @@ internal class SyncTest {
 
     @Test
     fun `tasks remote to local ignore unsynced deletions`() {
-        whenever(remoteRepo.getLists()).thenReturn(listOf(TaskList("1","Default").apply { isDefault = true; updated = Date(baseModifiedTime.time + 1) }))
+        whenever(remoteRepo.getLists()).thenReturn(listOf(defaultListGoogle))
         whenever(remoteRepo.getTasks(eq("1"), any())).thenReturn(listOf(Task("1").apply { id = "def"; deleted = true }))
         whenever(taskDao.getAllByList(eq("1"))).thenReturn(listOf(Task("1").apply { id = "abc" }))
 

@@ -12,9 +12,113 @@ import java.util.*
 
 internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao, private val googleRepo: GoogleTasksRepository, private val prefs: Prefs) {
 
+    fun tasks(listId: String): ListSyncResult {
+        val result = ListSyncResult(false)
+
+        //val list = listDb.getAll().first { it.id == listId }
+        //val updatedMin = if(list.updated_tasks.time == 0L) null else list.updated_tasks
+        //val googleTasks = googleRepo.getTasks(listId, updatedMin)
+        //val localTasks = taskDb.getAllByList(listId)
+
+        // TODO if any changes on web, set updated_tasks = most recent updated time on web (what we received OR added)
+        return result
+    }
+
+    fun lists(): ListSyncResult {
+        val result = ListSyncResult(false)
+
+        val googleLists = googleRepo.getLists()
+        if (googleLists.isEmpty())
+            return result
+
+        val dbLists = listDb.getAll()
+
+        // Pair up default list Ids on first sync
+        val defaultList = dbLists.getDefault()!!
+        if (defaultList.hasTempId) {
+            val googleId = googleLists.first { it.default }.id
+            listDb.updateId(defaultList.id, googleId)
+            defaultList.id = googleId
+        }
+
+        // Group lists in pair of <Google, Local>
+        val map1 = googleLists.associateBy { it.id }
+        val map2 = dbLists.associateBy { it.id }
+        val pairs = (map1.keys + map2.keys).associateWith { Pair(map1[it], map2[it]) }.values
+
+        pairs.forEach { pair ->
+            val googleList = pair.first
+            val localList = pair.second
+
+            if (googleList != null && localList != null) {
+                if (localList.deleted) {
+                    val tasks = taskDb.getAllByList(localList.id)
+                    if (tasks.isEmpty()) {
+                        if (googleRepo.deleteList(localList)) {
+                            listDb.delete(localList)
+                            result.toRemote.delete++
+                        }
+                    }
+                }
+                else if (localList.updated != googleList.updated) {
+                    var newUpdated = googleList.updated
+                    if (localList.title != googleList.title) {
+                        if (localList.updated > googleList.updated) {
+                            newUpdated = googleRepo.updateList(localList).updated
+                            result.toRemote.change++
+                        }
+                        else {
+                            localList.title = googleList.title
+                            result.toLocal.change++
+                        }
+                    }
+
+                    localList.updated = newUpdated
+                    listDb.update(localList)
+                }
+            }
+            else if (googleList != null) {
+                //Does not exist locally, add it
+                listDb.add(TaskList(googleList.id, googleList.title).apply {
+                    updated = googleList.updated
+                })
+
+                result.toLocal.add++
+            }
+            else if (localList != null) {
+                if (localList.hasTempId) {
+                    val addedList = googleRepo.createList(localList)
+
+                    // If current displayed list is this one update the ID so it reloads with this list active
+                    val lastId = prefs.getString(Prefs.KEY_LAST_SELECTED_LIST_ID)
+                    if (lastId != null && lastId.contentEquals(localList.id))
+                        prefs.setString(Prefs.KEY_LAST_SELECTED_LIST_ID, addedList.id)
+
+                    listDb.updateId(localList.id, addedList.id)
+                    result.toRemote.add++
+                }
+                else {
+                    // TODO this will cascade delete so log tasks count its removing...
+                    listDb.delete(localList)
+                    result.toLocal.delete++
+                }
+            }
+            else
+                throw UnsupportedOperationException() // should never happen
+        }
+
+        Log.d(TAG, "Lists to Local : ${result.toLocal.totalChanges} ${result.toLocal}")
+        Log.d(TAG, "Lists to Google: ${result.toRemote.totalChanges} ${result.toRemote}")
+        prefs.setDate(Prefs.KEY_LAST_LIST_SYNC, Date())
+
+        result.success = true
+        return result
+    }
+
     fun run(): SyncResult {
         val result = SyncResult(false)
 
+        /*
         val googleLists = googleRepo.getLists().toMutableList()
         if (googleLists.isEmpty())
             return result
@@ -34,7 +138,7 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
                     }
                 }
             }
-            else if (curr.isDefault) {
+            else if (curr.default) {
                 dbList = dbLists.getDefault()
                 if (dbList != null) {
                     if (!dbList.isRenamed) {
@@ -157,6 +261,9 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
         prefs.setDate(Prefs.KEY_LAST_SYNC, Date())
 
         result.success = true
+
+
+         */
         return result
     }
 
@@ -307,6 +414,14 @@ internal class Sync(private val listDb: TaskListDao, private val taskDb: TaskDao
             return Sync(db!!.taskListDao(), db.taskDao(), repo, Prefs.getInstance(context))
         }
     }
+}
+
+data class ListSyncResult(var success: Boolean) {
+    val toLocal = SyncChanges()
+    val toRemote = SyncChanges()
+
+    val totalChanges: Int
+        get() = toLocal.totalChanges + toRemote.totalChanges
 }
 
 data class SyncResult(var success: Boolean) {

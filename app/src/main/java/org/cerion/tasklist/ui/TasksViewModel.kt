@@ -105,7 +105,10 @@ class TasksViewModel(private val resources: ResourceProvider,
     private suspend fun syncInBackground(token: String): Boolean {
         val sync = Sync.getInstance(getApplication(), token)
         return withContext(Dispatchers.IO) {
-            sync.run().success
+            if(sync.lists().success)
+                sync.tasks(currList.id).success
+
+            false
         }
     }
 

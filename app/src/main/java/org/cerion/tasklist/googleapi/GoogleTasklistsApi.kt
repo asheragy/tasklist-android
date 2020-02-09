@@ -3,22 +3,22 @@ package org.cerion.tasklist.googleapi
 
 import android.util.Log
 import org.cerion.tasklist.common.TAG
-import org.cerion.tasklist.database.TaskList
 import org.json.JSONException
 import org.json.JSONObject
-import java.text.ParseException
 import java.util.*
+
+data class GoogleTaskList(val id: String, val title: String, val updated: Date = Date(0), val default: Boolean = false)
 
 class GoogleTasklistsApi internal constructor(authKey: String) : GoogleApiBase(authKey, GoogleApi.TASKS_BASE_URL) {
 
-    fun delete(list: TaskList): Boolean {
-        val sURL = getURL("users/@me/lists/" + list.id)
+    fun delete(id: String): Boolean {
+        val sURL = getURL("users/@me/lists/$id")
         val result = getInetData(sURL, null, DELETE)
 
         return result.isEmpty() //Successful delete does not return anything
     }
 
-    operator fun get(id: String): TaskList? {
+    operator fun get(id: String): GoogleTaskList? {
         val sURL = getURL("users/@me/lists/$id")
         val json = getJSON(sURL)
 
@@ -31,84 +31,55 @@ class GoogleTasklistsApi internal constructor(authKey: String) : GoogleApiBase(a
         return null
     }
 
-    fun getAll(): List<TaskList> {
-        val sURL = getURL("users/@me/lists")
+    fun getAll(): List<GoogleTaskList> {
+        val sURL = getURL("users/@me/lists") + "&fields=items/id,items/title,items/updated"
         val json = getJSON(sURL)
-        val result = ArrayList<TaskList>()
+        val result = ArrayList<GoogleTaskList>()
 
         try {
-
             val items = json.getJSONArray("items")
             Log.d(TAG, items.length().toString() + " task lists")
 
             for (i in 0 until items.length()) {
                 val item = items.getJSONObject(i)
-                val list = parseItem(item)
-                if (list != null) {
-                    if (i == 0)
-                        list.isDefault = true //first list is default list
-                    result.add(list)
-                }
-
+                val list = parseItem(item, i == 0) // first list is default list
+                result.add(list)
             }
-        } catch (e: JSONException) {
+        }
+        catch (e: JSONException) {
             Log.e(TAG, "exception", e)
         }
 
         return result
     }
 
-    fun update(list: TaskList): Boolean {
+    fun update(list: GoogleTaskList): GoogleTaskList {
         val sURL = getURL("users/@me/lists/" + list.id)
         val json = JSONObject()
-        var bResult = false
 
-        try {
-            json.put(FIELD_ID, list.id)
-            json.put(FIELD_TITLE, list.title)
+        json.put(FIELD_ID, list.id)
+        json.put(FIELD_TITLE, list.title)
 
-            val result = getJSON(sURL, json, PUT)
-            if (list.title.contentEquals(result.getString(FIELD_TITLE)))
-                bResult = true
-        } catch (e: JSONException) {
-            e.printStackTrace()
-        }
-
-        return bResult
+        val result = getJSON(sURL, json, PUT)
+        return parseItem(result)
     }
 
-    fun insert(list: TaskList): TaskList? {
+    fun insert(list: GoogleTaskList): GoogleTaskList {
         val sURL = getURL("users/@me/lists")
         val json = JSONObject()
-        var result: TaskList? = null
 
-        try {
-            json.put(FIELD_TITLE, list.title)
-            val item = getJSON(sURL, json, POST)
-            result = parseItem(item)
-
-        } catch (e: JSONException) {
-            e.printStackTrace()
-        }
-
-        return result
+        json.put(FIELD_TITLE, list.title)
+        val item = getJSON(sURL, json, POST)
+        return parseItem(item)
     }
 
-    @Throws(JSONException::class)
-    private fun parseItem(item: JSONObject): TaskList? {
-        var result: TaskList? = null
+    private fun parseItem(item: JSONObject, defaultList: Boolean = false): GoogleTaskList {
         val id = item.getString(FIELD_ID)
         val title = item.getString(FIELD_TITLE)
         val updated = item.getString(FIELD_UPDATED)
-        try {
-            val dt = dateFormat.parse(updated)
-            result = TaskList(id, title)
-            result.updated = dt
-        } catch (e: ParseException) {
-            Log.e(TAG, "exception", e)
-        }
 
-        return result
+        val dt = dateFormat.parse(updated)
+        return GoogleTaskList(id, title, dt, defaultList)
     }
 
     companion object {

@@ -9,6 +9,7 @@ import java.util.*
 data class TaskList(@PrimaryKey var id: String, var title: String) {
 
     var updated: Date = Date(0)
+    var updated_tasks: Date = Date(0)
     var isRenamed: Boolean = false
     var isDefault: Boolean = false
     var deleted: Boolean = false
@@ -22,13 +23,19 @@ data class TaskList(@PrimaryKey var id: String, var title: String) {
     override fun toString(): String = title
 
     fun logString(dateFormat: DateFormat?): String {
-        var result = String.format("List(id=%s, updated='%s', title='%s'", id, if (dateFormat != null) dateFormat.format(updated) else updated.toString(), title)
+        var result = String.format("List(id=%s, updated='%s', title='%s', updated_tasks='%s'",
+                id,
+                if (dateFormat != null) dateFormat.format(updated) else updated.toString(),
+                if (dateFormat != null) dateFormat.format(updated_tasks) else updated_tasks.toString(),
+                title)
+
         if (isDefault)
             result += ", **default"
         if (isRenamed)
             result += ", **renamed"
         if (deleted)
             result += ", **deleted"
+
         result += ")"
 
         return result

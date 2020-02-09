@@ -11,7 +11,7 @@ import org.cerion.tasklist.common.TAG
 import java.text.SimpleDateFormat
 import java.util.*
 
-@androidx.room.Database(entities = [TaskList::class, Task::class], version = 2, exportSchema = false)
+@androidx.room.Database(entities = [TaskList::class, Task::class], version = 3, exportSchema = false)
 @TypeConverters(DateConverter::class)
 abstract class AppDatabase : RoomDatabase() {
 
@@ -51,13 +51,19 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE " + TaskList.TABLE_NAME + " ADD COLUMN updated_tasks INTEGER DEFAULT 0 NOT NULL")
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase? {
             if (instance == null) {
                 synchronized(LOCK) {
                     if (instance == null) {
                         instance = Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, DATABASE_NAME)
                                 .allowMainThreadQueries()
-                                .addMigrations(MIGRATION_1_2)
+                                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                                 .build()
                     }
                 }
