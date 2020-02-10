@@ -75,7 +75,8 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
         viewModel.isOutOfSync.observe(viewLifecycleOwner, Observer { outOfSync ->
             if (outOfSync) {
                 binding.status.setTextColor(Color.RED)
-                onSync()
+                // TODO add back after testing + check for infinite sync loop on fail
+                //onSync()
             } else
                 binding.status.setTextColor(defaultTextColor)
         })

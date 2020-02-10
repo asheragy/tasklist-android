@@ -77,8 +77,6 @@ class Prefs private constructor(private val context: Context) {
         private val TAG = "prefs"
 
         const val KEY_LAST_LIST_SYNC = "lastListSync"
-        @Deprecated("last sync requires context")
-        const val KEY_LAST_SYNC = "lastSync"
         const val KEY_ACCOUNT_NAME = "accountName"
         const val KEY_LAST_SELECTED_LIST_ID = "lastListId"
         const val KEY_AUTHTOKEN = "authToken"

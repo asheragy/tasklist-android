@@ -11,6 +11,9 @@ import org.cerion.tasklist.common.TAG
 import java.text.SimpleDateFormat
 import java.util.*
 
+// TODO if resetting database version
+//   - rename TaskList.lastSync field so @column is not needed
+
 @androidx.room.Database(entities = [TaskList::class, Task::class], version = 4, exportSchema = false)
 @TypeConverters(DateConverter::class)
 abstract class AppDatabase : RoomDatabase() {

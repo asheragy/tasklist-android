@@ -13,10 +13,10 @@ class SyncTask(private val mContext: Context, private val mAuthToken: String, pr
 
     override fun doInBackground(vararg params: Void): Boolean? {
         val sync = Sync.getInstance(mContext, mAuthToken)
-        var result: Boolean
+        var result: Boolean = false
 
         try {
-            result = sync.run().success
+            //result = sync.run().success
         } catch (e: GoogleApiException) {
             mError = e
             result = false

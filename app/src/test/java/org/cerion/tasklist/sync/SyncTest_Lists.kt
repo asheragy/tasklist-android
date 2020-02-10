@@ -22,8 +22,7 @@ internal class SyncTest_Lists {
     private val prefs: Prefs = mock()
 
     private val sync = Sync(listDao, taskDao, remoteRepo, prefs)
-    private val baseModifiedTime = 1577836800000 // UTC Midnight 1/1/2020
-    private val baseModifiedDate = Date(baseModifiedTime)
+    private val baseModifiedDate = Date(1577836800000) // UTC Midnight 1/1/2020
     private val defaultList = TaskList("1","Default").apply { isDefault = true; updated = baseModifiedDate }
     private val defaultListGoogle = GoogleTaskList("1","Default", baseModifiedDate, true)
 
@@ -36,6 +35,7 @@ internal class SyncTest_Lists {
         whenever(remoteRepo.createList(any())).thenAnswer { (it.arguments[0] as TaskList).toGoogleList() }
         whenever(remoteRepo.updateList(any())).thenAnswer { (it.arguments[0] as TaskList).toGoogleList() }
         whenever(remoteRepo.deleteList(any())).thenReturn(true)
+        whenever(prefs.getDate(any())).thenReturn(Date(0))
     }
 
     @Test
@@ -56,8 +56,8 @@ internal class SyncTest_Lists {
         assertEquals(0, Mockito.mockingDetails(taskDao).invocations.size)
         // Remote data for changes
         assertEquals(1, Mockito.mockingDetails(remoteRepo).invocations.size)
-        // Save last sync time
-        assertEquals(1, Mockito.mockingDetails(prefs).invocations.size)
+        // Get+Save last sync time
+        assertEquals(2, Mockito.mockingDetails(prefs).invocations.size)
     }
 
     @Test
@@ -73,7 +73,7 @@ internal class SyncTest_Lists {
     @Test
     fun `lists local to remote add+change`() {
         whenever(listDao.getAll()).thenReturn(listOf(
-                defaultList.fullCopy().apply { title = "Default Modified"; updated = Date(baseModifiedTime + 1) },
+                defaultList.fullCopy().apply { title = "Default Modified"; updated = baseModifiedDate.add(1) },
                 TaskList("temp_id", "Another list")
         ))
 
@@ -90,12 +90,12 @@ internal class SyncTest_Lists {
     @Test
     fun `changes based on last updated time`() {
         whenever(listDao.getAll()).thenReturn(listOf(
-                defaultList.fullCopy().apply { title = "Default Modified"; updated = Date(baseModifiedTime + 2) },
-                TaskList("2", "Another list").apply { updated = Date(baseModifiedTime + 1) }
+                defaultList.fullCopy().apply { title = "Default Modified"; updated = baseModifiedDate.add(2) },
+                TaskList("2", "Another list").apply { updated = baseModifiedDate.add(1) }
         ))
         whenever(remoteRepo.getLists()).thenReturn(listOf(
-                defaultListGoogle.copy(updated = Date(baseModifiedTime + 1)),
-                GoogleTaskList("2", "List B", Date(baseModifiedTime + 2))
+                defaultListGoogle.copy(updated = baseModifiedDate.add(1)),
+                GoogleTaskList("2", "List B", baseModifiedDate.add(2))
         ))
 
         val result = sync.lists()
@@ -128,7 +128,7 @@ internal class SyncTest_Lists {
                 TaskList("3", "List not on remote")
         ))
         whenever(remoteRepo.getLists()).thenReturn(listOf(
-                defaultListGoogle.copy(title = "New Title", updated = Date(baseModifiedTime + 1)),
+                defaultListGoogle.copy(title = "New Title", updated = baseModifiedDate.add(1)),
                 GoogleTaskList("2", "List Added")
         ))
 
@@ -141,7 +141,7 @@ internal class SyncTest_Lists {
         verifyCallsMatchChanges(result)
     }
 
-    private fun verifyCallsMatchChanges(result: ListSyncResult) {
+    private fun verifyCallsMatchChanges(result: SyncResult) {
         verify(remoteRepo, times(result.toRemote.add)).createList(any())
         verify(remoteRepo, times(result.toRemote.change)).updateList(any())
         verify(remoteRepo, times(result.toRemote.delete)).deleteList(any())
@@ -150,5 +150,4 @@ internal class SyncTest_Lists {
         verify(listDao, times(result.toLocal.change)).update(any())
         verify(listDao, times(result.toLocal.delete)).delete(any())
     }
-
 }

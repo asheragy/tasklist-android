@@ -19,9 +19,9 @@ class GoogleTasksRepository(private val api: GoogleApi) {
     fun updateList(list: TaskList): GoogleTaskList = lists.update(list.toGoogleList())
     fun deleteList(list: TaskList): Boolean = lists.delete(list.id)
 
-    fun getTasks(listId: String, dtUpdatedMin: Date? = null) = tasks.list(listId, dtUpdatedMin)
+    fun getTasks(listId: String, dtUpdatedMin: Date? = null): List<Task> = tasks.list(listId, dtUpdatedMin)
     fun createTask(task: Task): Task? = tasks.insert(task)
-    fun updateTask(task: Task): Boolean = tasks.update(task)
+    fun updateTask(task: Task): Task = tasks.update(task)
     fun deleteTask(task: Task): Boolean = tasks.delete(task)
 }
 

@@ -145,7 +145,7 @@ object AuthTools {
 
         val prefs = Prefs.getInstance(context)
         //Remove prefs related to sync/account
-        prefs.remove(Prefs.KEY_LAST_SYNC)
+        prefs.remove(Prefs.KEY_LAST_LIST_SYNC)
         prefs.remove(Prefs.KEY_ACCOUNT_NAME)
         prefs.remove(Prefs.KEY_AUTHTOKEN)
         prefs.remove(Prefs.KEY_AUTHTOKEN_DATE)

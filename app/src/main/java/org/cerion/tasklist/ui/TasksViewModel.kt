@@ -139,17 +139,19 @@ class TasksViewModel(private val resources: ResourceProvider,
 
     private fun load() {
         Log.d(TAG, "load")
-        db.log()
-        updateLastSync() //Relative time so update it as much as possible
+        //db.log()
 
         val dbLists = getListsFromDatabase().sortedBy { it.title.toLowerCase() }.toMutableList()
-        dbLists.add(0, TaskList.ALL_TASKS)
+        dbLists.add(0, TaskList.ALL_TASKS.apply {
+            lastSync = prefs.getDate(Prefs.KEY_LAST_LIST_SYNC)
+        })
 
         val lastId = prefs.getString(Prefs.KEY_LAST_SELECTED_LIST_ID)
         val lastSaved = dbLists.firstOrNull { it.id == lastId }
         _selectedList.value = (lastSaved ?: TaskList.ALL_TASKS) //If nothing valid is saved default to "all tasks" list
 
         _lists.value = dbLists
+
         refreshTasks()
     }
 
@@ -284,7 +286,8 @@ class TasksViewModel(private val resources: ResourceProvider,
 
     private fun updateLastSync() {
         var lastSyncText = "Last Sync: "
-        val lastSyncTime = prefs.getDate(Prefs.KEY_LAST_LIST_SYNC)
+        val lastSyncTime = currList.lastSync
+
         if (lastSyncTime.time == 0L)
             lastSyncText += "Never"
         else {

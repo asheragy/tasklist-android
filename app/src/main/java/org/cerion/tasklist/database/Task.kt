@@ -48,6 +48,13 @@ data class Task(var listId: String) {
         return result
     }
 
+    fun equals(other: Task): Boolean {
+        return title == other.title
+                && notes == other.notes
+                && due == other.due
+                && completed == other.completed
+    }
+
     companion object {
         internal const val TABLE_NAME = "tasks"
     }

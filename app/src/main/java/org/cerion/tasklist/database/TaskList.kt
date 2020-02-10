@@ -1,5 +1,6 @@
 package org.cerion.tasklist.database
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.text.DateFormat
@@ -9,7 +10,8 @@ import java.util.*
 data class TaskList(@PrimaryKey var id: String, var title: String) {
 
     var updated: Date = Date(0)
-    var updated_tasks: Date = Date(0)
+    @ColumnInfo(name = "updated_tasks")
+    var lastSync: Date = Date(0)
     var isDefault: Boolean = false
     var deleted: Boolean = false
 
@@ -22,10 +24,10 @@ data class TaskList(@PrimaryKey var id: String, var title: String) {
     override fun toString(): String = title
 
     fun logString(dateFormat: DateFormat?): String {
-        var result = String.format("List(id=%s, updated='%s', updated_tasks='%s', title='%s'",
+        var result = String.format("List(id=%s, updated='%s', lastSync='%s', title='%s'",
                 id,
                 if (dateFormat != null) dateFormat.format(updated) else updated.toString(),
-                if (dateFormat != null) dateFormat.format(updated_tasks) else updated_tasks.toString(),
+                if (dateFormat != null) dateFormat.format(lastSync) else lastSync.toString(),
                 title)
 
         if (isDefault)

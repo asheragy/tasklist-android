@@ -25,6 +25,9 @@ interface TaskDao {
 
     @Delete
     fun delete(task: Task)
+
+    @Query("UPDATE " + Task.TABLE_NAME + " SET id=:newId, updated=:updated WHERE listId=:listId AND id=:oldId")
+    fun updateId(listId: String, oldId: String, newId: String, updated: Date)
 }
 
 @Dao
@@ -42,9 +45,9 @@ interface TaskListDao {
     @Delete
     fun delete(taskList: TaskList)
 
-    @Query("UPDATE " + TaskList.TABLE_NAME + " SET id = :newId WHERE id = :oldId")
+    @Query("UPDATE " + TaskList.TABLE_NAME + " SET id=:newId WHERE id=:oldId")
     fun updateId(oldId: String, newId: String)
 
-    @Query("UPDATE " + TaskList.TABLE_NAME + " SET updated = :updated WHERE id = :id")
+    @Query("UPDATE " + TaskList.TABLE_NAME + " SET updated=:updated WHERE id=:id")
     fun setLastUpdated(id: String, updated: Date)
 }
