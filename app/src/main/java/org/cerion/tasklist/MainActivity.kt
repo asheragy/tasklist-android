@@ -50,6 +50,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             } else {
                 drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
             }
+
+            if (nd.id == R.id.taskDetailFragment)
+                supportActionBar?.setHomeAsUpIndicator(android.R.drawable.ic_menu_close_clear_cancel)
         }
 
         navView.setNavigationItemSelectedListener(this)
@@ -67,17 +70,33 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     override fun onSupportNavigateUp(): Boolean {
-        hideKeyboard()
-        val navController = this.findNavController(R.id.nav_host_fragment)
-        return NavigationUI.navigateUp(navController, drawerLayout)
+        if (!fragmentHandledNavigation()) {
+            hideKeyboard()
+            val navController = this.findNavController(R.id.nav_host_fragment)
+            return NavigationUI.navigateUp(navController, drawerLayout)
+        }
+
+        return true
     }
 
     override fun onBackPressed() {
-        if(findNavController(R.id.nav_host_fragment).currentDestination?.id == R.id.taskListFragment)
-            finishAndRemoveTask()
-        else
-            super.onBackPressed()
+        if (!fragmentHandledNavigation()) {
+            if (findNavController(R.id.nav_host_fragment).currentDestination?.id == R.id.taskListFragment)
+                finishAndRemoveTask()
+            else
+                super.onBackPressed()
+        }
     }
+
+    private fun fragmentHandledNavigation(): Boolean {
+        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        val fragment = navHostFragment.childFragmentManager.fragments[0]
+        if (fragment is IOnBackPressed)
+            return fragment.onBackPressed()
+
+        return true
+    }
+
 
     private fun hideKeyboard() {
         val inputManager = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
@@ -109,4 +128,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val dialog = builder.create()
         dialog.show()
     }
+}
+
+interface IOnBackPressed {
+    // If returned true fragment handled the back press
+    fun onBackPressed(): Boolean
 }

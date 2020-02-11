@@ -2,6 +2,7 @@ package org.cerion.tasklist.ui
 
 
 import android.content.Context.INPUT_METHOD_SERVICE
+import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -9,16 +10,19 @@ import android.text.util.Linkify
 import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.view.inputmethod.InputMethodManager.HIDE_NOT_ALWAYS
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import com.google.android.material.datepicker.MaterialDatePicker
+import org.cerion.tasklist.IOnBackPressed
 import org.cerion.tasklist.R
 import org.cerion.tasklist.databinding.FragmentTaskBinding
 import java.util.*
 
-class TaskDetailFragment : Fragment() {
+
+class TaskDetailFragment : Fragment(), IOnBackPressed {
 
     private lateinit var binding: FragmentTaskBinding
 
@@ -70,7 +74,7 @@ class TaskDetailFragment : Fragment() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.action_save -> saveAndFinish()
+            R.id.action_save -> finish(true)
         }
 
         return super.onOptionsItemSelected(item)
@@ -89,14 +93,44 @@ class TaskDetailFragment : Fragment() {
         picker.show(parentFragmentManager, picker.toString())
     }
 
-    private fun saveAndFinish() {
+    private fun finish(save: Boolean) {
         val inputManager = requireContext().getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
         val currentFocusedView = requireActivity().currentFocus
         if (currentFocusedView != null)
             inputManager.hideSoftInputFromWindow(currentFocusedView.windowToken, HIDE_NOT_ALWAYS)
 
-        val changes = viewModel.save()
-        tasksViewModel.hasLocalChanges.set(changes)
+        if (save) {
+            val changes = viewModel.save()
+            tasksViewModel.hasLocalChanges.set(changes)
+        }
+
         requireActivity().onBackPressed()
+    }
+
+    private var discardChanges = false
+    override fun onBackPressed(): Boolean {
+        if (!discardChanges && viewModel.task.value!!.isModified) {
+            val dialogClickListener = DialogInterface.OnClickListener { _, which ->
+                when (which) {
+                    DialogInterface.BUTTON_POSITIVE -> {
+                        // Keep window active
+                    }
+                    DialogInterface.BUTTON_NEGATIVE -> {
+                        discardChanges = true
+                        finish(false)
+                    }
+                }
+            }
+
+            val builder = AlertDialog.Builder(requireContext())
+            builder.setMessage("Discard changes?")
+                    .setNegativeButton("Discard", dialogClickListener)
+                    .setPositiveButton("Keep editing", dialogClickListener)
+                    .show()
+
+            return true
+        }
+
+        return false
     }
 }
