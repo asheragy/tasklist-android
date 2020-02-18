@@ -33,7 +33,7 @@ class MoveTaskDialogFragment : DialogFragment() {
                 .setTitle("Move to list")
                 .setAdapter(adapter) { _, which ->
                     if (args.listId.isNotEmpty())
-                        viewModel.moveTaskToList(task, lists.value[which])
+                        viewModel.moveTaskToList(task, lists.value!![which])
                     else
                         Log.e(TAG, "Error, unable to find task")
                 }

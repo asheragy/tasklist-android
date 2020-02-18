@@ -10,7 +10,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.cerion.tasklist.R
-import org.cerion.tasklist.common.*
+import org.cerion.tasklist.common.ResourceProvider
+import org.cerion.tasklist.common.SingleLiveEvent
 import org.cerion.tasklist.database.*
 import org.cerion.tasklist.sync.Sync
 import java.util.*
@@ -22,20 +23,25 @@ class TasksViewModel(private val resources: ResourceProvider,
                      private val listDao: TaskListDao,
                      application: Application) : AndroidViewModel(application) {
 
-    private val _lists = NonNullMutableLiveData<List<TaskList>>(emptyList())
-    val lists: NonNullLiveData<List<TaskList>>
-        get() = _lists
+    val lists: LiveData<List<TaskList>> = listDao.getAllAsync().map {
+        val lists = it.sortedBy { list -> list.title.toLowerCase() }.toMutableList()
+        lists.add(0, TaskList.ALL_TASKS.apply {
+            lastSync = prefs.getDate(Prefs.KEY_LAST_LIST_SYNC)
+        })
+
+        lists
+    }
 
     val message: SingleLiveEvent<String> = SingleLiveEvent<String>()
 
     val hasLocalChanges: ObservableField<Boolean> = ObservableField()
 
     private val currList get() = selectedList.value!!
-    private val _selectedList = MutableLiveData<TaskList>(TaskList.ALL_TASKS)
+    private val _selectedList = MediatorLiveData<TaskList>()
     val selectedList: LiveData<TaskList>
         get() = _selectedList
 
-    private val _lastSync = MutableLiveData<String>("")
+    private val _lastSync = MediatorLiveData<String>()
     val lastSync: LiveData<String>
         get() = _lastSync
 
@@ -53,10 +59,18 @@ class TasksViewModel(private val resources: ResourceProvider,
 
     val tasks: LiveData<List<Task>> = selectedList.switchMap { taskRepo.getTasksForList(it) }
 
-    val defaultList get() = lists.value.getDefault()!!
+    val defaultList get() = lists.value!!.getDefault()!!
 
     init {
-        load()
+        _selectedList.addSource(lists) { lists ->
+            val lastId = prefs.getString(Prefs.KEY_LAST_SELECTED_LIST_ID)
+            val lastSaved = lists.firstOrNull { it.id == lastId }
+            _selectedList.value = (lastSaved ?: TaskList.ALL_TASKS) //If nothing valid is saved default to "all tasks" list
+        }
+
+        _lastSync.addSource(_selectedList) {
+            setLastSyncText(it.lastSync)
+        }
     }
 
     private val handler = CoroutineExceptionHandler { _, throwable ->
@@ -80,14 +94,10 @@ class TasksViewModel(private val resources: ResourceProvider,
             }
 
             _syncing.value = false
-            if (success) {
-                updateLastSync() //Update last sync time only if successful
+            if (success)
                 hasLocalChanges.set(false)
-            }
             else
                 message.value = if(error.isNullOrBlank()) "Sync Failed, unknown error" else error
-
-            load() //refresh since data may have changed
         }
     }
 
@@ -102,26 +112,9 @@ class TasksViewModel(private val resources: ResourceProvider,
     }
 
     fun setList(list: TaskList) {
+        // TODO see if this can observe itself to set the preference value
         prefs.setString(Prefs.KEY_LAST_SELECTED_LIST_ID, list.id)
-        load()
-    }
-
-    private fun load() {
-        Log.d(TAG, "load")
-        //db.log()
-
-        val dbLists = listDao.getAll().sortedBy { it.title.toLowerCase() }.toMutableList()
-        dbLists.add(0, TaskList.ALL_TASKS.apply {
-            lastSync = prefs.getDate(Prefs.KEY_LAST_LIST_SYNC)
-        })
-
-        val lastId = prefs.getString(Prefs.KEY_LAST_SELECTED_LIST_ID)
-        val lastSaved = dbLists.firstOrNull { it.id == lastId }
-        _selectedList.value = (lastSaved ?: TaskList.ALL_TASKS) //If nothing valid is saved default to "all tasks" list
-
-        _lists.value = dbLists
-
-        updateLastSync()
+        _selectedList.value = list
     }
 
     fun clearCompleted() = taskRepo.clearCompleted(tasks.value!!)
@@ -152,13 +145,15 @@ class TasksViewModel(private val resources: ResourceProvider,
     }
 
     fun moveLeft() {
-        val index = lists.value.indexOf(currList)
-        setList(lists.value[(index + 1) % lists.value.size])
+        lists.value?.run {
+            setList(this[(indexOf(currList) + 1) % size])
+        }
     }
 
     fun moveRight() {
-        val index = lists.value.indexOf(currList)
-        setList(lists.value[(index - 1 + lists.value.size) % lists.value.size])
+        lists.value?.run {
+            setList(this[(indexOf(currList) - 1 + size) % size])
+        }
     }
 
     fun logDatabase() {
@@ -178,7 +173,6 @@ class TasksViewModel(private val resources: ResourceProvider,
             // If never synced just delete
             listDao.delete(currList)
             message.value = resources.getString(R.string.message_deleted_list, currList.title)
-            load()
         }
         else {
             // Set deleted and sync
@@ -188,22 +182,21 @@ class TasksViewModel(private val resources: ResourceProvider,
         }
     }
 
-    private fun updateLastSync() {
+    private fun setLastSyncText(lastSync: Date) {
         var lastSyncText = "Last Sync: "
-        val lastSyncTime = currList.lastSync
 
-        if (lastSyncTime.time == 0L)
+        if (lastSync.time == 0L)
             lastSyncText += "Never"
         else {
             val now = Date().time
 
             lastSyncText +=
-                    if (now - lastSyncTime.time < 60 * 1000)
+                    if (now - lastSync.time < 60 * 1000)
                         "Less than 1 minute ago"
                     else
-                        DateUtils.getRelativeTimeSpanString(lastSyncTime.time, now, DateUtils.SECOND_IN_MILLIS).toString()
+                        DateUtils.getRelativeTimeSpanString(lastSync.time, now, DateUtils.SECOND_IN_MILLIS).toString()
 
-            _isOutOfSync.value = (now - lastSyncTime.time > 24 * 60 * 60 * 1000)
+            _isOutOfSync.value = (now - lastSync.time > 24 * 60 * 60 * 1000)
         }
 
         _lastSync.value = lastSyncText

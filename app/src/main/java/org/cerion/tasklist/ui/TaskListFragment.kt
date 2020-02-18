@@ -157,7 +157,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
         val menu = navView.menu.getItem(0).subMenu
         menu.clear() // clears placeholder items
 
-        for (list in viewModel.lists.value) {
+        for (list in viewModel.lists.value!!) {
             val item = menu.add(list.title)
             item.setOnMenuItemClickListener {
                 viewModel.setList(list)
@@ -195,7 +195,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
     override fun onPrepareOptionsMenu(menu: Menu) {
         super.onPrepareOptionsMenu(menu)
         menu.findItem(R.id.action_rename).isVisible = !viewModel.selectedList.value!!.isAllTasks
-        menu.findItem(R.id.action_delete).isVisible = viewModel.tasks.value!!.isEmpty()
+        menu.findItem(R.id.action_delete).isVisible = viewModel.tasks.value != null && viewModel.tasks.value!!.isEmpty()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
