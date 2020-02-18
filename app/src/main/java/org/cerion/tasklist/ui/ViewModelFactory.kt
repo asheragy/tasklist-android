@@ -8,6 +8,7 @@ import org.cerion.tasklist.common.ResourceProvider
 import org.cerion.tasklist.common.ResourceProvider_Impl
 import org.cerion.tasklist.database.AppDatabase
 import org.cerion.tasklist.database.Prefs
+import org.cerion.tasklist.database.TaskRepository
 
 class ViewModelFactory(private val app: Application) : ViewModelProvider.Factory {
 
@@ -27,7 +28,7 @@ class ViewModelFactory(private val app: Application) : ViewModelProvider.Factory
             return TaskDetailViewModel(ResourceProvider_Impl(app), db.taskDao()) as T
 
         if (modelClass.isAssignableFrom(TasksViewModel::class.java))
-            return TasksViewModel(resources, prefs, db, db.taskDao(), db.taskListDao(), app) as T
+            return TasksViewModel(resources, prefs, db, TaskRepository(db.taskDao()), db.taskListDao(),  app) as T
 
         throw IllegalArgumentException("Unknown ViewModel class")
     }

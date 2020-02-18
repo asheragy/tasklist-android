@@ -94,7 +94,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         if (fragment is IOnBackPressed)
             return fragment.onBackPressed()
 
-        return true
+        return false
     }
 
 

@@ -85,7 +85,6 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
             override fun onPropertyChanged(sender: Observable?, propertyId: Int) {
                 if(viewModel.hasLocalChanges.get() == true) {
                     viewModel.hasLocalChanges.set(false)
-                    viewModel.refreshTasks()
                     onSync()
                 }
             }
@@ -196,7 +195,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
     override fun onPrepareOptionsMenu(menu: Menu) {
         super.onPrepareOptionsMenu(menu)
         menu.findItem(R.id.action_rename).isVisible = !viewModel.selectedList.value!!.isAllTasks
-        menu.findItem(R.id.action_delete).isVisible = viewModel.tasks.value.isEmpty()
+        menu.findItem(R.id.action_delete).isVisible = viewModel.tasks.value!!.isEmpty()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

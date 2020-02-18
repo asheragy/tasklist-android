@@ -41,12 +41,20 @@ abstract class AppDatabase : RoomDatabase() {
         }
     }
 
+    private fun verifyDefaultTaskList() {
+        // TODO verify this works on clean install
+        if(taskListDao().getAll().isEmpty()) {
+            val defaultList = TaskList(generateTempId(), "Default")
+            defaultList.isDefault = true
+            taskListDao().add(defaultList)
+        }
+    }
+
     companion object {
 
         private const val DATABASE_NAME = "tasks.db"
         @Volatile
         private var instance: AppDatabase? = null
-        private val LOCK = Any()
 
         private val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(database: SupportSQLiteDatabase) {
@@ -69,19 +77,22 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
-        fun getInstance(context: Context): AppDatabase? {
-            if (instance == null) {
-                synchronized(LOCK) {
-                    if (instance == null) {
-                        instance = Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, DATABASE_NAME)
-                                .allowMainThreadQueries()
-                                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
-                                .build()
-                    }
+        fun getInstance(context: Context): AppDatabase {
+            synchronized(this) {
+                var db = instance
+                if (db == null) {
+                    db = Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, DATABASE_NAME)
+                            .allowMainThreadQueries()
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                            .build()
+
+                    db.verifyDefaultTaskList()
+                    instance = db
                 }
+
+                return db
             }
 
-            return instance
         }
 
         fun generateTempId(): String {

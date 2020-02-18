@@ -4,10 +4,11 @@ import android.app.Application
 import android.text.format.DateUtils
 import android.util.Log
 import androidx.databinding.ObservableField
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import kotlinx.coroutines.*
+import androidx.lifecycle.*
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.cerion.tasklist.R
 import org.cerion.tasklist.common.*
 import org.cerion.tasklist.database.*
@@ -17,29 +18,22 @@ import java.util.*
 class TasksViewModel(private val resources: ResourceProvider,
                      private val prefs: Prefs,
                      private val db: AppDatabase,
-                     private val taskDao: TaskDao,
+                     private val taskRepo: TaskRepository,
                      private val listDao: TaskListDao,
                      application: Application) : AndroidViewModel(application) {
-
-    private val job = Job()
-    private val uiScope =  CoroutineScope(Dispatchers.Main + job)
 
     private val _lists = NonNullMutableLiveData<List<TaskList>>(emptyList())
     val lists: NonNullLiveData<List<TaskList>>
         get() = _lists
 
-    private val _tasks = NonNullMutableLiveData<List<Task>>(emptyList())
-    val tasks: NonNullLiveData<List<Task>>
-        get() = _tasks
-
-    val message: SingleLiveEvent<String> = SingleLiveEvent()
+    val message: SingleLiveEvent<String> = SingleLiveEvent<String>()
 
     val hasLocalChanges: ObservableField<Boolean> = ObservableField()
 
+    private val currList get() = selectedList.value!!
     private val _selectedList = MutableLiveData<TaskList>(TaskList.ALL_TASKS)
     val selectedList: LiveData<TaskList>
         get() = _selectedList
-    private val currList get() = selectedList.value!!
 
     private val _lastSync = MutableLiveData<String>("")
     val lastSync: LiveData<String>
@@ -57,15 +51,12 @@ class TasksViewModel(private val resources: ResourceProvider,
     val deletedTask: LiveData<Task>
         get() = _deletedTask
 
+    val tasks: LiveData<List<Task>> = selectedList.switchMap { taskRepo.getTasksForList(it) }
+
     val defaultList get() = lists.value.getDefault()!!
 
     init {
         load()
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        job.cancel()
     }
 
     private val handler = CoroutineExceptionHandler { _, throwable ->
@@ -77,7 +68,7 @@ class TasksViewModel(private val resources: ResourceProvider,
             return
 
         _syncing.value = true
-        uiScope.launch(handler) {
+        viewModelScope.launch(handler) {
             var success = false
             var error: String? = null
 
@@ -92,11 +83,9 @@ class TasksViewModel(private val resources: ResourceProvider,
             if (success) {
                 updateLastSync() //Update last sync time only if successful
                 hasLocalChanges.set(false)
-            } else {
-                message.value = if(error.isNullOrBlank()) "Sync Failed, unknown error" else error
-                //val dialog = AlertDialogFragment.newInstance("Sync failed", message)
-                //dialog.show(requireFragmentManager(), "dialog")
             }
+            else
+                message.value = if(error.isNullOrBlank()) "Sync Failed, unknown error" else error
 
             load() //refresh since data may have changed
         }
@@ -112,26 +101,6 @@ class TasksViewModel(private val resources: ResourceProvider,
         }
     }
 
-    // TODO make private, should be based on actions that change it which only this class does
-    fun refreshTasks() {
-        updateLastSync() //Relative time so update it as much as possible
-
-        // TODO filter out blank records here
-        val dbTasks =
-                if(currList.isAllTasks)
-                    taskDao.getAll()
-                else
-                    taskDao.getAllByList(currList.id)
-
-        Collections.sort(dbTasks, Comparator { task, t1 ->
-            if (task.deleted != t1.deleted)
-                return@Comparator if (task.deleted) 1 else -1
-            if (task.completed != t1.completed) if (task.completed) 1 else -1 else task.title.compareTo(t1.title, ignoreCase = true)
-        })
-
-        _tasks.value = dbTasks
-    }
-
     fun setList(list: TaskList) {
         prefs.setString(Prefs.KEY_LAST_SELECTED_LIST_ID, list.id)
         load()
@@ -141,7 +110,7 @@ class TasksViewModel(private val resources: ResourceProvider,
         Log.d(TAG, "load")
         //db.log()
 
-        val dbLists = getListsFromDatabase().sortedBy { it.title.toLowerCase() }.toMutableList()
+        val dbLists = listDao.getAll().sortedBy { it.title.toLowerCase() }.toMutableList()
         dbLists.add(0, TaskList.ALL_TASKS.apply {
             lastSync = prefs.getDate(Prefs.KEY_LAST_LIST_SYNC)
         })
@@ -152,33 +121,12 @@ class TasksViewModel(private val resources: ResourceProvider,
 
         _lists.value = dbLists
 
-        refreshTasks()
+        updateLastSync()
     }
 
-    fun clearCompleted() {
-        Log.i(TAG, "onClearCompleted")
-
-        val completedTasks = tasks.value.filter { it.completed && !it.deleted }
-
-        for (task in completedTasks) {
-            if (task.hasTempId)
-                taskDao.delete(task)
-            else {
-                task.setModified()
-                task.deleted = true
-                taskDao.update(task)
-            }
-        }
-
-        refreshTasks()
-    }
-
-    fun toggleCompleted(task: Task) {
-        task.setModified()
-        task.completed = !task.completed
-        taskDao.update(task)
-        refreshTasks()
-    }
+    fun clearCompleted() = taskRepo.clearCompleted(tasks.value!!)
+    fun toggleCompleted(task: Task) = taskRepo.toggleCompleted(task)
+    fun undoDelete(task: Task) = taskRepo.undoDelete(task)
 
     fun toggleDeleted(task: Task) {
         if (task.deleted)
@@ -189,28 +137,7 @@ class TasksViewModel(private val resources: ResourceProvider,
 
     fun delete(task: Task) {
         _deletedTask.value = task
-
-        if (task.hasTempId)
-            taskDao.delete(task)
-        else {
-            task.setModified()
-            task.deleted = true
-            taskDao.update(task)
-        }
-
-        refreshTasks()
-    }
-
-    fun undoDelete(task: Task) {
-        if (task.hasTempId)
-            taskDao.add(task)
-        else {
-            task.setModified()
-            task.deleted = false
-            taskDao.update(task)
-        }
-
-        refreshTasks()
+        taskRepo.delete(task)
     }
 
     fun deleteConfirmed() {
@@ -218,23 +145,10 @@ class TasksViewModel(private val resources: ResourceProvider,
     }
 
     fun moveTaskToList(task: Task, newList: TaskList) {
-        if (newList.id == task.listId) {
-            Log.i(TAG, "Ignoring moving since same list")
-            return
+        if (newList.id != task.listId) {
+            taskRepo.moveTaskToList(task, newList)
+            setList(newList)
         }
-
-        // Delete task, add to new list and refresh
-        // TODO if temp ID permanently delete
-        task.setModified()
-        task.deleted = true
-        taskDao.update(task)
-
-        task.deleted = false
-        task.listId = newList.id
-        task.id = AppDatabase.generateTempId()
-        taskDao.add(task)
-
-        setList(newList)
     }
 
     fun moveLeft() {
@@ -252,10 +166,13 @@ class TasksViewModel(private val resources: ResourceProvider,
     }
 
     fun deleteCurrentList() {
+        if (tasks.value == null) // List not loaded yet
+            return
+
         // Only take action if list is empty
         if (currList.isAllTasks || currList.isDefault)
             message.value = resources.getString(R.string.warning_delete_system_list)
-        else if (tasks.value.isNotEmpty())
+        else if (tasks.value!!.isNotEmpty())
             message.value = resources.getString(R.string.warning_delete_nonEmpty_list)
         else if (currList.hasTempId) {
             // If never synced just delete
@@ -269,19 +186,6 @@ class TasksViewModel(private val resources: ResourceProvider,
             listDao.update(currList)
             hasLocalChanges.set(true) // triggers a sync
         }
-    }
-
-    private fun getListsFromDatabase(): List<TaskList> {
-        var dbLists = listDao.getAll()
-        if (dbLists.isEmpty()) {
-            Log.d(TAG, "No lists, adding default")
-            val defaultList = TaskList(AppDatabase.generateTempId(),"Default")
-            defaultList.isDefault = true
-            listDao.add(defaultList)
-            dbLists = listDao.getAll() //re-get list
-        }
-
-        return dbLists
     }
 
     private fun updateLastSync() {

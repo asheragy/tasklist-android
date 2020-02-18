@@ -62,6 +62,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent">
 
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recycler_view"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scrollbars="vertical"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
+
                     <TextView
                         android:id="@+id/empty_view"
                         android:layout_width="match_parent"
@@ -69,12 +76,7 @@
                         android:gravity="center_horizontal|center_vertical"
                         android:text="No Tasks"/>
 
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recycler_view"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:scrollbars="vertical"
-                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
+
                 </FrameLayout>
 
             </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

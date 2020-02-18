@@ -24,7 +24,7 @@ class MoveTaskDialogFragment : DialogFragment() {
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val args = MoveTaskDialogFragmentArgs.fromBundle(requireArguments())
         val lists = viewModel.lists
-        val task = viewModel.tasks.value.first { it.id == args.taskId }
+        val task = viewModel.tasks.value!!.first { it.id == args.taskId }
 
         val adapter = ArrayAdapter<TaskList>(requireContext(), android.R.layout.simple_spinner_dropdown_item)
         adapter.addAll(lists.value)

@@ -1,21 +1,25 @@
 package org.cerion.tasklist.database
 
+import androidx.lifecycle.LiveData
 import androidx.room.*
 import java.util.*
 
 @Dao
 interface TaskDao {
-
-    //String orderBy = COLUMN_DELETED + " ASC, " + COLUMN_COMPLETE + " ASC, " + COLUMN_TITLE + " ASC";
-
     @Query("SELECT * FROM " + Task.TABLE_NAME + " WHERE listId=:listId AND id=:id")
     fun get(listId: String, id: String): Task
 
     @Query("SELECT * FROM " + Task.TABLE_NAME)
     fun getAll(): List<Task>
 
+    @Query("SELECT * FROM " + Task.TABLE_NAME)
+    fun getAllAsync(): LiveData<List<Task>>
+
     @Query("SELECT * FROM " + Task.TABLE_NAME + " WHERE listId=:listId")
     fun getAllByList(listId: String): List<Task>
+
+    @Query("SELECT * FROM " + Task.TABLE_NAME + " WHERE listId=:listId")
+    fun getAllByListAsync(listId: String): LiveData<List<Task>>
 
     @Insert
     fun add(task: Task)
@@ -32,9 +36,11 @@ interface TaskDao {
 
 @Dao
 interface TaskListDao {
-
     @Query("SELECT * FROM " + TaskList.TABLE_NAME)
     fun getAll(): List<TaskList>
+
+    @Query("SELECT * FROM " + TaskList.TABLE_NAME)
+    fun getAllAsync(): LiveData<List<TaskList>>
 
     @Insert
     fun add(taskList: TaskList)
