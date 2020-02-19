@@ -25,7 +25,6 @@
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent"
                 android:inputType="textMultiLine"
-                android:lineSpacingMultiplier="2"
                 android:text="line1\nline2\nline3" />
 
         </HorizontalScrollView>

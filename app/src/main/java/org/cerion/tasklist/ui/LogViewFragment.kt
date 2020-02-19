@@ -39,7 +39,7 @@ class LogViewFragment : Fragment() {
 
         try {
             val rt = Runtime.getRuntime()
-            val process = rt.exec("logcat -d " + requireContext().applicationContext.packageName + ":D -v time")
+            val process = rt.exec("logcat -d ${android.os.Process.myPid()} -v time")
             val bufferedReader = BufferedReader(InputStreamReader(process.inputStream))
 
             val log = StringBuilder()

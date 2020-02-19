@@ -37,9 +37,7 @@ class TasksViewModel(private val resources: ResourceProvider,
     val hasLocalChanges: ObservableField<Boolean> = ObservableField()
 
     private val currList get() = selectedList.value!!
-    private val _selectedList = MediatorLiveData<TaskList>()
-    val selectedList: LiveData<TaskList>
-        get() = _selectedList
+    val selectedList = MediatorLiveData<TaskList>()
 
     private val _lastSync = MediatorLiveData<String>()
     val lastSync: LiveData<String>
@@ -62,13 +60,17 @@ class TasksViewModel(private val resources: ResourceProvider,
     val defaultList get() = lists.value!!.getDefault()!!
 
     init {
-        _selectedList.addSource(lists) { lists ->
+        selectedList.addSource(lists) { lists ->
             val lastId = prefs.getString(Prefs.KEY_LAST_SELECTED_LIST_ID)
             val lastSaved = lists.firstOrNull { it.id == lastId }
-            _selectedList.value = (lastSaved ?: TaskList.ALL_TASKS) //If nothing valid is saved default to "all tasks" list
+            selectedList.value = (lastSaved ?: TaskList.ALL_TASKS) //If nothing valid is saved default to "all tasks" list
         }
 
-        _lastSync.addSource(_selectedList) {
+        selectedList.addSource(selectedList) {
+            prefs.setString(Prefs.KEY_LAST_SELECTED_LIST_ID, it.id)
+        }
+
+        _lastSync.addSource(selectedList) {
             setLastSyncText(it.lastSync)
         }
     }
@@ -94,8 +96,14 @@ class TasksViewModel(private val resources: ResourceProvider,
             }
 
             _syncing.value = false
-            if (success)
+            if (success) {
                 hasLocalChanges.set(false)
+                // Manually update since dao w/livedata does not handle this list
+                if (currList.isAllTasks) {
+                    currList.lastSync = prefs.getDate(Prefs.KEY_LAST_LIST_SYNC)
+                    setLastSyncText(currList.lastSync)
+                }
+            }
             else
                 message.value = if(error.isNullOrBlank()) "Sync Failed, unknown error" else error
         }
@@ -109,12 +117,6 @@ class TasksViewModel(private val resources: ResourceProvider,
             else
                 false
         }
-    }
-
-    fun setList(list: TaskList) {
-        // TODO see if this can observe itself to set the preference value
-        prefs.setString(Prefs.KEY_LAST_SELECTED_LIST_ID, list.id)
-        _selectedList.value = list
     }
 
     fun clearCompleted() = taskRepo.clearCompleted(tasks.value!!)
@@ -140,19 +142,19 @@ class TasksViewModel(private val resources: ResourceProvider,
     fun moveTaskToList(task: Task, newList: TaskList) {
         if (newList.id != task.listId) {
             taskRepo.moveTaskToList(task, newList)
-            setList(newList)
+            selectedList.value = newList
         }
     }
 
     fun moveLeft() {
         lists.value?.run {
-            setList(this[(indexOf(currList) + 1) % size])
+            selectedList.value = this[(indexOf(currList) + 1) % size]
         }
     }
 
     fun moveRight() {
         lists.value?.run {
-            setList(this[(indexOf(currList) - 1 + size) % size])
+            selectedList.value = this[(indexOf(currList) - 1 + size) % size]
         }
     }
 

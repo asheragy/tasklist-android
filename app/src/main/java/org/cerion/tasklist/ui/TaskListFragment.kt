@@ -160,7 +160,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
         for (list in viewModel.lists.value!!) {
             val item = menu.add(list.title)
             item.setOnMenuItemClickListener {
-                viewModel.setList(list)
+                viewModel.selectedList.value = list
                 drawer.closeDrawers()
                 true
             }
@@ -185,7 +185,7 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
     }
 
     override fun onTaskListsChanged(currList: TaskList) {
-        viewModel.setList(currList) //This list was added or updated
+        viewModel.selectedList.value = currList //This list was added or updated
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -194,8 +194,8 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
 
     override fun onPrepareOptionsMenu(menu: Menu) {
         super.onPrepareOptionsMenu(menu)
-        menu.findItem(R.id.action_rename).isVisible = !viewModel.selectedList.value!!.isAllTasks
-        menu.findItem(R.id.action_delete).isVisible = viewModel.tasks.value != null && viewModel.tasks.value!!.isEmpty()
+        menu.findItem(R.id.action_rename).isVisible = viewModel.selectedList.value.let { it != null && !it.isAllTasks }
+        menu.findItem(R.id.action_delete).isVisible = viewModel.tasks.value.let { it != null && it.isEmpty() }
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
