@@ -18,6 +18,8 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.Snackbar
@@ -143,6 +145,15 @@ class TaskListFragment : Fragment(), TaskListsChangedListener  {
         binding.recyclerView.setOnTouchListener(touchListener)
         swipeRefresh = binding.swipeRefresh
         swipeRefresh.setOnRefreshListener(this::onSync)
+
+        // Swipe refresh only when list is at the top
+        binding.recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                val layoutManager = binding.recyclerView.layoutManager as LinearLayoutManager
+                swipeRefresh.isEnabled = layoutManager.findFirstCompletelyVisibleItemPosition() == 0;
+            }
+        })
 
         return view
     }

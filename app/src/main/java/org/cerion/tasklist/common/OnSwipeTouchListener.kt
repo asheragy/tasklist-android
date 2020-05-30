@@ -40,7 +40,11 @@ open class OnSwipeTouchListener(context: Context) : View.OnTouchListener {
 
             val distanceX = e2.x - e1.x
             val distanceY = e2.y - e1.y
-            if (abs(distanceX) > abs(distanceY) && abs(distanceX) > SWIPE_DISTANCE_THRESHOLD && abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+            if (abs(distanceX) > abs(distanceY) &&
+                    abs(distanceX) > SWIPE_DISTANCE_THRESHOLD &&
+                    abs(velocityX) > SWIPE_VELOCITY_THRESHOLD &&
+                    abs(velocityX) > abs(velocityY)) {
+
                 if (distanceX > 0)
                     onSwipeRight()
                 else
